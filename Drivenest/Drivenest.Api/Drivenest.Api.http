@@ -1,0 +1,6 @@
+@Drivenest.Api_HostAddress = http://localhost:5066
+
+GET {{Drivenest.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
