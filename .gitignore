@@ -82,3 +82,6 @@ secrets.json
 !.vscode/launch.json
 !.vscode/extensions.json
 
+# A dev.ps1 által indított folyamatok azonosítói
+.dev/
+
