@@ -17,6 +17,8 @@ namespace Drivenest.Api.Data
 
         public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
 
+        public DbSet<Vehicle> Vehicles => Set<Vehicle>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
