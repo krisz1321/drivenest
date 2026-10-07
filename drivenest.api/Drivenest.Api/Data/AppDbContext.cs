@@ -19,6 +19,8 @@ namespace Drivenest.Api.Data
 
         public DbSet<Vehicle> Vehicles => Set<Vehicle>();
 
+        public DbSet<Refueling> Refuelings => Set<Refueling>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
