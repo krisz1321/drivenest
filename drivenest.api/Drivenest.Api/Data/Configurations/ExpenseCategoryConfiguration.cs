@@ -16,6 +16,14 @@ namespace Drivenest.Api.Data.Configurations
 
             builder.HasIndex(x => x.Name)
                 .IsUnique();
+
+            builder.HasData(
+                new ExpenseCategory { Id = 1, Name = "Biztosítás" },
+                new ExpenseCategory { Id = 2, Name = "Autópálya-matrica" },
+                new ExpenseCategory { Id = 3, Name = "Adó" },
+                new ExpenseCategory { Id = 4, Name = "Mosás" },
+                new ExpenseCategory { Id = 5, Name = "Parkolás" },
+                new ExpenseCategory { Id = 6, Name = "Egyéb" });
         }
     }
 }

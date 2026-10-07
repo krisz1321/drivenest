@@ -16,6 +16,12 @@ namespace Drivenest.Api.Data.Configurations
 
             builder.HasIndex(x => x.Name)
                 .IsUnique();
+
+            builder.HasData(
+                new FuelType { Id = 1, Name = "Benzin" },
+                new FuelType { Id = 2, Name = "Dízel" },
+                new FuelType { Id = 3, Name = "Hibrid" },
+                new FuelType { Id = 4, Name = "LPG" });
         }
     }
 }
