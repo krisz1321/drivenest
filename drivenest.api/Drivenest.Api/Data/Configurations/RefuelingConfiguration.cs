@@ -1,5 +1,6 @@
 using Drivenest.Api.Data.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
 namespace Drivenest.Api.Data.Configurations
@@ -29,6 +30,12 @@ namespace Drivenest.Api.Data.Configurations
 
             builder.HasIndex(r => new { r.VehicleId, r.Date, r.OdometerKm })
                 .IsDescending(false, true, true);
+
+            builder.Property(r => r.CreatedAt)
+                .HasColumnType("datetime2(3)")
+                .HasDefaultValueSql("SYSUTCDATETIME()")
+                .ValueGeneratedOnAdd()
+                .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
             builder.HasOne(r => r.Vehicle)
                 .WithMany()

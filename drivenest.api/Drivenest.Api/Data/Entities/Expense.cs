@@ -1,6 +1,6 @@
 namespace Drivenest.Api.Data.Entities
 {
-    public class ServiceRecord
+    public class Expense
     {
         public int Id { get; set; }
 
@@ -10,20 +10,14 @@ namespace Drivenest.Api.Data.Entities
 
         public DateOnly Date { get; set; }
 
-        public int OdometerKm { get; set; }
-
-        public string? Provider { get; set; }
+        public decimal Amount { get; set; }
 
         public string? Description { get; set; }
-
-        public decimal PartsCost { get; set; }
-
-        public decimal LaborCost { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
         public Vehicle Vehicle { get; set; } = null!;
 
-        public ServiceCategory Category { get; set; } = null!;
+        public ExpenseCategory Category { get; set; } = null!;
     }
 }

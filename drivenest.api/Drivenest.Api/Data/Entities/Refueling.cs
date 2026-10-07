@@ -16,6 +16,8 @@ namespace Drivenest.Api.Data.Entities
 
         public bool IsFullTank { get; set; } = true;
 
+        public DateTime CreatedAt { get; set; }
+
         public Vehicle Vehicle { get; set; } = null!;
     }
 }

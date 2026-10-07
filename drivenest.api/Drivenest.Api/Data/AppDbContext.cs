@@ -23,6 +23,10 @@ namespace Drivenest.Api.Data
 
         public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
 
+        public DbSet<Expense> Expenses => Set<Expense>();
+
+        public DbSet<Reminder> Reminders => Set<Reminder>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
