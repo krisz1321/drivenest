@@ -11,6 +11,12 @@ namespace Drivenest.Api.Data
         {
         }
 
+        public DbSet<FuelType> FuelTypes => Set<FuelType>();
+
+        public DbSet<ServiceCategory> ServiceCategories => Set<ServiceCategory>();
+
+        public DbSet<ExpenseCategory> ExpenseCategories => Set<ExpenseCategory>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);
