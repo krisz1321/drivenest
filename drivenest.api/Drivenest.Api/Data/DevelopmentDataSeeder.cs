@@ -8,6 +8,7 @@ namespace Drivenest.Api.Data
     public static class DevelopmentDataSeeder
     {
         private const string DemoUserName = "demo1";
+        private const string SecondDemoUserName = "demo2";
         private const string DemoPassword = "Demo123!";
         private const string AdminUserName = "admin";
         private const string AdminPassword = "admin";
@@ -22,8 +23,14 @@ namespace Drivenest.Api.Data
                 await CreateAdminUserAsync(userManager);
             }
 
+            await SeedFirstDemoUserAsync(userManager, db);
+            await SeedSecondDemoUserAsync(userManager, db);
+        }
+
+        private static async Task SeedFirstDemoUserAsync(UserManager<ApplicationUser> userManager, AppDbContext db)
+        {
             var user = await userManager.FindByNameAsync(DemoUserName)
-                ?? await CreateDemoUserAsync(userManager);
+                ?? await CreateDemoUserAsync(userManager, DemoUserName, "demo1@drivenest.local", "Szék Elek");
 
             // Ha a felhasználónak már vannak járművei, a demó adatok megvannak.
             if (await db.Vehicles.AnyAsync(v => v.UserId == user.Id))
@@ -38,6 +45,19 @@ namespace Drivenest.Api.Data
             await SeedRemindersAsync(db, swift, octavia);
         }
 
+        private static async Task SeedSecondDemoUserAsync(UserManager<ApplicationUser> userManager, AppDbContext db)
+        {
+            var user = await userManager.FindByNameAsync(SecondDemoUserName)
+                ?? await CreateDemoUserAsync(userManager, SecondDemoUserName, "demo2@drivenest.local", "Pofá Zoltán");
+
+            if (await db.Vehicles.AnyAsync(v => v.UserId == user.Id))
+            {
+                return;
+            }
+
+            await SeedAstraAsync(db, user);
+        }
+
         // Fix, gyenge jelszót kap, ezért nem a jelszószabályon keresztül hozzuk létre:
         // a hash-t közvetlenül állítjuk be. Bejelentkezéskor a szabályt nem ellenőrzi az Identity.
         private static async Task CreateAdminUserAsync(UserManager<ApplicationUser> userManager)
@@ -47,7 +67,7 @@ namespace Drivenest.Api.Data
                 UserName = AdminUserName,
                 Email = "admin@drivenest.local",
                 EmailConfirmed = true,
-                DisplayName = "Admin",
+                DisplayName = "Bevíz Elek",
                 Currency = "HUF"
             };
             admin.PasswordHash = userManager.PasswordHasher.HashPassword(admin, AdminPassword);
@@ -63,14 +83,15 @@ namespace Drivenest.Api.Data
             await userManager.AddToRoleAsync(admin, "Admin");
         }
 
-        private static async Task<ApplicationUser> CreateDemoUserAsync(UserManager<ApplicationUser> userManager)
+        private static async Task<ApplicationUser> CreateDemoUserAsync(UserManager<ApplicationUser> userManager,
+            string userName, string email, string displayName)
         {
             var user = new ApplicationUser
             {
-                UserName = DemoUserName,
-                Email = "demo1@drivenest.local",
+                UserName = userName,
+                Email = email,
                 EmailConfirmed = true,
-                DisplayName = "Kovács Péter",
+                DisplayName = displayName,
                 Currency = "HUF"
             };
 
@@ -222,6 +243,77 @@ namespace Drivenest.Api.Data
                     IntervalMonths = 12
                 });
 
+            await db.SaveChangesAsync();
+        }
+
+        // A második demó felhasználó egyetlen, nagy futású öreg dízele.
+        private static async Task SeedAstraAsync(AppDbContext db, ApplicationUser user)
+        {
+            var dieselId = await db.FuelTypes.Where(f => f.Name == "Dízel").Select(f => f.Id).SingleAsync();
+            var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
+            var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki vizsga");
+            var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
+            var taxId = await GetExpenseCategoryIdAsync(db, "Adó");
+            var washId = await GetExpenseCategoryIdAsync(db, "Mosás");
+
+            var astra = new Vehicle
+            {
+                UserId = user.Id,
+                FuelTypeId = dieselId,
+                LicensePlate = "GHI-789",
+                Make = "Opel",
+                Model = "Astra F 1.7 TD",
+                Year = 1992,
+                InitialKm = 405000,
+                CurrentKm = 409200
+            };
+
+            db.Refuelings.AddRange(
+                Refueling(astra, 4, 12, 405600, 38.5m, 23900),
+                Refueling(astra, 5, 10, 406180, 37.8m, 23500),
+                Refueling(astra, 6, 7, 406800, 40.2m, 25000),
+                Refueling(astra, 7, 5, 407350, 35.5m, 22000, isFullTank: false),
+                Refueling(astra, 8, 2, 408010, 42.0m, 26100),
+                Refueling(astra, 8, 30, 408590, 37.4m, 23300),
+                Refueling(astra, 9, 27, 409200, 39.6m, 24600));
+
+            db.ServiceRecords.AddRange(
+                ServiceRecord(astra, oilChangeId, 6, 20, 406950, "Barkácsműhely",
+                    "Olaj- és olajszűrő csere", partsCost: 18000, laborCost: 7000),
+                ServiceRecord(astra, inspectionId, 9, 14, 409000, "Műszaki Vizsgaállomás",
+                    "Műszaki vizsga, sikeres", partsCost: 12000, laborCost: 28000));
+
+            db.Expenses.AddRange(
+                Expense(astra, insuranceId, 2, 10, 54000, "Éves kötelező biztosítás"),
+                Expense(astra, taxId, 3, 15, 18000, "Gépjárműadó"),
+                Expense(astra, washId, 5, 30, 2500, null));
+
+            db.Reminders.AddRange(
+                new Reminder
+                {
+                    Vehicle = astra,
+                    Title = "Olajcsere",
+                    DueDate = new DateOnly(2027, 6, 20),
+                    DueOdometerKm = 416950,
+                    IntervalMonths = 12,
+                    IntervalKm = 10000
+                },
+                new Reminder
+                {
+                    Vehicle = astra,
+                    Title = "Téli gumi csere",
+                    DueDate = new DateOnly(2026, 11, 15),
+                    IntervalMonths = 6
+                },
+                new Reminder
+                {
+                    Vehicle = astra,
+                    Title = "Műszaki vizsga",
+                    DueDate = new DateOnly(2028, 9, 14),
+                    IntervalMonths = 24
+                });
+
+            db.Vehicles.Add(astra);
             await db.SaveChangesAsync();
         }
 
