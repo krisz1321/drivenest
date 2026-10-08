@@ -28,6 +28,7 @@ namespace Drivenest.Api.Data
             await SeedRefuelingsAsync(db, swift, octavia);
             await SeedServiceRecordsAsync(db, swift, octavia);
             await SeedExpensesAsync(db, swift, octavia);
+            await SeedRemindersAsync(db, swift, octavia);
         }
 
         private static async Task<ApplicationUser> CreateDemoUserAsync(UserManager<ApplicationUser> userManager)
@@ -149,6 +150,45 @@ namespace Drivenest.Api.Data
                 Expense(swift, washId, 7, 12, 3500, null),
                 Expense(octavia, insuranceId, 3, 20, 78000, "Éves kötelező biztosítás"),
                 Expense(octavia, vignetteId, 1, 5, 24000, "Éves országos matrica"));
+
+            await db.SaveChangesAsync();
+        }
+
+        private static async Task SeedRemindersAsync(AppDbContext db, Vehicle swift, Vehicle octavia)
+        {
+            db.Reminders.AddRange(
+                new Reminder
+                {
+                    Vehicle = swift,
+                    Title = "Olajcsere",
+                    DueDate = new DateOnly(2027, 5, 25),
+                    DueOdometerKm = 53700,
+                    IntervalMonths = 12,
+                    IntervalKm = 10000
+                },
+                new Reminder
+                {
+                    Vehicle = swift,
+                    Title = "Műszaki vizsga",
+                    DueDate = new DateOnly(2028, 8, 20),
+                    IntervalMonths = 24
+                },
+                new Reminder
+                {
+                    Vehicle = octavia,
+                    Title = "Olajcsere",
+                    DueDate = new DateOnly(2027, 6, 2),
+                    DueOdometerKm = 130100,
+                    IntervalMonths = 12,
+                    IntervalKm = 10000
+                },
+                new Reminder
+                {
+                    Vehicle = octavia,
+                    Title = "Biztosítás évforduló",
+                    DueDate = new DateOnly(2027, 3, 20),
+                    IntervalMonths = 12
+                });
 
             await db.SaveChangesAsync();
         }
