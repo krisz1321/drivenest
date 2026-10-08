@@ -9,11 +9,18 @@ namespace Drivenest.Api.Data
     {
         private const string DemoUserName = "demo1";
         private const string DemoPassword = "Demo123!";
+        private const string AdminUserName = "admin";
+        private const string AdminPassword = "admin";
 
         public static async Task SeedAsync(IServiceProvider services)
         {
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             var db = services.GetRequiredService<AppDbContext>();
+
+            if (await userManager.FindByNameAsync(AdminUserName) == null)
+            {
+                await CreateAdminUserAsync(userManager);
+            }
 
             var user = await userManager.FindByNameAsync(DemoUserName)
                 ?? await CreateDemoUserAsync(userManager);
@@ -29,6 +36,31 @@ namespace Drivenest.Api.Data
             await SeedServiceRecordsAsync(db, swift, octavia);
             await SeedExpensesAsync(db, swift, octavia);
             await SeedRemindersAsync(db, swift, octavia);
+        }
+
+        // Fix, gyenge jelszót kap, ezért nem a jelszószabályon keresztül hozzuk létre:
+        // a hash-t közvetlenül állítjuk be. Bejelentkezéskor a szabályt nem ellenőrzi az Identity.
+        private static async Task CreateAdminUserAsync(UserManager<ApplicationUser> userManager)
+        {
+            var admin = new ApplicationUser
+            {
+                UserName = AdminUserName,
+                Email = "admin@drivenest.local",
+                EmailConfirmed = true,
+                DisplayName = "Admin",
+                Currency = "HUF"
+            };
+            admin.PasswordHash = userManager.PasswordHasher.HashPassword(admin, AdminPassword);
+
+            var result = await userManager.CreateAsync(admin);
+            if (!result.Succeeded)
+            {
+                throw new InvalidOperationException(
+                    "Az admin felhasználó létrehozása nem sikerült: " +
+                    string.Join(", ", result.Errors.Select(e => e.Description)));
+            }
+
+            await userManager.AddToRoleAsync(admin, "Admin");
         }
 
         private static async Task<ApplicationUser> CreateDemoUserAsync(UserManager<ApplicationUser> userManager)
