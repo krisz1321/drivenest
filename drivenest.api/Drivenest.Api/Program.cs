@@ -7,7 +7,7 @@ namespace Drivenest.Api
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
 
@@ -30,6 +30,8 @@ namespace Drivenest.Api
                 {
                     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
                     db.Database.Migrate();
+
+                    await DevelopmentDataSeeder.SeedAsync(scope.ServiceProvider);
                 }
 
                 app.UseSwagger();
@@ -40,7 +42,7 @@ namespace Drivenest.Api
             app.UseAuthorization();
             app.MapControllers();
 
-            app.Run();
+            await app.RunAsync();
         }
     }
 }
