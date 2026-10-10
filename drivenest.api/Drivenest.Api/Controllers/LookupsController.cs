@@ -1,11 +1,13 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Dtos;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Drivenest.Api.Controllers
 {
     [ApiController]
+    [Authorize]
     [Route("api/lookups")]
     public class LookupsController : ControllerBase
     {

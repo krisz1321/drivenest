@@ -1,11 +1,13 @@
 using Drivenest.Api.Data;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
 namespace Drivenest.Api.Controllers
 {
-    // IDEIGLENES: csak a teszteléshez van itt, az auth (S1-05) után ki kell törölni.
+    // IDEIGLENES: csak a teszteléshez van itt, később ki kell törölni.
     [ApiController]
+    [Authorize(Roles = "Admin")]
     [Route("api/dev")]
     public class DevController : ControllerBase
     {
