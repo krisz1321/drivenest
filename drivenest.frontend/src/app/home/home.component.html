@@ -6,7 +6,5 @@
     <p>A <code>/api/me</code> válasza:</p>
     <pre>{{ me | json }}</pre>
     <button type="button" (click)="auth.logout()">Kijelentkezés</button>
-  } @else {
-    <p>Nem vagy bejelentkezve. <a routerLink="/login">Belépés</a></p>
   }
 </main>
