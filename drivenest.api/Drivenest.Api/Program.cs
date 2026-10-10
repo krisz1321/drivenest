@@ -1,6 +1,7 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Options;
+using Drivenest.Api.Services;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -41,6 +42,9 @@ namespace Drivenest.Api
                 .Validate(o => o.MaxSessionHours * 60 >= o.LifetimeMinutes,
                     "A Jwt:MaxSessionHours nem lehet rövidebb a Jwt:LifetimeMinutes-nél.")
                 .ValidateOnStart();
+
+            builder.Services.AddSingleton(TimeProvider.System);
+            builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
