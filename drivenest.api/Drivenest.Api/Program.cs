@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Options;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 
@@ -31,6 +32,15 @@ namespace Drivenest.Api
                 .AddRoles<IdentityRole<int>>()
                 .AddErrorDescriber<HungarianIdentityErrorDescriber>()
                 .AddEntityFrameworkStores<AppDbContext>();
+
+            builder.Services.AddOptions<JwtOptions>()
+                .Bind(builder.Configuration.GetSection(JwtOptions.SectionName))
+                .Validate(o => o.Key.Length >= 32,
+                    "A Jwt:Key hiányzik vagy rövidebb 32 karakternél (dotnet user-secrets set \"Jwt:Key\" \"...\").")
+                .Validate(o => o.LifetimeMinutes > 0, "A Jwt:LifetimeMinutes legyen pozitív.")
+                .Validate(o => o.MaxSessionHours * 60 >= o.LifetimeMinutes,
+                    "A Jwt:MaxSessionHours nem lehet rövidebb a Jwt:LifetimeMinutes-nél.")
+                .ValidateOnStart();
 
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
