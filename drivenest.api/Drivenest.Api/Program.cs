@@ -14,8 +14,22 @@ namespace Drivenest.Api
             builder.Services.AddDbContext<AppDbContext>(options =>
                 options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-            builder.Services.AddIdentityCore<ApplicationUser>()
+            builder.Services.AddIdentityCore<ApplicationUser>(options =>
+                {
+                    options.Password.RequiredLength = 8;
+                    options.Password.RequireDigit = true;
+                    options.Password.RequireLowercase = true;
+                    options.Password.RequireUppercase = true;
+                    options.Password.RequireNonAlphanumeric = false;
+
+                    options.User.RequireUniqueEmail = true;
+
+                    options.Lockout.AllowedForNewUsers = true;
+                    options.Lockout.MaxFailedAccessAttempts = 5;
+                    options.Lockout.DefaultLockoutTimeSpan = TimeSpan.FromMinutes(5);
+                })
                 .AddRoles<IdentityRole<int>>()
+                .AddErrorDescriber<HungarianIdentityErrorDescriber>()
                 .AddEntityFrameworkStores<AppDbContext>();
 
             builder.Services.AddControllers();
