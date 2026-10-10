@@ -1,6 +1,7 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Extensions;
+using Drivenest.Api.Middleware;
 using Drivenest.Api.Options;
 using Drivenest.Api.Services;
 using Microsoft.AspNetCore.Identity;
@@ -74,6 +75,7 @@ namespace Drivenest.Api
             app.UseCors(ServiceCollectionExtensions.FrontendCorsPolicy);
             app.UseAuthentication();
             app.UseAuthorization();
+            app.UseMiddleware<TokenRenewalMiddleware>();
             app.MapControllers();
 
             await app.RunAsync();

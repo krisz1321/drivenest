@@ -1,5 +1,6 @@
 using System.Text;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Middleware;
 using Drivenest.Api.Options;
 using Drivenest.Api.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -75,8 +76,7 @@ namespace Drivenest.Api.Extensions
                     .WithOrigins(origins)
                     .AllowAnyHeader()
                     .AllowAnyMethod()
-                    // A megújított tokent a böngésző csak akkor engedi olvasni, ha a fejléc itt fel van sorolva.
-                    .WithExposedHeaders("X-Refreshed-Token", "X-Token-Expires-At"));
+                    .WithExposedHeaders(TokenRenewalMiddleware.TokenHeader, TokenRenewalMiddleware.ExpiresAtHeader));
             });
 
             return services;
