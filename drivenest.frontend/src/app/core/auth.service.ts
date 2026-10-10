@@ -44,9 +44,13 @@ export class AuthService {
     return this.http.post<User>(`${environment.apiUrl}/auth/register`, request);
   }
 
-  logout(): void {
+  logout(returnUrl?: string): void {
     this.clearSession();
-    this.router.navigate(['/login']);
+
+    // Ha már a belépés oldalon vagyunk, nem navigálunk újra (a returnUrl is megmarad).
+    if (!this.router.url.startsWith('/login')) {
+      this.router.navigate(['/login'], { queryParams: returnUrl && returnUrl !== '/' ? { returnUrl } : {} });
+    }
   }
 
   // A szerver módosító kérések után újabb tokent ad (X-Refreshed-Token), ezzel cseréljük a tárolt tokent.
