@@ -1,6 +1,9 @@
 using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Dtos.Auth;
+using Drivenest.Api.Extensions;
+using Drivenest.Api.Middleware;
 using Drivenest.Api.Services;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 
@@ -77,6 +80,40 @@ namespace Drivenest.Api.Controllers
 
             await _userManager.ResetAccessFailedCountAsync(user);
 
+            return await CreateLoginResponseAsync(user);
+        }
+
+        // A jelszócsere után az Identity új SecurityStamp-et ad, ezért itt új tokent adunk, a régiek érvénytelenek.
+        [HttpPost("change-password")]
+        [Authorize]
+        [SkipTokenRenewal]
+        public async Task<ActionResult<LoginResponse>> ChangePassword(ChangePasswordRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(User.GetUserId().ToString());
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            if (request.NewPassword == request.CurrentPassword)
+            {
+                ModelState.AddModelError(nameof(ChangePasswordRequest.NewPassword),
+                    "Az új jelszó nem egyezhet meg a jelenlegivel.");
+
+                return ValidationProblem(ModelState);
+            }
+
+            var result = await _userManager.ChangePasswordAsync(user, request.CurrentPassword, request.NewPassword);
+            if (!result.Succeeded)
+            {
+                return IdentityValidationProblem(result, nameof(ChangePasswordRequest.NewPassword));
+            }
+
+            return await CreateLoginResponseAsync(user);
+        }
+
+        private async Task<LoginResponse> CreateLoginResponseAsync(ApplicationUser user)
+        {
             var roles = (await _userManager.GetRolesAsync(user)).ToList();
             var token = _tokenService.CreateToken(user, roles);
 
@@ -92,7 +129,8 @@ namespace Drivenest.Api.Controllers
                 title: "Hibás felhasználónév vagy jelszó.");
         }
 
-        private ActionResult IdentityValidationProblem(IdentityResult result)
+        private ActionResult IdentityValidationProblem(IdentityResult result,
+            string passwordField = nameof(RegisterRequest.Password))
         {
             // A felhasználónév az e-mail-cím, ezért a foglaltságot elég egyszer jelezni.
             var errors = result.Errors.Any(e => e.Code == nameof(IdentityErrorDescriber.DuplicateEmail))
@@ -101,22 +139,27 @@ namespace Drivenest.Api.Controllers
 
             foreach (var error in errors)
             {
-                ModelState.AddModelError(GetFieldName(error.Code), error.Description);
+                ModelState.AddModelError(GetFieldName(error.Code, passwordField), error.Description);
             }
 
             return ValidationProblem(ModelState);
         }
 
-        private static string GetFieldName(string errorCode)
+        private static string GetFieldName(string errorCode, string passwordField)
         {
             if (errorCode.Contains("Email") || errorCode.Contains("UserName"))
             {
                 return nameof(RegisterRequest.Email);
             }
 
+            if (errorCode == nameof(IdentityErrorDescriber.PasswordMismatch))
+            {
+                return nameof(ChangePasswordRequest.CurrentPassword);
+            }
+
             if (errorCode.StartsWith("Password"))
             {
-                return nameof(RegisterRequest.Password);
+                return passwordField;
             }
 
             return string.Empty;

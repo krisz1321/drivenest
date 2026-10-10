@@ -43,7 +43,8 @@ namespace Drivenest.Api.Middleware
         {
             return context.User.Identity?.IsAuthenticated == true
                 && ModifyingMethods.Contains(context.Request.Method)
-                && context.Response.StatusCode is >= 200 and < 300;
+                && context.Response.StatusCode is >= 200 and < 300
+                && context.GetEndpoint()?.Metadata.GetMetadata<SkipTokenRenewalAttribute>() == null;
         }
     }
 }
