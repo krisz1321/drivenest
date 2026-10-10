@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Extensions;
 using Drivenest.Api.Options;
 using Drivenest.Api.Services;
 using Microsoft.AspNetCore.Identity;
@@ -46,9 +47,12 @@ namespace Drivenest.Api
             builder.Services.AddSingleton(TimeProvider.System);
             builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
 
+            builder.Services.AddJwtAuthentication();
+            builder.Services.AddFrontendCors(builder.Configuration);
+
             builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();
-            builder.Services.AddSwaggerGen();
+            builder.Services.AddSwaggerWithJwt();
 
             var app = builder.Build();
 
@@ -67,6 +71,8 @@ namespace Drivenest.Api
             }
 
             app.UseHttpsRedirection();
+            app.UseCors(ServiceCollectionExtensions.FrontendCorsPolicy);
+            app.UseAuthentication();
             app.UseAuthorization();
             app.MapControllers();
 
