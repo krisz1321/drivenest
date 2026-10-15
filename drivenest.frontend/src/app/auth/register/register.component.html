@@ -1,0 +1,47 @@
+<main class="page">
+  <h1>Regisztráció</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="field">
+      <label for="displayName">Név</label>
+      <input id="displayName" type="text" formControlName="displayName" autocomplete="name">
+      @if (errorOf('displayName'); as message) {
+        <div class="error">{{ message }}</div>
+      }
+    </div>
+
+    <div class="field">
+      <label for="email">E-mail-cím</label>
+      <input id="email" type="email" formControlName="email" autocomplete="email">
+      @if (errorOf('email'); as message) {
+        <div class="error">{{ message }}</div>
+      }
+    </div>
+
+    <div class="field">
+      <label for="password">Jelszó</label>
+      <input id="password" type="password" formControlName="password" autocomplete="new-password">
+      @if (errorOf('password'); as message) {
+        <div class="error">{{ message }}</div>
+      }
+    </div>
+
+    <div class="field">
+      <label for="confirmPassword">Jelszó újra</label>
+      <input id="confirmPassword" type="password" formControlName="confirmPassword" autocomplete="new-password">
+      @if (errorOf('confirmPassword'); as message) {
+        <div class="error">{{ message }}</div>
+      } @else if (passwordsDiffer) {
+        <div class="error">A két jelszó nem egyezik.</div>
+      }
+    </div>
+
+    @for (message of errorMessages; track message) {
+      <div class="error field">{{ message }}</div>
+    }
+
+    <button type="submit" [disabled]="submitting">Regisztráció</button>
+  </form>
+
+  <p>Van már fiókod? <a routerLink="/login" queryParamsHandling="preserve">Belépés</a></p>
+</main>
