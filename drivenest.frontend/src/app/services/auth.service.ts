@@ -46,4 +46,13 @@ export class AuthService {
     sessionStorage.removeItem('drivenest.token');
     sessionStorage.removeItem('drivenest.expiresAtUtc');
   }
+
+  // Felhasználói kijelentkezés: helyben azonnal töröl, a szerveren is érvényteleníti a tokent.
+  signOut() {
+    const token = this.token;
+    this.logout();
+    if (!token) return;
+    this.http.post<void>(`${this.apiUrl}/auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } })
+      .subscribe({ error: () => {} });
+  }
 }

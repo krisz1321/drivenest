@@ -7,11 +7,6 @@ namespace Drivenest.Api.Middleware
         public const string TokenHeader = "X-Refreshed-Token";
         public const string ExpiresAtHeader = "X-Token-Expires-At";
 
-        private static readonly HashSet<string> ModifyingMethods = new(StringComparer.OrdinalIgnoreCase)
-        {
-            HttpMethods.Post, HttpMethods.Put, HttpMethods.Patch, HttpMethods.Delete
-        };
-
         private readonly RequestDelegate _next;
 
         public TokenRenewalMiddleware(RequestDelegate next)
@@ -39,10 +34,10 @@ namespace Drivenest.Api.Middleware
             await _next(context);
         }
 
+        // Minden sikeres kérés (olvasás is) megújít, hogy az aktív, de csak olvasó felhasználót se léptesse ki.
         private static bool ShouldRenew(HttpContext context)
         {
             return context.User.Identity?.IsAuthenticated == true
-                && ModifyingMethods.Contains(context.Request.Method)
                 && context.Response.StatusCode is >= 200 and < 300
                 && context.GetEndpoint()?.Metadata.GetMetadata<SkipTokenRenewalAttribute>() == null;
         }

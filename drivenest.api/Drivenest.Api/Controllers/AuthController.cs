@@ -112,6 +112,21 @@ namespace Drivenest.Api.Controllers
             return await CreateLoginResponseAsync(user);
         }
 
+        // Új SecurityStamp: a felhasználó összes eddig kiadott tokenje érvénytelenné válik.
+        [HttpPost("logout")]
+        [Authorize]
+        [SkipTokenRenewal]
+        public async Task<IActionResult> Logout()
+        {
+            var user = await _userManager.FindByIdAsync(User.GetUserId().ToString());
+            if (user != null)
+            {
+                await _userManager.UpdateSecurityStampAsync(user);
+            }
+
+            return NoContent();
+        }
+
         private async Task<LoginResponse> CreateLoginResponseAsync(ApplicationUser user)
         {
             var roles = (await _userManager.GetRolesAsync(user)).ToList();

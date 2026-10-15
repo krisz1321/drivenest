@@ -9,8 +9,9 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const auth = inject(AuthService);
   const router = inject(Router);
   const isApi = request.url.startsWith(`${base}/`);
-  const isLogin = request.url === `${base}/auth/login` || request.url === `${base}/auth/register`;
-  if (!isApi || isLogin) return next(request);
+  // A logout saját maga küldi a (már helyben törölt) tokent, a 401-e nem jelent lejárt munkamenetet.
+  const isAuthFlow = [`${base}/auth/login`, `${base}/auth/register`, `${base}/auth/logout`].includes(request.url);
+  if (!isApi || isAuthFlow) return next(request);
   const token = auth.token;
   const authorized = token ? request.clone({ setHeaders: { Authorization: `Bearer ${token}` } }) : request;
   return next(authorized).pipe(

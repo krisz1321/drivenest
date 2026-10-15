@@ -146,6 +146,6 @@ export class DashboardComponent implements OnInit {
     return ['A művelet nem sikerült. Próbáld újra.'];
   }
 
-  signOut() { this.auth.logout(); void this.router.navigateByUrl('/login'); }
+  signOut() { this.auth.signOut();void this.router.navigateByUrl('/login'); }
 
 }

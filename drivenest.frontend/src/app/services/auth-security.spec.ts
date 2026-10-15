@@ -46,6 +46,16 @@ describe('Dashboard authentication', () => {
     expect(TestBed.inject(AuthService).token).toBe('renewed-token');
     expect(sessionStorage.getItem('drivenest.expiresAtUtc')).toBe('2099-02-01T00:00:00Z');
   });
+  it('signs out locally at once and revokes the token on the server', () => {
+    const auth = TestBed.inject(AuthService);
+    auth.signOut();
+    expect(auth.token).toBeNull();
+    const logout = http.expectOne('/api/auth/logout');
+    expect(logout.request.method).toBe('POST');
+    expect(logout.request.headers.get('Authorization')).toBe('Bearer test-token');
+    logout.flush(null, { status: 401, statusText: 'Unauthorized' });
+    expect(router.navigate).not.toHaveBeenCalled();
+  });
   it('clears a rejected session and returns to login', () => {
     client.get('/api/me').subscribe({ error: () => {} });
     http.expectOne('/api/me').flush(null, { status: 401, statusText: 'Unauthorized' });
