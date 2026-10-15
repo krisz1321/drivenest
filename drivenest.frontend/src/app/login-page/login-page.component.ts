@@ -3,8 +3,8 @@ import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
-import { AuthService, LoginResponse } from '../services/auth.service';
-import { RouterLink } from '@angular/router';
+import { AuthService } from '../services/auth.service';
+import { Router, RouterLink } from '@angular/router';
 
 @Component({
   selector: 'app-login-page',
@@ -17,6 +17,7 @@ export class LoginPageComponent {
   private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly formBuilder = inject(FormBuilder);
+  private readonly router = inject(Router);
   readonly form = this.formBuilder.nonNullable.group({
     userNameOrEmail: ['', [Validators.required, Validators.pattern(/\S/)]],
     password: ['', Validators.required]
@@ -24,7 +25,6 @@ export class LoginPageComponent {
   showPassword = false;
   submitting = false;
   error = '';
-  signedInUser: LoginResponse['user'] | null = null;
 
   submit() {
     if (this.submitting) return;
@@ -39,10 +39,10 @@ export class LoginPageComponent {
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.submitting = false)
     ).subscribe({
-      next: response => {
-        this.signedInUser = response.user;
+      next: () => {
         this.form.reset();
         this.showPassword = false;
+        void this.router.navigateByUrl('/dashboard');
       },
       error: (error: HttpErrorResponse) => {
         this.error = error.status === 401 ? 'The username or password is incorrect. Please try again.'
@@ -52,8 +52,4 @@ export class LoginPageComponent {
     });
   }
 
-  signOut() {
-    this.auth.logout();
-    this.signedInUser = null;
-  }
 }

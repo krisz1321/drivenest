@@ -2,7 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { HttpErrorResponse } from '@angular/common/http';
 import { of, throwError } from 'rxjs';
 import { AuthService } from '../services/auth.service';
-import { provideRouter } from '@angular/router';
+import { provideRouter, Router } from '@angular/router';
 
 import { LoginPageComponent } from './login-page.component';
 
@@ -18,6 +18,7 @@ describe('LoginPageComponent', () => {
       providers: [provideRouter([]), { provide: AuthService, useValue: auth }]
     })
     .compileComponents();
+    spyOn(TestBed.inject(Router), 'navigateByUrl').and.resolveTo(true);
 
     fixture = TestBed.createComponent(LoginPageComponent);
     component = fixture.componentInstance;
@@ -40,7 +41,7 @@ describe('LoginPageComponent', () => {
     component.form.setValue({ userNameOrEmail: ' demo1 ', password: ' Demo123! ' });
     component.submit();
     expect(auth.login).toHaveBeenCalledWith('demo1', ' Demo123! ');
-    expect(component.signedInUser).toEqual(user);
+    expect(TestBed.inject(Router).navigateByUrl).toHaveBeenCalledWith('/dashboard');
     expect(component.form.controls.password.value).toBe('');
     expect(component.submitting).toBeFalse();
   });
@@ -52,6 +53,6 @@ describe('LoginPageComponent', () => {
     fixture.detectChanges();
     expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('incorrect');
     expect(component.submitting).toBeFalse();
-    expect(component.signedInUser).toBeNull();
+    expect(TestBed.inject(Router).navigateByUrl).not.toHaveBeenCalled();
   });
 });

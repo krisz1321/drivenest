@@ -19,6 +19,15 @@ export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(API_BASE_URL);
 
+  get token(): string | null { return sessionStorage.getItem('drivenest.token'); }
+
+  isAuthenticated(): boolean {
+    const expires = sessionStorage.getItem('drivenest.expiresAtUtc');
+    return !!this.token && !!expires && Date.parse(expires) > Date.now();
+  }
+
+  me() { return this.http.get<LoginResponse['user']>(`${this.apiUrl}/me`); }
+
   register(displayName: string, email: string, password: string) {
     return this.http.post<LoginResponse['user']>(`${this.apiUrl}/auth/register`, {
       displayName, email, password
