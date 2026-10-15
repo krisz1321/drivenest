@@ -1,1 +1,48 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  color-scheme: light;
+  --color-primary: #245bd6;
+  --color-primary-hover: #1949b5;
+  --color-primary-soft: #eef3ff;
+  --color-background: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-text: #19243b;
+  --color-muted: #687386;
+  --color-border: #dde2ea;
+  --color-error: #b42332;
+  --color-error-soft: #fff0f1;
+  --color-success: #237354;
+  --radius-sm: 10px;
+  --radius-lg: 24px;
+  --shadow-card: 0 12px 50px rgb(25 36 59 / 5%);
+  --font-body: 'Segoe UI', Arial, sans-serif;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--color-background); color: var(--color-text); font-family: var(--font-body); line-height: 1.5; }
+button, input { font: inherit; }
+button, a, input { -webkit-tap-highlight-color: transparent; }
+button { cursor: pointer; }
+a { color: var(--color-primary); text-underline-offset: 4px; }
+button:disabled { cursor: wait; opacity: .65; }
+:focus-visible { outline: 3px solid var(--color-primary); outline-offset: 4px; }
+h1, h2, p { margin-top: 0; }
+.brand { display: inline-flex; align-items: center; gap: 10px; color: var(--color-text); text-decoration: none; font-size: 22px; font-weight: 750; letter-spacing: -.8px; }
+.brand-mark { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 11px; background: var(--color-primary); color: var(--color-surface); }
+.brand-mark svg { width: 25px; height: 25px; }
+.button { display: inline-flex; align-items: center; justify-content: center; gap: 12px; min-height: 50px; padding: 12px 20px; border: 1px solid transparent; border-radius: var(--radius-sm); font-weight: 650; text-decoration: none; transition: background .15s; }
+.button-primary { background: var(--color-primary); color: var(--color-surface); }
+.button-primary:hover:not(:disabled) { background: var(--color-primary-hover); }
+.form-field { display: grid; gap: 8px; }
+.form-field label { font-size: 14px; font-weight: 600; }
+.form-input { width: 100%; min-height: 50px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: var(--radius-sm); background: var(--color-surface); color: var(--color-text); }
+.form-input::placeholder { color: var(--color-muted); opacity: .8; }
+.form-input[aria-invalid='true'] { border-color: var(--color-error); }
+.field-error { color: var(--color-error); font-size: 13px; margin: 0; }
+.alert-error { padding: 12px 14px; border-radius: var(--radius-sm); background: var(--color-error-soft); color: var(--color-error); font-size: 14px; }
+.eyebrow { font-size: 11px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; }
+.muted { color: var(--color-muted); }
+.auth-switch { text-align: center; color: var(--color-muted); font-size: 13px; margin: 24px 0 0; }
+.auth-switch a { font-weight: 600; }
+.surface-card { background: var(--color-surface); border: 1px solid var(--color-border); border-radius: var(--radius-lg); box-shadow: var(--shadow-card); }
+.alert-success { padding: 14px; border-radius: var(--radius-sm); background: var(--color-primary-soft); color: var(--color-success); }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
