@@ -1,5 +1,14 @@
 # Vehicle API
 
+The `OwnVehicles` API exposes all five operations at `/api/ownvehicles` and
+`/api/ownvehicles/{id}`. It derives ownership from the authenticated token,
+including for administrators. POST automatically assigns the vehicle to that
+user; PUT cannot transfer ownership. Other users' vehicle IDs return 404.
+It appears as **OwnVehicles** in Swagger.
+
+The existing `/api/vehicles` routes remain available with the same ownership
+restrictions. Both controllers share the same CRUD implementation.
+
 All endpoints require `Authorization: Bearer <token>`. Each user can access only
 their own vehicles. Missing vehicles and vehicles owned by someone else return 404.
 

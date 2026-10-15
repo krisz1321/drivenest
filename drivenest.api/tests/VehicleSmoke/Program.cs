@@ -18,7 +18,7 @@ await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>(
 db.FuelTypes.Add(new FuelType { Id = 1, Name = "Petrol" });
 db.Vehicles.Add(new Vehicle { Id = 100, UserId = 2, FuelTypeId = 1, LicensePlate = "OTHER" });
 await db.SaveChangesAsync();
-var controller = new VehiclesController(db)
+var controller = new OwnVehiclesController(db)
 {
     ControllerContext = new ControllerContext
     {
@@ -45,16 +45,25 @@ VehicleRequest Request(string plate = "abc-123") => new()
     FuelTypeId = 1, LicensePlate = plate, Make = " Suzuki ", Model = " Swift ",
     Year = 2020, InitialKm = 100, CurrentKm = 200
 };
-Check(Attribute.IsDefined(typeof(VehiclesController), typeof(AuthorizeAttribute)), "Authentication required");
+Check(Attribute.IsDefined(typeof(OwnVehiclesController), typeof(AuthorizeAttribute)), "Authentication required");
 var created = (await controller.Create(Request(), ct)).Result as CreatedAtActionResult;
 var dto = created?.Value as VehicleDto;
 Check(dto is { LicensePlate: "ABC-123", Make: "Suzuki", Model: "Swift" }
     && created!.ActionName == nameof(VehiclesController.GetById), "Create normalizes fields and returns resource location");
 int id = dto!.Id;
+Check((await db.Vehicles.FindAsync(id))!.UserId == 1, "Create assigns ownership to the logged-in user");
 Check((await controller.GetAll(ct)).Value is { Count: 1 }, "List excludes other users' vehicles");
 Check((await controller.GetById(100, ct)).Result is NotFoundResult, "Read hides another owner's vehicle");
 Check((await controller.Update(100, Request(), ct)).Result is NotFoundResult, "Update blocks another owner");
 Check(await controller.Delete(100, ct) is NotFoundResult, "Delete blocks another owner");
+Check((await db.Vehicles.FindAsync(100))!.LicensePlate == "OTHER", "Forbidden operations leave the other vehicle unchanged");
+controller.HttpContext.User = new ClaimsPrincipal(new ClaimsIdentity(new[]
+{
+    new Claim("sub", "1"), new Claim(ClaimTypes.Role, "Admin")
+}, "Test"));
+Check((await controller.GetAll(ct)).Value is { Count: 1 }
+    && (await controller.GetById(100, ct)).Result is NotFoundResult,
+    "Admin users are also restricted to their own vehicles");
 var updated = (await controller.Update(id, Request("new-123"), ct)).Result as OkObjectResult;
 Check(updated?.Value is VehicleDto { LicensePlate: "NEW-123" }, "Update persists vehicle fields");
 var duplicate = (await controller.Create(Request("new-123"), ct)).Result;
