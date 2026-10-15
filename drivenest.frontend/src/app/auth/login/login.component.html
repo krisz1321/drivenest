@@ -1,0 +1,29 @@
+<main class="page">
+  <h1>Belépés</h1>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+    <div class="field">
+      <label for="userNameOrEmail">Felhasználónév vagy e-mail-cím</label>
+      <input id="userNameOrEmail" type="text" formControlName="userNameOrEmail" autocomplete="username">
+      @if (isInvalid('userNameOrEmail')) {
+        <div class="error">Kötelező megadni.</div>
+      }
+    </div>
+
+    <div class="field">
+      <label for="password">Jelszó</label>
+      <input id="password" type="password" formControlName="password" autocomplete="current-password">
+      @if (isInvalid('password')) {
+        <div class="error">Kötelező megadni.</div>
+      }
+    </div>
+
+    @if (errorMessage) {
+      <div class="error field">{{ errorMessage }}</div>
+    }
+
+    <button type="submit" [disabled]="submitting">Belépés</button>
+  </form>
+
+  <p>Nincs még fiókod? <a routerLink="/register" queryParamsHandling="preserve">Regisztráció</a></p>
+</main>

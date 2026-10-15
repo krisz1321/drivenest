@@ -1,0 +1,10 @@
+<main class="page">
+  <h1>Drivenest</h1>
+
+  @if (auth.user$ | async; as user) {
+    <p>Bejelentkezve: <strong>{{ user.displayName }}</strong> ({{ user.email }})</p>
+    <p>A <code>/api/me</code> válasza:</p>
+    <pre>{{ me | json }}</pre>
+    <button type="button" (click)="auth.logout()">Kijelentkezés</button>
+  }
+</main>
