@@ -1,5 +1,5 @@
 import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
-import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppShellComponent } from '../layout/app-shell.component';
@@ -32,7 +32,10 @@ export class FillUpComponentComponent implements OnInit {
   vehicleName(id: number) { const car = this.vehicles.find(v => v.id === id); return car ? `${car.make} ${car.model} · ${car.licensePlate}` : '—'; }
   get selectedVehicle() { return this.vehicles.find(v => v.id === this.form.controls.vehicleId.value); }
   createdAt(value: string) { return new Date(value).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' }); }
-  get unitPrice() { const { liters, totalAmount } = this.form.getRawValue(); return liters > 0 ? totalAmount / liters : 0; }
+  readonly unitPriceControl = new FormControl<number | null>(0, [Validators.required, Validators.min(0),
+    control => control.value === null || Number.isFinite(control.value) ? null : { finite: true }]);
+  private priceSource: 'total' | 'unit' = 'total';
+  get unitPrice() { return this.unitPriceControl.value ?? 0; }
   @ViewChild('refuelingDialog') dialog!: ElementRef<HTMLDialogElement>;
   private readonly api = inject(RefuelingService);
   private readonly destroyRef = inject(DestroyRef);
@@ -52,6 +55,33 @@ export class FillUpComponentComponent implements OnInit {
     totalAmount: [0, [Validators.required, Validators.min(0), Validators.max(9999999999.99), precision(2)]],
     isFullTank: [true]
   });
+  constructor() {
+    this.form.controls.totalAmount.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.priceSource = 'total';
+      this.calculatePrice();
+    });
+    this.unitPriceControl.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.priceSource = 'unit';
+      this.calculatePrice();
+    });
+    this.form.controls.liters.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.calculatePrice());
+  }
+
+  private calculatePrice() {
+    const liters = this.form.controls.liters.value;
+    if (this.priceSource === 'unit') {
+      const price = this.unitPriceControl.value;
+      if (typeof price !== 'number' || !Number.isFinite(price) || price < 0) return;
+      const total = typeof liters === 'number' && Number.isFinite(liters) && liters > 0
+        ? Number((price * liters).toFixed(2)) : 0;
+      this.form.controls.totalAmount.setValue(total, { emitEvent: false });
+    } else {
+      const total = this.form.controls.totalAmount.value;
+      if (typeof total !== 'number' || !Number.isFinite(total) || total < 0) return;
+      this.unitPriceControl.setValue(typeof liters === 'number' && Number.isFinite(liters) && liters > 0
+        ? Number((total / liters).toFixed(6)) : 0, { emitEvent: false });
+    }
+  }
   get title() { return this.mode === 'create' ? 'Tankolás rögzítése' : this.mode === 'edit' ? 'Tankolás szerkesztése' : 'Tankolás törlése'; }
   get unit() { return this.currency === 'HUF' ? 'Ft' : this.currency; }
   get monthlyTotal() {
@@ -79,9 +109,12 @@ export class FillUpComponentComponent implements OnInit {
     this.mode = mode;
     this.target = entry;
     this.errors = [];
+    this.priceSource = 'total';
+    this.unitPriceControl.reset(0, { emitEvent: false });
     this.form.reset({ vehicleId: this.vehicles[0]?.id ?? 0, date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' }),
-      odometerKm: this.vehicles[0]?.currentKm ?? 0, liters: 0, totalAmount: 0, isFullTank: true });
-    if (entry) this.form.patchValue(entry);
+      odometerKm: this.vehicles[0]?.currentKm ?? 0, liters: 0, totalAmount: 0, isFullTank: true }, { emitEvent: false });
+    if (entry) this.form.patchValue(entry, { emitEvent: false });
+    this.calculatePrice();
     this.dialog.nativeElement.showModal();
   }
   close() { if (!this.saving) this.dialog.nativeElement.close(); }
@@ -89,7 +122,7 @@ export class FillUpComponentComponent implements OnInit {
   save() {
     if (this.saving) return;
     this.errors = [];
-    if (this.form.invalid) { this.form.markAllAsTouched(); return; }
+    if (this.form.invalid || this.unitPriceControl.invalid) { this.form.markAllAsTouched(); this.unitPriceControl.markAsTouched(); return; }
     if (!this.selectedVehicle) return;
     const { vehicleId, ...body } = this.form.getRawValue();
     this.saving = true;
