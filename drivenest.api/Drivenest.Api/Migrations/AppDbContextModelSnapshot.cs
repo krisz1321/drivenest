@@ -37,6 +37,12 @@ namespace Drivenest.Api.Migrations
                         .IsConcurrencyToken()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("ConsumptionUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(10)")
+                        .HasDefaultValue("l/100km");
+
                     b.Property<string>("Currency")
                         .IsRequired()
                         .ValueGeneratedOnAdd()
@@ -47,6 +53,12 @@ namespace Drivenest.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("DistanceUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(2)")
+                        .HasDefaultValue("km");
 
                     b.Property<string>("Email")
                         .HasMaxLength(256)
@@ -88,6 +100,12 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(256)
                         .HasColumnType("nvarchar(256)");
 
+                    b.Property<string>("VolumeUnit")
+                        .IsRequired()
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("varchar(3)")
+                        .HasDefaultValue("l");
+
                     b.HasKey("Id");
 
                     b.HasIndex("NormalizedEmail")
@@ -100,7 +118,13 @@ namespace Drivenest.Api.Migrations
 
                     b.ToTable("Users", null, t =>
                         {
+                            t.HasCheckConstraint("CK_Users_ConsumptionUnit", "[ConsumptionUnit] IN ('l/100km', 'km/l', 'mpg')");
+
                             t.HasCheckConstraint("CK_Users_Currency", "[Currency] IN ('HUF', 'EUR')");
+
+                            t.HasCheckConstraint("CK_Users_DistanceUnit", "[DistanceUnit] IN ('km', 'mi')");
+
+                            t.HasCheckConstraint("CK_Users_VolumeUnit", "[VolumeUnit] IN ('l', 'gal')");
                         });
                 });
 
