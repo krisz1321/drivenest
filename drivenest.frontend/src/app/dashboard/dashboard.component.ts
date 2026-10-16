@@ -1,8 +1,7 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { catchError, finalize, forkJoin, of } from 'rxjs';
-import { FuelType, Vehicle, VehicleService } from '../services/vehicle.service';
+import { finalize } from 'rxjs';
 import { ProfileService } from '../services/profile.service';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { consumptionLabel, currencyLabel, distanceLabel } from '../shared/units';
@@ -16,17 +15,11 @@ import { RouterLink } from '@angular/router';
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit {
-  private readonly api = inject(VehicleService);
   private readonly profile = inject(ProfileService);
   private readonly destroyRef = inject(DestroyRef);
   readonly month = new Date().toLocaleDateString('hu-HU', { month: 'long', timeZone: 'Europe/Budapest' });
-  vehicles: Vehicle[] = [];
-  fuelTypes: FuelType[] = [];
   loading = true;
-  saving = false;
   loadErrors: string[] = [];
-  message = '';
-  get currency() { return this.profile.preferences().currency; }
   get stats() {
     const { currency, distanceUnit, consumptionUnit } = this.profile.preferences();
     return [
@@ -39,18 +32,10 @@ export class DashboardComponent implements OnInit {
   ngOnInit() { this.load(); }
 
   load() {
-    if (this.saving) return;
     this.loading = true;
     this.loadErrors = [];
-    forkJoin({
-      vehicles: this.api.list().pipe(catchError(() => { this.loadErrors.push('A járművek betöltése nem sikerült. Próbáld újra.'); return of(null); })),
-      fuelTypes: this.api.fuelTypes().pipe(catchError(() => { this.loadErrors.push('Az üzemanyagtípusok nem érhetők el. A jármű mentéséhez próbáld újra a betöltést.'); return of(null); })),
-      user: this.profile.load().pipe(catchError(() => { this.loadErrors.push('A profil betöltése nem sikerült.'); return of(null); }))
-    }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)).subscribe(result => {
-      if (result.vehicles !== null) {
-        this.vehicles = result.vehicles;
-      }
-      if (result.fuelTypes !== null) this.fuelTypes = result.fuelTypes;
+    this.profile.load().pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)).subscribe({
+      error: () => this.loadErrors = ['A profil betöltése nem sikerült. Próbáld újra.']
     });
   }
 

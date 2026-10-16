@@ -10,7 +10,7 @@ import { RouterLink } from '@angular/router';
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
-  @Input() active: 'dashboard' | 'settings' | 'garage' = 'dashboard';
+  @Input() active: 'dashboard' | 'settings' | 'garage' | 'refuelings' = 'dashboard';
   @Input() displayName = 'Saját garázs';
   @Output() signOut = new EventEmitter<void>();
 }

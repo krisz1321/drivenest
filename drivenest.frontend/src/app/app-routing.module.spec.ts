@@ -42,8 +42,6 @@ describe('Default page', () => {
     http.expectOne('/api/auth/login').flush({ token: 'test-token', expiresAtUtc: '2099-01-01T00:00:00Z', user, roles: ['User'] });
     await navigation;
     harness.detectChanges();
-    http.expectOne('/api/ownvehicles').flush([]);
-    http.expectOne('/api/lookups/fuel-types').flush([{ id: 1, name: 'Benzin' }]);
     http.expectOne('/api/me').flush(user);
     await harness.fixture.whenStable();
     harness.detectChanges();
