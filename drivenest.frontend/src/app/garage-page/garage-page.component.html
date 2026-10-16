@@ -1,4 +1,20 @@
-<app-shell active="garage" section="Járműveim">
+<app-shell active="garage" [section]="selectedVehicle ? name(selectedVehicle) : 'Járműveim'">
+  @if (vehicleId !== null) {
+    <a class="back-to-garage" routerLink="/garage"><span aria-hidden="true">←</span> Vissza a garázshoz</a>
+  @if (selectedVehicle; as car) {
+    <section class="panel vehicle-detail-page"><div class="panel-heading"><div><h2 id="car-details-title">{{ name(car) }}</h2><p class="form-help">{{ car.licensePlate }} · {{ details(car) }}</p></div></div>
+    <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>N/A</strong></span></div>
+    <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
+    <app-vehicle-refuelings [vehicle]="car" [currency]="currency" />
+    </section>
+  } @else if (loading) {
+    <div class="panel empty-state" role="status">Jármű betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div>
+  } @else {
+    <div class="panel empty-state"><h2>A jármű nem található</h2></div>
+  }
+  } @else {
   <header class="garage-heading">
     <div><h1>Garázs</h1>@if (!loading && !loadError) { <p>{{ vehicles.length }} jármű</p> }</div>
     <button type="button" class="new-vehicle" (click)="open('create')" [disabled]="loading || !fuelTypes.length"><span aria-hidden="true">+</span> Új jármű</button>
@@ -26,16 +42,9 @@
     }
   </section>
   }
+  }
 </app-shell>
 
-<dialog #carDetailsDialog class="modal car-details-modal dashboard-theme" aria-labelledby="car-details-title" (cancel)="cancelVehicle($event)" (close)="selectedVehicle = null">
-  @if (selectedVehicle; as car) {
-    <div class="panel-heading"><div><h2 id="car-details-title">{{ name(car) }}</h2><p class="form-help">{{ car.licensePlate }} · {{ details(car) }}</p></div><button type="button" class="modal-close" (click)="closeVehicle()" aria-label="Bezárás">×</button></div>
-    <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>N/A</strong></span></div>
-    <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
-    <app-vehicle-refuelings [vehicle]="car" [currency]="currency" />
-  }
-</dialog>
 <dialog #vehicleDialog class="modal dashboard-theme" aria-labelledby="vehicle-modal-title" (cancel)="cancel($event)">
   <div class="panel-heading"><h2 id="vehicle-modal-title">{{ modalTitle }}</h2><button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button></div>
   @if (mode === 'delete') {

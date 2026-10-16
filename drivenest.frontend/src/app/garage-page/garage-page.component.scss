@@ -1,6 +1,9 @@
 :host { display: block; }
 .new-vehicle { border: 0; }
-.car-details-modal { width: min(900px, calc(100% - 32px)); }
+.back-to-garage { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 24px; color: var(--color-text); text-decoration: none; font-size: 14px; font-weight: 600; }
+.back-to-garage:hover { color: var(--color-warning); }
+.back-to-garage span { font-size: 22px; }
+.vehicle-detail-page > .panel-heading h2 { font-size: 24px; }
 .car-summary { display: flex; flex-wrap: wrap; gap: 20px 48px; padding: 20px 0; border-block: 1px solid var(--color-border); }
 .car-summary span { display: grid; gap: 5px; color: var(--color-muted); font-size: 13px; }
 .car-summary strong { color: var(--color-text); font-size: 18px; }

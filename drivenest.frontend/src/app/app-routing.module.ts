@@ -12,6 +12,7 @@ const routes: Routes = [
   { path: 'login', component: LoginPageComponent },
   { path: 'register', component: RegisterPageComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'garage/:id', component: GaragePageComponent, canActivate: [authGuard] },
   { path: 'garage', component: GaragePageComponent, canActivate: [authGuard] },
   { path: 'settings', component: SettingsPageComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'login' }

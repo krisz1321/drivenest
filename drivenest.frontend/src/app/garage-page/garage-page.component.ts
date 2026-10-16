@@ -1,4 +1,5 @@
 import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
@@ -19,7 +20,7 @@ const integer = (control: AbstractControl): ValidationErrors | null =>
 @Component({
   selector: 'app-garage-page',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, AppShellComponent, VehicleRefuelingsComponent],
+  imports: [RouterLink, CommonModule, ReactiveFormsModule, AppShellComponent, VehicleRefuelingsComponent],
   templateUrl: './garage-page.component.html',
   styleUrl: './garage-page.component.scss'
 })
@@ -55,7 +56,18 @@ export class GaragePageComponent implements OnInit {
   number(value: number) { return value.toLocaleString('hu-HU'); }
   fuelName(id: number) { return this.fuelTypes.find(f => f.id === id)?.name ?? '—'; }
   invalid(field: keyof typeof this.form.controls) { const control = this.form.controls[field]; return control.touched && control.invalid; }
-  ngOnInit() { this.load(); }
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  vehicleId: number | null = null;
+  get selectedVehicle() { return this.vehicles.find(vehicle => vehicle.id === this.vehicleId) ?? null; }
+  ngOnInit() {
+    this.route.paramMap.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(params => {
+      const id = params.get('id');
+      this.vehicleId = id === null ? null : Number(id);
+      this.message = '';
+    });
+    this.load();
+  }
 
   load() {
     if (this.saving) return;
@@ -100,7 +112,6 @@ export class GaragePageComponent implements OnInit {
     action.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.saving = false)).subscribe({
       next: vehicle => {
         this.vehicles = [...this.vehicles.filter(v => v.id !== vehicle.id), vehicle].sort((a, b) => a.id - b.id);
-        if (this.selectedVehicle?.id === vehicle.id) this.selectedVehicle = vehicle;
         this.message = this.mode === 'create' ? 'A járművet hozzáadtuk a garázsodhoz.' : 'A jármű adatait mentettük.';
         this.dialog.nativeElement.close();
       },
@@ -146,15 +157,8 @@ export class GaragePageComponent implements OnInit {
   }
   color(vehicle: Vehicle) { return ['blue', 'bronze', 'green'][vehicle.id % 3]; }
 
-  @ViewChild('carDetailsDialog') carDetailsDialog!: ElementRef<HTMLDialogElement>;
-  selectedVehicle: Vehicle | null = null;
   openVehicle(vehicle: Vehicle) {
-    this.selectedVehicle = vehicle;
-    this.carDetailsDialog.nativeElement.showModal();
+    void this.router.navigate(['/garage', vehicle.id]);
   }
-  closeVehicle() {
-    this.carDetailsDialog.nativeElement.close();
-    this.selectedVehicle = null;
-  }
-  cancelVehicle(event: Event) { event.preventDefault(); this.closeVehicle(); }
+  closeVehicle() { void this.router.navigateByUrl('/garage'); }
 }

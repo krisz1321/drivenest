@@ -1,7 +1,8 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 
 import { GaragePageComponent } from './garage-page.component';
-import { provideRouter } from '@angular/router';
+import { ActivatedRoute, Router, convertToParamMap, provideRouter } from '@angular/router';
+import { BehaviorSubject } from 'rxjs';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
@@ -9,11 +10,13 @@ describe('GaragePageComponent', () => {
   let component: GaragePageComponent;
   let fixture: ComponentFixture<GaragePageComponent>;
   let http: HttpTestingController;
+  let params: BehaviorSubject<ReturnType<typeof convertToParamMap>>;
 
   beforeEach(async () => {
+    params = new BehaviorSubject(convertToParamMap({}));
     await TestBed.configureTestingModule({
       imports: [GaragePageComponent],
-      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting()]
+      providers: [provideRouter([]), provideHttpClient(), provideHttpClientTesting(), { provide: ActivatedRoute, useValue: { paramMap: params } }]
     })
     .compileComponents();
 
@@ -48,22 +51,27 @@ describe('GaragePageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Még nincs jármű');
   });
 
-  it('opens the selected vehicle with its refueling tools and closes on Escape', () => {
-    respond([{ id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'TEST-42', currentKm: 42000, initialKm: 0, year: 2020, fuelTypeId: 1, vin: null }]);
+  it('navigates to a vehicle page when its card is clicked', () => {
+    respond([{ id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'TEST-42', currentKm: 42000, fuelTypeId: 1 }]);
+    const navigate = spyOn(TestBed.inject(Router), 'navigate').and.resolveTo(true);
     fixture.nativeElement.querySelector('.vehicle-card').click();
-    fixture.detectChanges();
+    expect(navigate).toHaveBeenCalledWith(['/garage', 4]);
+  });
+
+  it('renders a vehicle page with its tools and a back link', () => {
+    params.next(convertToParamMap({ id: '4' }));
+    respond([{ id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'TEST-42', currentKm: 42000, initialKm: 0, year: 2020, fuelTypeId: 1, vin: null }]);
     http.expectOne(req => req.url.endsWith('/vehicles/4/refuelings')).flush([]);
     fixture.detectChanges();
-    const modal: HTMLDialogElement = fixture.nativeElement.querySelector('.car-details-modal');
-    expect(modal.open).toBeTrue();
-    expect(modal.textContent).toContain('Toyota Yaris');
-    expect(modal.textContent).toContain('Tankolás');
-    expect(modal.textContent).toContain('Szerviz');
-    expect(modal.textContent).toContain('Egyéb kiadás');
-    modal.dispatchEvent(new Event('cancel', { cancelable: true }));
+    const page = fixture.nativeElement.querySelector('.vehicle-detail-page');
+    expect(page.textContent).toContain('Toyota Yaris');
+    expect(page.querySelector('app-vehicle-refuelings')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.back-to-garage').getAttribute('href')).toBe('/garage');
+    expect(fixture.nativeElement.querySelector('.vehicle-grid')).toBeNull();
+    params.next(convertToParamMap({}));
     fixture.detectChanges();
-    expect(modal.open).toBeFalse();
-    expect(component.selectedVehicle).toBeNull();
+    expect(fixture.nativeElement.querySelector('.vehicle-grid')).toBeTruthy();
+    expect(fixture.nativeElement.querySelector('.vehicle-detail-page')).toBeNull();
   });
 
   it('should create', () => {
