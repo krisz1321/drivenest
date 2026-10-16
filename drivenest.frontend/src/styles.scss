@@ -129,3 +129,26 @@ button:disabled { cursor: not-allowed; }
 .stat-card p { font-size: 11px; color: var(--color-muted); margin: 10px 0; }
 @media (max-width: 480px) { .form-grid { grid-template-columns: 1fr; } .panel, .modal { padding: 20px; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation: none !important; transition: none !important; scroll-behavior: auto !important; } }
+
+// Finomítások: átmenetek, fókusz, select-nyíl, kártyaárnyék.
+.button { transition: background .15s, border-color .15s, box-shadow .15s, transform .1s; }
+.button:active:not(:disabled) { transform: translateY(1px); }
+.button-primary:hover:not(:disabled) { box-shadow: 0 6px 16px rgb(16 43 62 / 14%); }
+.button-secondary:hover:not(:disabled) { border-color: var(--color-muted); }
+.button-danger:hover:not(:disabled) { filter: brightness(.92); }
+.form-input { transition: border-color .15s, box-shadow .15s; }
+.form-input:hover:not(:disabled) { border-color: color-mix(in srgb, var(--color-border), var(--color-text) 18%); }
+.form-input:focus { outline: none; border-color: var(--color-primary); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-primary) 22%, transparent); }
+.form-input[aria-invalid='true']:focus { border-color: var(--color-error); box-shadow: 0 0 0 3px color-mix(in srgb, var(--color-error) 16%, transparent); }
+.form-input:disabled { background-color: var(--color-background); color: var(--color-muted); cursor: not-allowed; }
+select.form-input { appearance: none; padding-right: 42px; cursor: pointer; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8' fill='none'%3E%3Cpath d='m1 1.5 5 5 5-5' stroke='%23738491' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; background-size: 12px 8px; }
+.panel { box-shadow: 0 1px 3px rgb(16 43 62 / 4%); }
+.alert-error, .alert-success { border: 1px solid color-mix(in srgb, currentColor 18%, transparent); }
+.alert-error p, .alert-success p { margin: 0; }
+.alert-error p + p { margin-top: 4px; }
+.alert-error > .button { margin-top: 12px; }
+.badge { font-weight: 600; }
+.nav-item, .signout, .text-button { transition: background .15s, color .15s; }
+.signout:hover { color: var(--color-surface); }
+.text-button:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
+.modal { box-shadow: 0 24px 60px rgb(16 43 62 / 22%); }

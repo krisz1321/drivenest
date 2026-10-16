@@ -1,9 +1,17 @@
-.heading { margin-bottom: 20px; }
+.heading { margin-bottom: 28px; }
 .heading h1 { font-size: 30px; letter-spacing: -1px; margin-bottom: 10px; }
 .heading p { margin-bottom: 0; }
 .heading .eyebrow { color: var(--color-warning); margin-bottom: 12px; font-size: 10px; }
-.settings-panel { max-width: 860px; margin-bottom: 24px; }
+// Széles képernyőn bal oldalt a szekció címe (és leírása), jobb oldalt az űrlap.
+.settings-panel { max-width: 980px; margin-bottom: 20px; padding: 28px; display: grid; grid-template-columns: minmax(170px, 230px) minmax(0, 1fr); grid-template-rows: auto auto 1fr; column-gap: 40px; }
+.settings-panel > .panel-heading, .settings-panel > .panel-description { grid-column: 1; }
+.settings-panel > form { grid-column: 2; grid-row: 1 / -1; }
+.settings-panel .panel-heading h2 { padding-left: 12px; border-left: 3px solid var(--color-primary); line-height: 1.3; }
+.settings-panel .panel-description { margin: 12px 0 0 15px; line-height: 1.6; overflow-wrap: anywhere; }
 .settings-panel .form-grid { align-items: start; }
+.settings-panel form > .form-help { margin: 18px 0 0; padding: 12px 14px; border-radius: var(--radius-sm); background: var(--color-background); line-height: 1.6; }
+.settings-panel .form-actions { margin-top: 24px; padding-top: 20px; border-top: 1px solid var(--color-border); }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .settings-panel .alert-success, .settings-panel .alert-error { margin-top: 16px; }
-@media (max-width: 480px) { .heading h1 { font-size: 24px; } }
+@media (max-width: 1100px) { .settings-panel { display: block; } .settings-panel .panel-heading { margin-bottom: 20px; } .settings-panel .panel-description { margin: -8px 0 20px; } }
+@media (max-width: 480px) { .heading h1 { font-size: 24px; } .settings-panel { padding: 20px; } .settings-panel .form-actions .button { width: 100%; } }
