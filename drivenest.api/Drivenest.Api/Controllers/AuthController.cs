@@ -34,7 +34,7 @@ namespace Drivenest.Api.Controllers
                 UserName = email,
                 Email = email,
                 DisplayName = request.DisplayName.Trim(),
-                Currency = "HUF"
+                Currency = UserPreferences.Huf
             };
 
             var createResult = await _userManager.CreateAsync(user, request.Password);
@@ -52,9 +52,7 @@ namespace Drivenest.Api.Controllers
                 return IdentityValidationProblem(roleResult);
             }
 
-            var dto = new UserDto(user.Id, user.Email, user.DisplayName, user.Currency);
-
-            return StatusCode(StatusCodes.Status201Created, dto);
+            return StatusCode(StatusCodes.Status201Created, UserDto.From(user));
         }
 
         [HttpPost("login")]
@@ -132,9 +130,7 @@ namespace Drivenest.Api.Controllers
             var roles = (await _userManager.GetRolesAsync(user)).ToList();
             var token = _tokenService.CreateToken(user, roles);
 
-            var dto = new UserDto(user.Id, user.Email ?? string.Empty, user.DisplayName, user.Currency);
-
-            return new LoginResponse(token.Token, token.ExpiresAtUtc, dto, roles);
+            return new LoginResponse(token.Token, token.ExpiresAtUtc, UserDto.From(user), roles);
         }
 
         private ActionResult InvalidCredentials()
