@@ -26,8 +26,6 @@ export class AuthService {
     return !!this.token && !!expires && Date.parse(expires) > Date.now();
   }
 
-  me() { return this.http.get<UserProfile>(`${this.apiUrl}/me`); }
-
   register(displayName: string, email: string, password: string) {
     return this.http.post<UserProfile>(`${this.apiUrl}/auth/register`, {
       displayName, email, password

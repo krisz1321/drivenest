@@ -1,0 +1,21 @@
+<div class="dashboard dashboard-theme">
+  <aside class="sidebar">
+    <a class="brand" routerLink="/dashboard" aria-label="DriveNest vezérlőpult"><span class="brand-mark">D</span><span class="brand-name">DriveNest<span class="brand-dot">.</span></span></a>
+    <p class="nav-label">SAJÁT GARÁZS</p>
+    <nav aria-label="Fő navigáció">
+      <a class="nav-item" [class.active]="active === 'dashboard'" routerLink="/dashboard" fragment="overview" [attr.aria-current]="active === 'dashboard' ? 'page' : null" aria-label="Vezérlőpult"><span aria-hidden="true">▦</span><span class="nav-text">Vezérlőpult</span></a>
+      <a class="nav-item" routerLink="/dashboard" fragment="vehicle" aria-label="Járműveim"><span aria-hidden="true">▱</span><span class="nav-text">Járműveim</span></a>
+      <a class="nav-item" routerLink="/dashboard" fragment="events" aria-label="Események"><span aria-hidden="true">≡</span><span class="nav-text">Események</span></a>
+      <a class="nav-item" routerLink="/dashboard" fragment="reminders" aria-label="Emlékeztetők"><span aria-hidden="true">◷</span><span class="nav-text">Emlékeztetők</span></a>
+      <a class="nav-item" routerLink="/dashboard" fragment="costs" aria-label="Költségáttekintés"><span aria-hidden="true">▥</span><span class="nav-text">Költségáttekintés</span></a>
+    </nav>
+    <div class="sidebar-note"><span>EGY HELYEN, ÁTLÁTHATÓAN</span><p>A járműved története.<br>A kezedben.</p></div>
+    <div class="profile"><span class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</span><div><strong>{{ displayName }}</strong><small>Saját garázs</small></div></div>
+    <button type="button" class="signout" (click)="signOut()" aria-label="Kijelentkezés"><span aria-hidden="true">↪</span><span class="nav-text">Kijelentkezés</span></button>
+  </aside>
+
+  <main [attr.id]="active === 'dashboard' ? 'overview' : null">
+    <header class="topbar"><span>Garázs <span class="separator">/</span><strong>{{ section }}</strong></span><span class="date">{{ dateLabel }}</span></header>
+    <div class="page-content"><ng-content /></div>
+  </main>
+</div>

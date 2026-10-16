@@ -1,62 +1,42 @@
-<div class="dashboard dashboard-theme">
-  <aside class="sidebar">
-    <a class="brand" routerLink="/dashboard" aria-label="DriveNest vezérlőpult"><span class="brand-mark">D</span><span class="brand-name">DriveNest<span class="brand-dot">.</span></span></a>
-    <p class="nav-label">SAJÁT GARÁZS</p>
-    <nav aria-label="Fő navigáció">
-      <a class="nav-item active" routerLink="/dashboard" fragment="overview" aria-current="page" aria-label="Vezérlőpult"><span aria-hidden="true">▦</span><span class="nav-text">Vezérlőpult</span></a>
-      <a class="nav-item" routerLink="/dashboard" fragment="vehicle" aria-label="Járműveim"><span aria-hidden="true">▱</span><span class="nav-text">Járműveim</span></a>
-      <a class="nav-item" routerLink="/dashboard" fragment="events" aria-label="Események"><span aria-hidden="true">≡</span><span class="nav-text">Események</span></a>
-      <a class="nav-item" routerLink="/dashboard" fragment="reminders" aria-label="Emlékeztetők"><span aria-hidden="true">◷</span><span class="nav-text">Emlékeztetők</span></a>
-      <a class="nav-item" routerLink="/dashboard" fragment="costs" aria-label="Költségáttekintés"><span aria-hidden="true">▥</span><span class="nav-text">Költségáttekintés</span></a>
-    </nav>
-    <div class="sidebar-note"><span>EGY HELYEN, ÁTLÁTHATÓAN</span><p>A járműved története.<br>A kezedben.</p></div>
-    <div class="profile"><span class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</span><div><strong>{{ displayName }}</strong><small>Saját garázs</small></div></div>
-    <button type="button" class="signout" (click)="signOut()" aria-label="Kijelentkezés"><span aria-hidden="true">↪</span><span class="nav-text">Kijelentkezés</span></button>
-  </aside>
+<app-shell active="dashboard" section="Vezérlőpult">
+  <div class="heading"><div><p class="eyebrow">MINDEN KILOMÉTER SZÁMÍT</p><h1>A garázsod, egy pillantásra.</h1><p class="muted">Fogyasztás, kiadások és teendők — minden egy helyen.</p></div><button type="button" class="button button-primary button-compact" (click)="open('create')" [disabled]="loading || !fuelTypes.length">+ Jármű hozzáadása</button></div>
+  <p class="notice">A járművek és tankolások élő adatokkal működnek. Szerviz, egyéb kiadások és emlékeztetők: hamarosan.</p>
+  @if (loadErrors.length) { <div class="alert-error" role="alert">@for (error of loadErrors; track $index) { <p>{{ error }}</p> }<button type="button" class="button button-secondary button-compact" (click)="load()" [disabled]="loading">Újrapróbálás</button></div> }
+  @if (message) { <div class="alert-success notification" role="status"><span>{{ message }}</span><button type="button" class="text-button" aria-label="Üzenet bezárása" (click)="message = ''">×</button></div> }
 
-  <main id="overview">
-    <header class="topbar"><span>Garázs <span class="separator">/</span><strong>Vezérlőpult</strong></span><span class="date">{{ dateLabel }}</span></header>
-    <div class="page-content">
-      <div class="heading"><div><p class="eyebrow">MINDEN KILOMÉTER SZÁMÍT</p><h1>A garázsod, egy pillantásra.</h1><p class="muted">Fogyasztás, kiadások és teendők — minden egy helyen.</p></div><button type="button" class="button button-primary button-compact" (click)="open('create')" [disabled]="loading || !fuelTypes.length">+ Jármű hozzáadása</button></div>
-      <p class="notice">A járművek és tankolások élő adatokkal működnek. Szerviz, egyéb kiadások és emlékeztetők: hamarosan.</p>
-      @if (loadErrors.length) { <div class="alert-error" role="alert">@for (error of loadErrors; track $index) { <p>{{ error }}</p> }<button type="button" class="button button-secondary button-compact" (click)="load()" [disabled]="loading">Újrapróbálás</button></div> }
-      @if (message) { <div class="alert-success notification" role="status"><span>{{ message }}</span><button type="button" class="text-button" aria-label="Üzenet bezárása" (click)="message = ''">×</button></div> }
-
-      <section id="vehicle" aria-label="Saját járművek" [attr.aria-busy]="loading">
-        <div class="panel-heading garage-heading"><h2>Járműveim</h2><span class="badge">{{ vehicles.length }} jármű</span></div>
-        @if (loading) {
-          <div class="panel empty-state" role="status">A garázsod betöltése…</div>
-        } @else {
-          <div class="vehicle-grid">
-            @for (car of vehicles; track car.id) {
-              <article class="panel vehicle-card" [attr.aria-labelledby]="'vehicle-title-' + car.id">
-                <div class="vehicle-banner">
-                  <div class="vehicle-symbol" aria-hidden="true"><svg viewBox="0 0 64 48" fill="none"><path d="m8 25 8-16h32l8 16v16h-8v-7H16v7H8V25Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h42M17 29h5m20 0h5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></div>
-                  <div class="vehicle-copy"><span class="eyebrow">SAJÁT JÁRMŰ</span><h2 [id]="'vehicle-title-' + car.id">{{ name(car) }}</h2><p><span class="plate">{{ car.licensePlate }}</span><span>{{ car.year || 'Évjárat nincs megadva' }}</span><span>·</span><span>{{ number(car.currentKm) }} km</span></p><small>{{ fuelName(car.fuelTypeId) }} · Kezdő óraállás: {{ number(car.initialKm) }} km</small></div>
-                  <div class="vehicle-actions"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length" [attr.aria-label]="'Jármű szerkesztése: ' + car.licensePlate">Szerkesztés</button><button type="button" class="text-button delete-button" (click)="open('delete', car)" [attr.aria-label]="'Jármű törlése: ' + car.licensePlate">Törlés</button></div>
-                </div>
-                <app-vehicle-refuelings [vehicle]="car" [currency]="user?.currency || 'HUF'" />
-              </article>
-            } @empty {
-              <div class="panel empty-state"><h2>Itt kezdődik a saját garázsod.</h2><p>Add hozzá az első járművedet. Csak a hozzád rendelt autók jelennek meg itt.</p><button type="button" class="button button-primary button-compact" (click)="open('create')" [disabled]="!fuelTypes.length">+ Első jármű hozzáadása</button></div>
-            }
-          </div>
+  <section id="vehicle" aria-label="Saját járművek" [attr.aria-busy]="loading">
+    <div class="panel-heading garage-heading"><h2>Járműveim</h2><span class="badge">{{ vehicles.length }} jármű</span></div>
+    @if (loading) {
+      <div class="panel empty-state" role="status">A garázsod betöltése…</div>
+    } @else {
+      <div class="vehicle-grid">
+        @for (car of vehicles; track car.id) {
+          <article class="panel vehicle-card" [attr.aria-labelledby]="'vehicle-title-' + car.id">
+            <div class="vehicle-banner">
+              <div class="vehicle-symbol" aria-hidden="true"><svg viewBox="0 0 64 48" fill="none"><path d="m8 25 8-16h32l8 16v16h-8v-7H16v7H8V25Z" stroke="currentColor" stroke-width="3" stroke-linejoin="round"/><path d="M11 24h42M17 29h5m20 0h5" stroke="currentColor" stroke-width="3" stroke-linecap="round"/></svg></div>
+              <div class="vehicle-copy"><span class="eyebrow">SAJÁT JÁRMŰ</span><h2 [id]="'vehicle-title-' + car.id">{{ name(car) }}</h2><p><span class="plate">{{ car.licensePlate }}</span><span>{{ car.year || 'Évjárat nincs megadva' }}</span><span>·</span><span>{{ number(car.currentKm) }} km</span></p><small>{{ fuelName(car.fuelTypeId) }} · Kezdő óraállás: {{ number(car.initialKm) }} km</small></div>
+              <div class="vehicle-actions"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length" [attr.aria-label]="'Jármű szerkesztése: ' + car.licensePlate">Szerkesztés</button><button type="button" class="text-button delete-button" (click)="open('delete', car)" [attr.aria-label]="'Jármű törlése: ' + car.licensePlate">Törlés</button></div>
+            </div>
+            <app-vehicle-refuelings [vehicle]="car" [currency]="currency" />
+          </article>
+        } @empty {
+          <div class="panel empty-state"><h2>Itt kezdődik a saját garázsod.</h2><p>Add hozzá az első járművedet. Csak a hozzád rendelt autók jelennek meg itt.</p><button type="button" class="button button-primary button-compact" (click)="open('create')" [disabled]="!fuelTypes.length">+ Első jármű hozzáadása</button></div>
         }
-      </section>
-
-      <section class="stat-grid" aria-label="Jármű összesítése – előkészítés alatt">
-        @for (stat of stats; track stat.label) { <article class="panel stat-card"><div class="card-label">{{ stat.label }}<span class="stat-icon" aria-hidden="true">{{ stat.icon }}</span></div><strong>— <small>{{ stat.unit === 'Ft' && user?.currency && user?.currency !== 'HUF' ? user?.currency : stat.unit }}</small></strong><p>{{ stat.detail }}</p><span class="badge">Előkészítés alatt</span></article> }
-      </section>
-
-      <div class="content-grid">
-        <section id="reminders" class="panel"><div class="panel-heading"><h2>Közelgő teendők</h2><span class="badge badge-warning">Hamarosan</span></div><p class="panel-description">Legyen a következő lépés mindig tervezhető.</p><div class="empty-state"><span class="empty-icon" aria-hidden="true">◷</span><h3>Minden teendőnek meglesz a helye.</h3><p>Az emlékeztetők a következő bővítéssel érkeznek. Itt most nem jelenítünk meg minta határidőket.</p></div></section>
-        <section id="events" class="panel"><div class="panel-heading"><h2>További események</h2><button type="button" class="text-button" disabled title="Az események API-ja még nem érhető el.">CSV letöltése ↓</button></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Esemény</th><th>Dátum</th><th class="right">Összeg</th></tr></thead><tbody><tr><td colspan="3"><div class="empty-state"><span class="empty-icon" aria-hidden="true">≡</span><p>A szervizek és egyéb kiadások itt jelennek majd meg. A tankolásaidat az egyes autók kártyáin találod.</p><span class="badge badge-warning">Előkészítés alatt</span></div></td></tr></tbody></table></div></section>
-        <section id="costs" class="panel"><div class="panel-heading"><h2>Hová ment a pénz?</h2><span class="badge">{{ month }}</span></div><p class="panel-description">A havi kiadások megoszlása</p>@for (category of ['Tankolás', 'Szerviz', 'Egyéb kiadás']; track category) { <div class="cost-row"><div><span>{{ category }}</span><strong>—</strong></div><div class="bar-track" aria-hidden="true"></div></div> }<div class="cost-total"><span>Összesen</span><strong>—</strong></div><p class="form-help">A költségkimutatás a kiadások kezelésével együtt válik elérhetővé.</p></section>
       </div>
-      <footer><span>DriveNest · Gondoskodás minden kilométeren.</span><button type="button" class="text-button" (click)="load()" [disabled]="loading || saving">{{ loading ? 'Frissítés…' : 'Garázs frissítése ↻' }}</button></footer>
-    </div>
-  </main>
-</div>
+    }
+  </section>
+
+  <section class="stat-grid" aria-label="Jármű összesítése – előkészítés alatt">
+    @for (stat of stats; track stat.label) { <article class="panel stat-card"><div class="card-label">{{ stat.label }}<span class="stat-icon" aria-hidden="true">{{ stat.icon }}</span></div><strong>— <small>{{ stat.unit }}</small></strong><p>{{ stat.detail }}</p><span class="badge">Előkészítés alatt</span></article> }
+  </section>
+
+  <div class="content-grid">
+    <section id="reminders" class="panel"><div class="panel-heading"><h2>Közelgő teendők</h2><span class="badge badge-warning">Hamarosan</span></div><p class="panel-description">Legyen a következő lépés mindig tervezhető.</p><div class="empty-state"><span class="empty-icon" aria-hidden="true">◷</span><h3>Minden teendőnek meglesz a helye.</h3><p>Az emlékeztetők a következő bővítéssel érkeznek. Itt most nem jelenítünk meg minta határidőket.</p></div></section>
+    <section id="events" class="panel"><div class="panel-heading"><h2>További események</h2><button type="button" class="text-button" disabled title="Az események API-ja még nem érhető el.">CSV letöltése ↓</button></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Esemény</th><th>Dátum</th><th class="right">Összeg</th></tr></thead><tbody><tr><td colspan="3"><div class="empty-state"><span class="empty-icon" aria-hidden="true">≡</span><p>A szervizek és egyéb kiadások itt jelennek majd meg. A tankolásaidat az egyes autók kártyáin találod.</p><span class="badge badge-warning">Előkészítés alatt</span></div></td></tr></tbody></table></div></section>
+    <section id="costs" class="panel"><div class="panel-heading"><h2>Hová ment a pénz?</h2><span class="badge">{{ month }}</span></div><p class="panel-description">A havi kiadások megoszlása</p>@for (category of ['Tankolás', 'Szerviz', 'Egyéb kiadás']; track category) { <div class="cost-row"><div><span>{{ category }}</span><strong>—</strong></div><div class="bar-track" aria-hidden="true"></div></div> }<div class="cost-total"><span>Összesen</span><strong>—</strong></div><p class="form-help">A költségkimutatás a kiadások kezelésével együtt válik elérhetővé.</p></section>
+  </div>
+  <footer><span>DriveNest · Gondoskodás minden kilométeren.</span><button type="button" class="text-button" (click)="load()" [disabled]="loading || saving">{{ loading ? 'Frissítés…' : 'Garázs frissítése ↻' }}</button></footer>
+</app-shell>
 
 <dialog #vehicleDialog class="modal dashboard-theme" aria-labelledby="vehicle-modal-title" (cancel)="cancel($event)">
   <div class="panel-heading"><h2 id="vehicle-modal-title">{{ modalTitle }}</h2><button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button></div>
