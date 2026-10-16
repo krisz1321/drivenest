@@ -5,6 +5,7 @@ import { AuthService } from '../services/auth.service';
 import { provideRouter, Router } from '@angular/router';
 
 import { LoginPageComponent } from './login-page.component';
+import { DEFAULT_PREFERENCES } from '../shared/units';
 
 describe('LoginPageComponent', () => {
   let component: LoginPageComponent;
@@ -36,7 +37,7 @@ describe('LoginPageComponent', () => {
   });
 
   it('signs in with a trimmed username and clears the password', () => {
-    const user = { id: 1, email: 'demo@example.com', displayName: 'Demo', currency: 'HUF' };
+    const user = { id: 1, email: 'demo@example.com', displayName: 'Demo', ...DEFAULT_PREFERENCES };
     auth.login.and.returnValue(of({ token: 'token', expiresAtUtc: '2099-01-01', user, roles: ['User'] }));
     component.form.setValue({ userNameOrEmail: ' demo1 ', password: ' Demo123! ' });
     component.submit();
