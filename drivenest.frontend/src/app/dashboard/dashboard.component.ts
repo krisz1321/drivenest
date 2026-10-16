@@ -1,12 +1,13 @@
 import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, ValidationErrors, Validators } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
-import { AuthService, LoginResponse } from '../services/auth.service';
 import { FuelType, Vehicle, VehicleRequest, VehicleService } from '../services/vehicle.service';
+import { ProfileService } from '../services/profile.service';
+import { AppShellComponent } from '../layout/app-shell.component';
+import { consumptionLabel, currencyLabel, distanceLabel } from '../shared/units';
 import { VehicleRefuelingsComponent } from './vehicle-refuelings.component';
 
 function mileageOrder(form: AbstractControl): ValidationErrors | null {
@@ -18,29 +19,18 @@ const integer = (control: AbstractControl): ValidationErrors | null =>
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [CommonModule, ReactiveFormsModule, RouterLink, VehicleRefuelingsComponent],
+  imports: [CommonModule, ReactiveFormsModule, AppShellComponent, VehicleRefuelingsComponent],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
 export class DashboardComponent implements OnInit {
   private readonly api = inject(VehicleService);
-  private readonly auth = inject(AuthService);
-  private readonly router = inject(Router);
+  private readonly profile = inject(ProfileService);
   private readonly destroyRef = inject(DestroyRef);
   @ViewChild('vehicleDialog') dialog!: ElementRef<HTMLDialogElement>;
-  readonly dateLabel = new Date().toLocaleDateString('hu-HU', {
-    year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Budapest'
-  });
   readonly month = new Date().toLocaleDateString('hu-HU', { month: 'long', timeZone: 'Europe/Budapest' });
-  readonly stats = [
-    { label: 'Utolsó fogyasztás', unit: 'l/100 km', detail: 'Tele tanktól tele tankig', icon: '◉' },
-    { label: 'Havi kiadás', unit: 'Ft', detail: 'Minden kategória', icon: '↗' },
-    { label: 'Kilométerköltség', unit: 'Ft/km', detail: 'A rögzített időszak alapján', icon: '↔' },
-    { label: 'Figyelmet igényel', unit: 'teendő', detail: 'Közelgő emlékeztetők', icon: '!' }
-  ];
   vehicles: Vehicle[] = [];
   fuelTypes: FuelType[] = [];
-  user: LoginResponse['user'] | null = null;
   loading = true;
   saving = false;
   loadErrors: string[] = [];
@@ -59,7 +49,16 @@ export class DashboardComponent implements OnInit {
     currentKm: [0, [Validators.required, Validators.min(0), Validators.max(2147483647), integer]]
   }, { validators: mileageOrder });
 
-  get displayName() { return this.user?.displayName || 'Saját garázs'; }
+  get currency() { return this.profile.preferences().currency; }
+  get stats() {
+    const { currency, distanceUnit, consumptionUnit } = this.profile.preferences();
+    return [
+      { label: 'Utolsó fogyasztás', unit: consumptionLabel(consumptionUnit), detail: 'Tele tanktól tele tankig', icon: '◉' },
+      { label: 'Havi kiadás', unit: currencyLabel(currency), detail: 'Minden kategória', icon: '↗' },
+      { label: 'Kilométerköltség', unit: `${currencyLabel(currency)}/${distanceLabel(distanceUnit)}`, detail: 'A rögzített időszak alapján', icon: '↔' },
+      { label: 'Figyelmet igényel', unit: 'teendő', detail: 'Közelgő emlékeztetők', icon: '!' }
+    ];
+  }
   get modalTitle() { return this.mode === 'create' ? 'Jármű hozzáadása' : this.mode === 'edit' ? 'Jármű szerkesztése' : 'Jármű törlése'; }
   name(vehicle: Vehicle) { return `${vehicle.make} ${vehicle.model}`; }
   number(value: number) { return value.toLocaleString('hu-HU'); }
@@ -74,13 +73,12 @@ export class DashboardComponent implements OnInit {
     forkJoin({
       vehicles: this.api.list().pipe(catchError(() => { this.loadErrors.push('A járművek betöltése nem sikerült. Próbáld újra.'); return of(null); })),
       fuelTypes: this.api.fuelTypes().pipe(catchError(() => { this.loadErrors.push('Az üzemanyagtípusok nem érhetők el. A jármű mentéséhez próbáld újra a betöltést.'); return of(null); })),
-      user: this.auth.me().pipe(catchError(() => { this.loadErrors.push('A profil betöltése nem sikerült.'); return of(null); }))
+      user: this.profile.load().pipe(catchError(() => { this.loadErrors.push('A profil betöltése nem sikerült.'); return of(null); }))
     }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)).subscribe(result => {
       if (result.vehicles !== null) {
         this.vehicles = result.vehicles;
       }
       if (result.fuelTypes !== null) this.fuelTypes = result.fuelTypes;
-      if (result.user !== null) this.user = result.user;
     });
   }
 
@@ -145,7 +143,4 @@ export class DashboardComponent implements OnInit {
     if (typeof error.error?.title === 'string') return [error.error.title];
     return ['A művelet nem sikerült. Próbáld újra.'];
   }
-
-  signOut() { this.auth.signOut();void this.router.navigateByUrl('/login'); }
-
 }

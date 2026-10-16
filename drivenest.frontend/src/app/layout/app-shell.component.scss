@@ -1,0 +1,9 @@
+:host { display: block; font-size: 14px; }
+.dashboard { min-height: 100svh; background: var(--color-background); }
+main { margin-left: 232px; }
+.topbar { min-height: 76px; padding: 16px 36px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-muted); font-size: 12px; }
+.topbar strong { color: var(--color-text); }
+.separator { margin: 0 13px; }
+.page-content { max-width: 1500px; margin: auto; padding: 34px 36px; }
+@media (max-width: 900px) { .sidebar { width: 76px; padding: 24px 10px; } .brand-name, .nav-label, .sidebar-note, .profile div, .nav-text { display: none; } .sidebar .brand, .profile, .signout { justify-content: center; } .sidebar nav { margin-top: 40px; } .nav-item { justify-content: center; padding: 12px 0; } .profile { margin-top: auto; } main { margin-left: 76px; } .page-content { padding: 28px 24px; } .topbar { padding: 16px 24px; } }
+@media (max-width: 480px) { .page-content { padding: 24px 14px; } .topbar { padding: 12px 14px; font-size: 10px; } .date { max-width: 90px; text-align: right; } }

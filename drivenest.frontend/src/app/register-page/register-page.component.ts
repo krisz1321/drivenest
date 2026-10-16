@@ -6,10 +6,15 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize } from 'rxjs';
 import { AuthService } from '../services/auth.service';
 
-function passwordsMatch(control: AbstractControl): ValidationErrors | null {
+export function passwordsMatch(control: AbstractControl): ValidationErrors | null {
   return control.get('password')?.value === control.get('confirmPassword')?.value
     ? null : { passwordMismatch: true };
 }
+
+// Közös az új jelszót kérő űrlapokon (regisztráció, jelszómódosítás).
+export const newPasswordValidators = [
+  Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[\s\S]+$/)
+];
 
 @Component({
   selector: 'app-register-page',
@@ -24,7 +29,7 @@ export class RegisterPageComponent {
   readonly form = inject(FormBuilder).nonNullable.group({
     displayName: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(100)]],
     email: ['', [Validators.required, Validators.email, Validators.maxLength(256)]],
-    password: ['', [Validators.required, Validators.minLength(8), Validators.pattern(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[\s\S]+$/)]],
+    password: ['', newPasswordValidators],
     confirmPassword: ['', Validators.required]
   }, { validators: passwordsMatch });
   submitting = false;
