@@ -110,6 +110,49 @@ namespace Drivenest.Api.Controllers
             return await CreateLoginResponseAsync(user);
         }
 
+        // Az e-mail-cím egyben a felhasználónév is. Az új SecurityStamp miatt a régi tokenek érvénytelenek, ezért új tokent adunk.
+        [HttpPost("change-email")]
+        [Authorize]
+        [SkipTokenRenewal]
+        public async Task<ActionResult<LoginResponse>> ChangeEmail(ChangeEmailRequest request)
+        {
+            var user = await _userManager.FindByIdAsync(User.GetUserId().ToString());
+            if (user == null)
+            {
+                return Unauthorized();
+            }
+
+            var email = request.Email.Trim();
+
+            if (string.Equals(email, user.Email, StringComparison.OrdinalIgnoreCase))
+            {
+                ModelState.AddModelError(nameof(ChangeEmailRequest.Email),
+                    "Az új e-mail-cím megegyezik a jelenlegivel.");
+
+                return ValidationProblem(ModelState);
+            }
+
+            if (!await _userManager.CheckPasswordAsync(user, request.CurrentPassword))
+            {
+                ModelState.AddModelError(nameof(ChangeEmailRequest.CurrentPassword),
+                    "A jelenlegi jelszó hibás.");
+
+                return ValidationProblem(ModelState);
+            }
+
+            // Egyetlen mentés: validálja az egyediséget, normalizálja a mezőket és érvényteleníti a régi tokeneket.
+            user.UserName = email;
+            user.Email = email;
+
+            var result = await _userManager.UpdateSecurityStampAsync(user);
+            if (!result.Succeeded)
+            {
+                return IdentityValidationProblem(result);
+            }
+
+            return await CreateLoginResponseAsync(user);
+        }
+
         // Új SecurityStamp: a felhasználó összes eddig kiadott tokenje érvénytelenné válik.
         [HttpPost("logout")]
         [Authorize]
