@@ -1,12 +1,13 @@
 import { Component, Input, inject } from '@angular/core';
-import { Router, RouterLink } from '@angular/router';
+import { Router } from '@angular/router';
+import { SidebarComponent } from './sidebar.component';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 
 @Component({
   selector: 'app-shell',
   standalone: true,
-  imports: [RouterLink],
+  imports: [SidebarComponent],
   templateUrl: './app-shell.component.html',
   styleUrl: './app-shell.component.scss'
 })

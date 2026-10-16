@@ -7,10 +7,12 @@ import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
 import { LoginPageComponent } from './login-page/login-page.component';
 import { DashboardComponent } from './dashboard/dashboard.component';
+import { GaragePageComponent } from './garage-page/garage-page.component';
 
 @NgModule({
   declarations: [
-    AppComponent
+    AppComponent,
+    GaragePageComponent
   ],
   imports: [
     BrowserModule,
