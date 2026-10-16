@@ -1,8 +1,9 @@
 <app-shell active="garage" section="Járműveim">
   <header class="garage-heading">
     <div><h1>Garázs</h1>@if (!loading && !loadError) { <p>{{ vehicles.length }} jármű</p> }</div>
-    <a class="new-vehicle" routerLink="/dashboard" fragment="vehicle"><span aria-hidden="true">+</span> Új jármű</a>
+    <button type="button" class="new-vehicle" (click)="open('create')" [disabled]="loading || !fuelTypes.length"><span aria-hidden="true">+</span> Új jármű</button>
   </header>
+  @if (message) { <p class="alert-success" role="status">{{ message }}</p> }
   @if (loading) {
     <div class="panel empty-state" role="status">Járművek betöltése…</div>
   } @else if (loadError) {
@@ -12,7 +13,7 @@
   } @else {
   <section class="vehicle-grid" aria-label="Járműveim">
     @for (vehicle of vehicles; track vehicle.id) {
-      <button type="button" class="vehicle-card" [attr.aria-label]="name(vehicle) + ' – ' + vehicle.licensePlate + ' megnyitása'">
+      <button type="button" class="vehicle-card" (click)="openVehicle(vehicle)" [attr.aria-label]="name(vehicle) + ' – ' + vehicle.licensePlate + ' megnyitása'">
         <span [class]="'vehicle-banner ' + color(vehicle)"><span class="license-plate">{{ vehicle.licensePlate }}</span></span>
         <span class="vehicle-body">
           <span class="vehicle-name">{{ name(vehicle) }}</span>
@@ -26,3 +27,35 @@
   </section>
   }
 </app-shell>
+
+<dialog #carDetailsDialog class="modal car-details-modal dashboard-theme" aria-labelledby="car-details-title" (cancel)="cancelVehicle($event)" (close)="selectedVehicle = null">
+  @if (selectedVehicle; as car) {
+    <div class="panel-heading"><div><h2 id="car-details-title">{{ name(car) }}</h2><p class="form-help">{{ car.licensePlate }} · {{ details(car) }}</p></div><button type="button" class="modal-close" (click)="closeVehicle()" aria-label="Bezárás">×</button></div>
+    <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>N/A</strong></span></div>
+    <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
+    <app-vehicle-refuelings [vehicle]="car" [currency]="currency" />
+  }
+</dialog>
+<dialog #vehicleDialog class="modal dashboard-theme" aria-labelledby="vehicle-modal-title" (cancel)="cancel($event)">
+  <div class="panel-heading"><h2 id="vehicle-modal-title">{{ modalTitle }}</h2><button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button></div>
+  @if (mode === 'delete') {
+    <p>Biztosan törlöd ezt a járművet: <strong>{{ target ? name(target) : '' }} · {{ target?.licensePlate }}</strong>?</p>
+    <p class="form-help">A törlés végleges. Kapcsolódó bejegyzésekkel rendelkező járművet a rendszer nem enged törölni.</p>
+  } @else {
+    <p class="form-help">A járművet automatikusan a bejelentkezett fiókhoz rendeljük. A * jelölt mezők kötelezők.</p>
+    <form id="vehicle-form" [formGroup]="form" (ngSubmit)="save()" [attr.aria-busy]="saving" novalidate>
+      <fieldset [disabled]="saving"><div class="form-grid">
+        <div class="form-field"><label for="car-make">Márka *</label><input class="form-input" id="car-make" formControlName="make" maxlength="50" placeholder="Pl. Suzuki" [attr.aria-invalid]="invalid('make')" aria-describedby="make-error">@if (invalid('make')) { <p id="make-error" class="field-error">Adj meg egy márkát, legfeljebb 50 karakterrel.</p> }</div>
+        <div class="form-field"><label for="car-model">Modell *</label><input class="form-input" id="car-model" formControlName="model" maxlength="50" placeholder="Pl. Swift" [attr.aria-invalid]="invalid('model')" aria-describedby="model-error">@if (invalid('model')) { <p id="model-error" class="field-error">Adj meg egy modellt, legfeljebb 50 karakterrel.</p> }</div>
+        <div class="form-field"><label for="car-plate">Rendszám *</label><input class="form-input" id="car-plate" formControlName="licensePlate" maxlength="20" placeholder="ABC-123" [attr.aria-invalid]="invalid('licensePlate')" aria-describedby="plate-error">@if (invalid('licensePlate')) { <p id="plate-error" class="field-error">Adj meg egy rendszámot, legfeljebb 20 karakterrel.</p> }</div>
+        <div class="form-field"><label for="car-fuel">Üzemanyagtípus *</label><select class="form-input" id="car-fuel" formControlName="fuelTypeId" [attr.aria-invalid]="invalid('fuelTypeId')" aria-describedby="fuel-error"><option [ngValue]="0" disabled>Válassz típust</option>@for (fuel of fuelTypes; track fuel.id) { <option [ngValue]="fuel.id">{{ fuel.name }}</option> }</select>@if (invalid('fuelTypeId')) { <p id="fuel-error" class="field-error">Válassz üzemanyagtípust.</p> }</div>
+        <div class="form-field"><label for="car-year">Évjárat</label><input class="form-input" id="car-year" type="number" formControlName="year" min="1886" max="2100" step="1" placeholder="Pl. 2020" [attr.aria-invalid]="invalid('year')" aria-describedby="year-error">@if (invalid('year')) { <p id="year-error" class="field-error">Egész évszámot adj meg 1886 és 2100 között.</p> }</div>
+        <div class="form-field"><label for="car-vin">Alvázszám (VIN)</label><input class="form-input" id="car-vin" formControlName="vin" maxlength="17" placeholder="17 betű vagy szám" [attr.aria-invalid]="invalid('vin')" aria-describedby="vin-error">@if (invalid('vin')) { <p id="vin-error" class="field-error">Az alvázszám pontosan 17 betűből vagy számból álljon.</p> }</div>
+        <div class="form-field"><label for="car-initial">Kezdő óraállás (km) *</label><input class="form-input" id="car-initial" type="number" formControlName="initialKm" min="0" max="2147483647" step="1" [attr.aria-invalid]="invalid('initialKm')" aria-describedby="initial-error">@if (invalid('initialKm')) { <p id="initial-error" class="field-error">Nemnegatív egész számot adj meg.</p> }</div>
+        <div class="form-field"><label for="car-current">Aktuális óraállás (km) *</label><input class="form-input" id="car-current" type="number" formControlName="currentKm" min="0" max="2147483647" step="1" [attr.aria-invalid]="invalid('currentKm') || (form.controls.currentKm.touched && form.hasError('mileageOrder'))" aria-describedby="current-error">@if (invalid('currentKm') || (form.controls.currentKm.touched && form.hasError('mileageOrder'))) { <p id="current-error" class="field-error">Egész számot adj meg, legalább a kezdő óraállás értékével.</p> }</div>
+      </div></fieldset>
+    </form>
+  }
+  @if (modalErrors.length) { <div class="alert-error" role="alert">@for (error of modalErrors; track $index) { <p>{{ error }}</p> }</div> }
+  <div class="form-actions"><button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>@if (mode === 'delete') { <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Jármű törlése' }}</button> } @else { <button type="submit" form="vehicle-form" class="button button-primary button-compact" [disabled]="saving || !fuelTypes.length">{{ saving ? 'Mentés…' : 'Jármű mentése' }}</button> }</div>
+</dialog>

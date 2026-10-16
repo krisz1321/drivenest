@@ -48,6 +48,24 @@ describe('GaragePageComponent', () => {
     expect(fixture.nativeElement.textContent).toContain('Még nincs jármű');
   });
 
+  it('opens the selected vehicle with its refueling tools and closes on Escape', () => {
+    respond([{ id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'TEST-42', currentKm: 42000, initialKm: 0, year: 2020, fuelTypeId: 1, vin: null }]);
+    fixture.nativeElement.querySelector('.vehicle-card').click();
+    fixture.detectChanges();
+    http.expectOne(req => req.url.endsWith('/vehicles/4/refuelings')).flush([]);
+    fixture.detectChanges();
+    const modal: HTMLDialogElement = fixture.nativeElement.querySelector('.car-details-modal');
+    expect(modal.open).toBeTrue();
+    expect(modal.textContent).toContain('Toyota Yaris');
+    expect(modal.textContent).toContain('Tankolás');
+    expect(modal.textContent).toContain('Szerviz');
+    expect(modal.textContent).toContain('Egyéb kiadás');
+    modal.dispatchEvent(new Event('cancel', { cancelable: true }));
+    fixture.detectChanges();
+    expect(modal.open).toBeFalse();
+    expect(component.selectedVehicle).toBeNull();
+  });
+
   it('should create', () => {
     respond([]);
     expect(component).toBeTruthy();
