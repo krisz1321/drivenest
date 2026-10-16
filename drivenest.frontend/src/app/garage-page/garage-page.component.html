@@ -1,1 +1,28 @@
-<p>garage-page works!</p>
+<app-shell active="garage" section="Járműveim">
+  <header class="garage-heading">
+    <div><h1>Garázs</h1>@if (!loading && !loadError) { <p>{{ vehicles.length }} jármű</p> }</div>
+    <a class="new-vehicle" routerLink="/dashboard" fragment="vehicle"><span aria-hidden="true">+</span> Új jármű</a>
+  </header>
+  @if (loading) {
+    <div class="panel empty-state" role="status">Járművek betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div>
+  } @else if (!vehicles.length) {
+    <div class="panel empty-state"><h2>Még nincs jármű a garázsodban</h2><p>Az Új jármű gombbal hozzáadhatod az első járművedet.</p></div>
+  } @else {
+  <section class="vehicle-grid" aria-label="Járműveim">
+    @for (vehicle of vehicles; track vehicle.id) {
+      <button type="button" class="vehicle-card" [attr.aria-label]="name(vehicle) + ' – ' + vehicle.licensePlate + ' megnyitása'">
+        <span [class]="'vehicle-banner ' + color(vehicle)"><span class="license-plate">{{ vehicle.licensePlate }}</span></span>
+        <span class="vehicle-body">
+          <span class="vehicle-name">{{ name(vehicle) }}</span>
+          <span class="vehicle-details">{{ details(vehicle) }}</span>
+          <span class="vehicle-stat"><span>Kilométeróra</span><strong>{{ mileage(vehicle) }}</strong></span>
+          <span class="vehicle-stat"><span>Átlagfogyasztás</span><strong>N/A</strong></span>
+          <span class="open-label">Megnyitás <span aria-hidden="true">↗</span></span>
+        </span>
+      </button>
+    }
+  </section>
+  }
+</app-shell>

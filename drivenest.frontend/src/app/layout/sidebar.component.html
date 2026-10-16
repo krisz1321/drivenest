@@ -3,7 +3,7 @@
     <p class="nav-label">SAJÁT GARÁZS</p>
     <nav aria-label="Fő navigáció">
       <a class="nav-item" [class.active]="active === 'dashboard'" routerLink="/dashboard" fragment="overview" [attr.aria-current]="active === 'dashboard' ? 'page' : null" aria-label="Vezérlőpult"><span aria-hidden="true">▦</span><span class="nav-text">Vezérlőpult</span></a>
-      <a class="nav-item" routerLink="/dashboard" fragment="vehicle" aria-label="Járműveim"><span aria-hidden="true">▱</span><span class="nav-text">Járműveim</span></a>
+      <a class="nav-item" [class.active]="active === 'garage'" routerLink="/garage" [attr.aria-current]="active === 'garage' ? 'page' : null" aria-label="Járműveim"><span aria-hidden="true">▱</span><span class="nav-text">Járműveim</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="events" aria-label="Események"><span aria-hidden="true">≡</span><span class="nav-text">Események</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="reminders" aria-label="Emlékeztetők"><span aria-hidden="true">◷</span><span class="nav-text">Emlékeztetők</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="costs" aria-label="Költségáttekintés"><span aria-hidden="true">▥</span><span class="nav-text">Költségáttekintés</span></a>
