@@ -1,16 +1,15 @@
 import { HttpClient } from '@angular/common/http';
-import { Injectable, InjectionToken, inject } from '@angular/core';
+import { Injectable, inject } from '@angular/core';
 import { tap } from 'rxjs';
+import { API_BASE_URL } from './api-base-url';
+import { ProfileService, UserProfile } from './profile.service';
 
-// Override this provider when deploying the frontend against another API host.
-export const API_BASE_URL = new InjectionToken<string>('API_BASE_URL', {
-  providedIn: 'root', factory: () => 'https://localhost:7104/api'
-});
+export { API_BASE_URL };
 
 export interface LoginResponse {
   token: string;
   expiresAtUtc: string;
-  user: { id: number; email: string; displayName: string; currency: string };
+  user: UserProfile;
   roles: string[];
 }
 
@@ -18,6 +17,7 @@ export interface LoginResponse {
 export class AuthService {
   private readonly http = inject(HttpClient);
   private readonly apiUrl = inject(API_BASE_URL);
+  private readonly profile = inject(ProfileService);
 
   get token(): string | null { return sessionStorage.getItem('drivenest.token'); }
 
@@ -26,25 +26,34 @@ export class AuthService {
     return !!this.token && !!expires && Date.parse(expires) > Date.now();
   }
 
-  me() { return this.http.get<LoginResponse['user']>(`${this.apiUrl}/me`); }
+  me() { return this.http.get<UserProfile>(`${this.apiUrl}/me`); }
 
   register(displayName: string, email: string, password: string) {
-    return this.http.post<LoginResponse['user']>(`${this.apiUrl}/auth/register`, {
+    return this.http.post<UserProfile>(`${this.apiUrl}/auth/register`, {
       displayName, email, password
     });
   }
 
   login(userNameOrEmail: string, password: string) {
     return this.http.post<LoginResponse>(`${this.apiUrl}/auth/login`, { userNameOrEmail, password })
-      .pipe(tap(response => {
-        sessionStorage.setItem('drivenest.token', response.token);
-        sessionStorage.setItem('drivenest.expiresAtUtc', response.expiresAtUtc);
-      }));
+      .pipe(tap(response => this.store(response)));
+  }
+
+  // A jelszó- és az e-mail-csere új SecurityStamp-et ad, ezért a válasz új tokent hoz, a régi érvénytelen.
+  changePassword(currentPassword: string, newPassword: string) {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/change-password`, { currentPassword, newPassword })
+      .pipe(tap(response => this.store(response)));
+  }
+
+  changeEmail(email: string, currentPassword: string) {
+    return this.http.post<LoginResponse>(`${this.apiUrl}/auth/change-email`, { email, currentPassword })
+      .pipe(tap(response => this.store(response)));
   }
 
   logout() {
     sessionStorage.removeItem('drivenest.token');
     sessionStorage.removeItem('drivenest.expiresAtUtc');
+    this.profile.clear();
   }
 
   // Felhasználói kijelentkezés: helyben azonnal töröl, a szerveren is érvényteleníti a tokent.
@@ -54,5 +63,11 @@ export class AuthService {
     if (!token) return;
     this.http.post<void>(`${this.apiUrl}/auth/logout`, {}, { headers: { Authorization: `Bearer ${token}` } })
       .subscribe({ error: () => {} });
+  }
+
+  private store(response: LoginResponse) {
+    sessionStorage.setItem('drivenest.token', response.token);
+    sessionStorage.setItem('drivenest.expiresAtUtc', response.expiresAtUtc);
+    this.profile.set(response.user);
   }
 }
