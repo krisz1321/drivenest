@@ -154,6 +154,13 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("OdometerKm")
+                        .HasColumnType("int");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
@@ -161,11 +168,14 @@ namespace Drivenest.Api.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("VehicleId");
+                    b.HasIndex("VehicleId", "Date")
+                        .IsDescending(false, true);
 
                     b.ToTable("Expenses", null, t =>
                         {
                             t.HasCheckConstraint("CK_Expenses_Amount", "[Amount] >= 0");
+
+                            t.HasCheckConstraint("CK_Expenses_OdometerKm", "[OdometerKm] >= 0");
                         });
                 });
 
@@ -182,9 +192,12 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("ExpenseCategories", (string)null);
@@ -219,6 +232,31 @@ namespace Drivenest.Api.Migrations
                         {
                             Id = 6,
                             Name = "Egyéb"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Name = "Útdíj"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Name = "Bírság"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Name = "Finanszírozás / hitel"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Name = "Forgalmi / regisztráció"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Name = "Tartozék"
                         });
                 });
 
@@ -709,6 +747,16 @@ namespace Drivenest.Api.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.ExpenseCategory", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.Refueling", b =>

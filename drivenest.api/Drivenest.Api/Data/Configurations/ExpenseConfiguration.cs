@@ -9,7 +9,11 @@ namespace Drivenest.Api.Data.Configurations
     {
         public void Configure(EntityTypeBuilder<Expense> builder)
         {
-            builder.ToTable("Expenses", t => t.HasCheckConstraint("CK_Expenses_Amount", "[Amount] >= 0"));
+            builder.ToTable("Expenses", t =>
+            {
+                t.HasCheckConstraint("CK_Expenses_Amount", "[Amount] >= 0");
+                t.HasCheckConstraint("CK_Expenses_OdometerKm", "[OdometerKm] >= 0");
+            });
 
             builder.Property(e => e.Date)
                 .HasColumnType("date");
@@ -17,8 +21,15 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(e => e.Amount)
                 .HasColumnType("decimal(12,2)");
 
+            builder.Property(e => e.Location)
+                .HasMaxLength(200);
+
             builder.Property(e => e.Description)
                 .HasMaxLength(500);
+
+            // A listázás járművenként, dátum szerint csökkenőleg történik.
+            builder.HasIndex(e => new { e.VehicleId, e.Date })
+                .IsDescending(false, true);
 
             builder.Property(e => e.CreatedAt)
                 .HasColumnType("datetime2(3)")

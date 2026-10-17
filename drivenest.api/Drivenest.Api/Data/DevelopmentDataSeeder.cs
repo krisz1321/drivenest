@@ -196,13 +196,17 @@ namespace Drivenest.Api.Data
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
             var vignetteId = await GetExpenseCategoryIdAsync(db, "Autópálya-matrica");
             var washId = await GetExpenseCategoryIdAsync(db, "Mosás");
+            var parkingId = await GetExpenseCategoryIdAsync(db, "Parkolás");
+            var tollId = await GetExpenseCategoryIdAsync(db, "Útdíj");
 
             db.Expenses.AddRange(
-                Expense(swift, insuranceId, 4, 1, 62000, "Éves kötelező biztosítás"),
-                Expense(swift, vignetteId, 1, 5, 24000, "Éves országos matrica"),
-                Expense(swift, washId, 7, 12, 3500, null),
-                Expense(octavia, insuranceId, 3, 20, 78000, "Éves kötelező biztosítás"),
-                Expense(octavia, vignetteId, 1, 5, 24000, "Éves országos matrica"));
+                Expense(swift, insuranceId, 4, 1, 42300, 62000, null, "Éves kötelező biztosítás"),
+                Expense(swift, vignetteId, 1, 5, 42050, 24000, "Online (nemzetiutdij.hu)", "Éves országos matrica"),
+                Expense(swift, washId, 7, 12, 45200, 3500, "Shell autómosó", null),
+                Expense(swift, parkingId, 8, 20, 46100, 1800, "Budapest, Belváros", "Mozi előtt 3 óra"),
+                Expense(octavia, insuranceId, 3, 20, 119000, 78000, null, "Éves kötelező biztosítás"),
+                Expense(octavia, vignetteId, 1, 5, 118150, 24000, "Online (nemzetiutdij.hu)", "Éves országos matrica"),
+                Expense(octavia, tollId, 7, 3, 121800, 4900, "Hegyeshalom", "Osztrák 10 napos matrica"));
 
             await db.SaveChangesAsync();
         }
@@ -284,9 +288,9 @@ namespace Drivenest.Api.Data
                     "Műszaki vizsga, sikeres", partsCost: 12000, laborCost: 28000));
 
             db.Expenses.AddRange(
-                Expense(astra, insuranceId, 2, 10, 54000, "Éves kötelező biztosítás"),
-                Expense(astra, taxId, 3, 15, 18000, "Gépjárműadó"),
-                Expense(astra, washId, 5, 30, 2500, null));
+                Expense(astra, insuranceId, 2, 10, 405000, 54000, null, "Éves kötelező biztosítás"),
+                Expense(astra, taxId, 3, 15, 405300, 18000, null, "Gépjárműadó"),
+                Expense(astra, washId, 5, 30, 406500, 2500, "Kézi autómosó", null));
 
             db.Reminders.AddRange(
                 new Reminder
@@ -324,7 +328,7 @@ namespace Drivenest.Api.Data
 
         private static Task<int> GetExpenseCategoryIdAsync(AppDbContext db, string name)
         {
-            return db.ExpenseCategories.Where(c => c.Name == name).Select(c => c.Id).SingleAsync();
+            return db.ExpenseCategories.Where(c => c.UserId == null && c.Name == name).Select(c => c.Id).SingleAsync();
         }
 
         private static ServiceRecord ServiceRecord(Vehicle vehicle, int categoryId, int month, int day,
@@ -348,7 +352,7 @@ namespace Drivenest.Api.Data
         }
 
         private static Expense Expense(Vehicle vehicle, int categoryId, int month, int day,
-            decimal amount, string? description)
+            int odometerKm, decimal amount, string? location, string? description)
         {
             var date = new DateOnly(2026, month, day);
 
@@ -357,7 +361,9 @@ namespace Drivenest.Api.Data
                 Vehicle = vehicle,
                 CategoryId = categoryId,
                 Date = date,
+                OdometerKm = odometerKm,
                 Amount = amount,
+                Location = location,
                 Description = description,
                 CreatedAt = date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc)
             };
