@@ -45,8 +45,10 @@ export class ExpensesPageComponent implements OnInit {
   vehicleFilter = 0;
   categoryFilter = 0;
 
-  // Felugró ablak az új kiadáshoz
+  // Felugró ablak: ugyanazt használjuk új kiadáshoz, szerkesztéshez és törléshez is.
   @ViewChild('expenseDialog') dialog!: ElementRef<HTMLDialogElement>;
+  mode: 'create' | 'edit' | 'delete' = 'create';
+  target: Expense | null = null; // szerkesztésnél / törlésnél a kiválasztott kiadás
   saving = false;
   errors: string[] = [];
   message = '';
@@ -83,10 +85,20 @@ export class ExpensesPageComponent implements OnInit {
     return control.touched && control.invalid;
   }
 
+  get title() {
+    if (this.mode === 'edit') return 'Kiadás szerkesztése';
+    if (this.mode === 'delete') return 'Kiadás törlése';
+    return 'Új kiadás';
+  }
+
   openCreate() {
     if (!this.vehicles.length || this.loading || this.saving) return;
 
+    this.mode = 'create';
+    this.target = null;
     this.errors = [];
+    this.form.controls.vehicleId.enable();
+
     // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot.
     const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
     this.form.reset({
@@ -98,6 +110,36 @@ export class ExpensesPageComponent implements OnInit {
       location: '',
       description: ''
     });
+    this.dialog.nativeElement.showModal();
+  }
+
+  openEdit(entry: Expense) {
+    if (this.saving) return;
+
+    this.mode = 'edit';
+    this.target = entry;
+    this.errors = [];
+    // Szerkesztésnél a jármű nem változtatható (a backend sem engedi átrakni).
+    this.form.controls.vehicleId.disable();
+
+    this.form.reset({
+      vehicleId: entry.vehicleId,
+      date: entry.date,
+      categoryId: entry.categoryId,
+      odometerKm: entry.odometerKm,
+      amount: entry.amount,
+      location: entry.location ?? '',
+      description: entry.description ?? ''
+    });
+    this.dialog.nativeElement.showModal();
+  }
+
+  openDelete(entry: Expense) {
+    if (this.saving) return;
+
+    this.mode = 'delete';
+    this.target = entry;
+    this.errors = [];
     this.dialog.nativeElement.showModal();
   }
 
@@ -133,14 +175,39 @@ export class ExpensesPageComponent implements OnInit {
       description: value.description.trim() || null
     };
 
+    // Szerkesztésnél PUT, egyébként POST
+    const request = this.mode === 'edit' && this.target
+      ? this.api.update(this.target.vehicleId, this.target.id, body)
+      : this.api.create(value.vehicleId, body);
+
     this.saving = true;
-    this.api.create(value.vehicleId, body).pipe(
+    request.pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.saving = false)
     ).subscribe({
       next: entry => {
-        this.entries = this.sorted([...this.entries, entry]);
-        this.message = 'A kiadást elmentettük.';
+        // A régi változatot (ha volt) kicseréljük az újra.
+        this.entries = this.sorted([...this.entries.filter(e => e.id !== entry.id), entry]);
+        this.message = this.mode === 'edit' ? 'A kiadást módosítottuk.' : 'A kiadást elmentettük.';
+        this.dialog.nativeElement.close();
+      },
+      error: (error: HttpErrorResponse) => this.showError(error)
+    });
+  }
+
+  remove() {
+    if (this.saving || !this.target) return;
+    const id = this.target.id;
+
+    this.saving = true;
+    this.errors = [];
+    this.api.delete(this.target.vehicleId, id).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.saving = false)
+    ).subscribe({
+      next: () => {
+        this.entries = this.entries.filter(e => e.id !== id);
+        this.message = 'A kiadást töröltük.';
         this.dialog.nativeElement.close();
       },
       error: (error: HttpErrorResponse) => this.showError(error)

@@ -84,6 +84,7 @@
                 <th>Helyszín</th>
                 <th>Megjegyzés</th>
                 <th class="right">Összeg</th>
+                <th>Műveletek</th>
               </tr>
             </thead>
             <tbody>
@@ -96,6 +97,14 @@
                   <td>{{ entry.location || '—' }}</td>
                   <td class="muted">{{ entry.description || '—' }}</td>
                   <td class="right nowrap"><strong>{{ number(entry.amount) }} {{ unit }}</strong></td>
+                  <td>
+                    <div class="action-row">
+                      <button type="button" class="text-button" (click)="openEdit(entry)" [disabled]="saving"
+                        [attr.aria-label]="entry.categoryName + ', ' + entry.date + ' szerkesztése'">Szerkesztés</button>
+                      <button type="button" class="text-button danger-text" (click)="openDelete(entry)" [disabled]="saving"
+                        [attr.aria-label]="entry.categoryName + ', ' + entry.date + ' törlése'">Törlés</button>
+                    </div>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -120,13 +129,20 @@
   }
 </app-shell>
 
-<!-- Új kiadás felugró ablak -->
+<!-- Felugró ablak: új kiadás / szerkesztés / törlés -->
 <dialog #expenseDialog class="modal dashboard-theme" aria-labelledby="expense-title" (cancel)="cancel($event)">
   <div class="panel-heading">
-    <h2 id="expense-title">Új kiadás</h2>
+    <h2 id="expense-title">{{ title }}</h2>
     <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
   </div>
 
+  @if (mode === 'delete') {
+    <p>
+      Biztosan törlöd a(z) {{ target?.date | date:'yyyy. MM. dd.' }} dátumú
+      <strong>{{ target?.categoryName }}</strong> kiadást ({{ target ? number(target.amount) : '' }} {{ unit }})?
+    </p>
+    <p class="muted">{{ target ? vehicleName(target.vehicleId) : '' }}</p>
+  } @else {
   <form id="expense-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
     <fieldset [disabled]="saving">
       <div class="form-grid">
@@ -190,6 +206,7 @@
       </div>
     </fieldset>
   </form>
+  }
 
   @if (errors.length) {
     <div class="alert-error" role="alert">
@@ -199,6 +216,10 @@
 
   <div class="form-actions">
     <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
-    <button type="submit" form="expense-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    @if (mode === 'delete') {
+      <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
+    } @else {
+      <button type="submit" form="expense-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    }
   </div>
 </dialog>
