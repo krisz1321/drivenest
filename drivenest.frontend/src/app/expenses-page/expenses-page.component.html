@@ -1,0 +1,225 @@
+<app-shell active="expenses" section="Kiadások">
+  <header class="page-heading">
+    <div>
+      <h1>Kiadások</h1>
+      <p class="muted">Biztosítás, matrica, parkolás és minden egyéb költség a járműveidhez.</p>
+    </div>
+    <button type="button" class="button button-primary button-compact" (click)="openCreate()" [disabled]="loading || !!loadError || !vehicles.length">+ Új kiadás</button>
+  </header>
+
+  @if (message) {
+    <p class="alert-success" role="status">{{ message }}</p>
+  }
+
+  @if (loading) {
+    <div class="panel empty-state" role="status">Kiadások betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else {
+    <!-- Összesítő kártyák -->
+    <section class="stat-grid" aria-label="Kiadások összesítése">
+      <article class="panel stat-card">
+        <div class="card-label">Ebben a hónapban<span class="stat-icon" aria-hidden="true">◷</span></div>
+        <strong>{{ number(monthlyTotal) }} <small>{{ unit }}</small></strong>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Összesen<span class="stat-icon" aria-hidden="true">¤</span></div>
+        <strong>{{ number(total) }} <small>{{ unit }}</small></strong>
+        <p>{{ filtered.length }} kiadás alapján</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Legnagyobb tétel<span class="stat-icon" aria-hidden="true">▥</span></div>
+        @if (topCategory; as top) {
+          <strong class="top-category">{{ top.name }}</strong>
+          <p>{{ number(top.amount) }} {{ unit }}</p>
+        } @else {
+          <strong>—</strong>
+        }
+      </article>
+    </section>
+
+    <section class="panel" aria-label="Kiadások listája">
+      <div class="panel-heading">
+        <h2>{{ filtered.length }} kiadás</h2>
+        <button type="button" class="text-button" (click)="load()">Frissítés ↻</button>
+      </div>
+
+      <!-- Szűrők -->
+      <div class="filters">
+        <div class="form-field">
+          <label for="filter-car">Jármű</label>
+          <select id="filter-car" class="form-input" [(ngModel)]="vehicleFilter">
+            <option [ngValue]="0">Összes jármű</option>
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="filter-category">Kategória</label>
+          <select id="filter-category" class="form-input" [(ngModel)]="categoryFilter">
+            <option [ngValue]="0">Összes kategória</option>
+            @for (category of categories; track category.id) {
+              <option [ngValue]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+        @if (hasFilter) {
+          <button type="button" class="text-button" (click)="clearFilters()">Szűrők törlése</button>
+        }
+      </div>
+
+      @if (filtered.length) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dátum</th>
+                <th>Jármű</th>
+                <th>Kategória</th>
+                <th>Km</th>
+                <th>Helyszín</th>
+                <th>Megjegyzés</th>
+                <th class="right">Összeg</th>
+                <th>Műveletek</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of filtered; track entry.id) {
+                <tr>
+                  <td class="nowrap">{{ entry.date | date:'yyyy. MM. dd.' }}</td>
+                  <td><a [routerLink]="['/garage', entry.vehicleId]">{{ vehicleName(entry.vehicleId) }}</a></td>
+                  <td><span class="badge">{{ entry.categoryName }}</span></td>
+                  <td class="nowrap">{{ number(entry.odometerKm, 0) }}</td>
+                  <td>{{ entry.location || '—' }}</td>
+                  <td class="muted">{{ entry.description || '—' }}</td>
+                  <td class="right nowrap"><strong>{{ number(entry.amount) }} {{ unit }}</strong></td>
+                  <td>
+                    <div class="action-row">
+                      <button type="button" class="text-button" (click)="openEdit(entry)" [disabled]="saving"
+                        [attr.aria-label]="entry.categoryName + ', ' + entry.date + ' szerkesztése'">Szerkesztés</button>
+                      <button type="button" class="text-button danger-text" (click)="openDelete(entry)" [disabled]="saving"
+                        [attr.aria-label]="entry.categoryName + ', ' + entry.date + ' törlése'">Törlés</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (entries.length) {
+        <div class="empty-state">
+          <h2>Nincs találat</h2>
+          <p>A kiválasztott szűrőknek egy kiadás sem felel meg.</p>
+          <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Még nincs kiadás</h2>
+          <p>{{ vehicles.length ? 'Rögzítsd az első kiadásodat az Új kiadás gombbal.' : 'Először adj hozzá egy járművet a garázsodhoz.' }}</p>
+          @if (!vehicles.length) {
+            <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+          }
+        </div>
+      }
+    </section>
+  }
+</app-shell>
+
+<!-- Felugró ablak: új kiadás / szerkesztés / törlés -->
+<dialog #expenseDialog class="modal dashboard-theme" aria-labelledby="expense-title" (cancel)="cancel($event)">
+  <div class="panel-heading">
+    <h2 id="expense-title">{{ title }}</h2>
+    <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
+  </div>
+
+  @if (mode === 'delete') {
+    <p>
+      Biztosan törlöd a(z) {{ target?.date | date:'yyyy. MM. dd.' }} dátumú
+      <strong>{{ target?.categoryName }}</strong> kiadást ({{ target ? number(target.amount) : '' }} {{ unit }})?
+    </p>
+    <p class="muted">{{ target ? vehicleName(target.vehicleId) : '' }}</p>
+  } @else {
+  <form id="expense-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <fieldset [disabled]="saving">
+      <div class="form-grid">
+        <div class="form-field form-wide">
+          <label for="expense-car">Jármű *</label>
+          <select id="expense-car" class="form-input" formControlName="vehicleId" (change)="onVehicleChange()">
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="expense-category">Kategória *</label>
+          <select id="expense-category" class="form-input" formControlName="categoryId" [attr.aria-invalid]="invalid('categoryId')">
+            <option [ngValue]="0" disabled>Válassz kategóriát…</option>
+            <optgroup label="Alap kategóriák">
+              @for (category of builtInCategories; track category.id) {
+                <option [ngValue]="category.id">{{ category.name }}</option>
+              }
+            </optgroup>
+            <!-- A saját kategóriák felvétele később jön, addig ez a csoport nem jelenik meg. -->
+            @if (customCategories.length) {
+              <optgroup label="Saját kategóriák">
+                @for (category of customCategories; track category.id) {
+                  <option [ngValue]="category.id">{{ category.name }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+          @if (invalid('categoryId')) { <p class="field-error">Válassz egy kategóriát.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-date">Dátum *</label>
+          <input id="expense-date" class="form-input" type="date" formControlName="date" [attr.aria-invalid]="invalid('date')">
+          @if (invalid('date')) { <p class="field-error">Add meg a dátumot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-km">Kilométeróra (km) *</label>
+          <input id="expense-km" class="form-input" type="number" min="0" step="1" formControlName="odometerKm" [attr.aria-invalid]="invalid('odometerKm')">
+          @if (invalid('odometerKm')) { <p class="field-error">Adj meg egy nemnegatív egész számot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-amount">Összeg ({{ unit }}) *</label>
+          <input id="expense-amount" class="form-input" type="number" min="0" step="0.01" formControlName="amount" [attr.aria-invalid]="invalid('amount')">
+          @if (invalid('amount')) { <p class="field-error">Nemnegatív összeg, legfeljebb 2 tizedesjegy.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-location">Helyszín</label>
+          <input id="expense-location" class="form-input" type="text" maxlength="200" formControlName="location" placeholder="pl. Shell autómosó">
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="expense-description">Megjegyzés</label>
+          <textarea id="expense-description" class="form-input" rows="3" maxlength="500" formControlName="description"></textarea>
+        </div>
+      </div>
+    </fieldset>
+  </form>
+  }
+
+  @if (errors.length) {
+    <div class="alert-error" role="alert">
+      @for (error of errors; track $index) { <p>{{ error }}</p> }
+    </div>
+  }
+
+  <div class="form-actions">
+    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+    @if (mode === 'delete') {
+      <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
+    } @else {
+      <button type="submit" form="expense-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    }
+  </div>
+</dialog>

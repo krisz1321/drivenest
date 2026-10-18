@@ -154,6 +154,13 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("Location")
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<int>("OdometerKm")
+                        .HasColumnType("int");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
@@ -161,11 +168,14 @@ namespace Drivenest.Api.Migrations
 
                     b.HasIndex("CategoryId");
 
-                    b.HasIndex("VehicleId");
+                    b.HasIndex("VehicleId", "Date")
+                        .IsDescending(false, true);
 
                     b.ToTable("Expenses", null, t =>
                         {
                             t.HasCheckConstraint("CK_Expenses_Amount", "[Amount] >= 0");
+
+                            t.HasCheckConstraint("CK_Expenses_OdometerKm", "[OdometerKm] >= 0");
                         });
                 });
 
@@ -182,9 +192,12 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("ExpenseCategories", (string)null);
@@ -198,17 +211,17 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 2,
-                            Name = "Autópálya-matrica"
+                            Name = "Autópálya matrica"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Adó"
+                            Name = "Autó"
                         },
                         new
                         {
                             Id = 4,
-                            Name = "Mosás"
+                            Name = "Autómosó"
                         },
                         new
                         {
@@ -218,7 +231,67 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 6,
-                            Name = "Egyéb"
+                            Name = "Vásárlás"
+                        },
+                        new
+                        {
+                            Id = 7,
+                            Name = "Útdíjak"
+                        },
+                        new
+                        {
+                            Id = 8,
+                            Name = "Bírság"
+                        },
+                        new
+                        {
+                            Id = 9,
+                            Name = "Finanszírozás"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Name = "Regisztráció"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Name = "Eredetiség vizsga"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Name = "Műszaki"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Name = "Műszaki vizsga"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Name = "Olajcsere"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Name = "Törzskönyv"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Name = "Visszafizetés"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Name = "Átruházási Illeték"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Name = "Új forgalmi"
                         });
                 });
 
@@ -709,6 +782,16 @@ namespace Drivenest.Api.Migrations
                     b.Navigation("Category");
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.ExpenseCategory", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.Refueling", b =>
