@@ -1,19 +1,30 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
-import { Expense, ExpenseCategory, ExpenseService } from '../services/expense.service';
+import { Expense, ExpenseCategory, ExpenseRequest, ExpenseService } from '../services/expense.service';
 import { currencyLabel } from '../shared/units';
+
+// Egész szám (a km-hez)
+const integer = (control: AbstractControl) =>
+  control.value === null || Number.isInteger(control.value) ? null : { integer: true };
+
+// Legfeljebb 2 tizedesjegy (az összeghez)
+const twoDecimals = (control: AbstractControl) =>
+  control.value === null || Number(Number(control.value).toFixed(2)) === control.value ? null : { precision: true };
+
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' });
 
 @Component({
   selector: 'app-expenses-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AppShellComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, AppShellComponent],
   templateUrl: './expenses-page.component.html',
   styleUrl: './expenses-page.component.scss'
 })
@@ -34,8 +45,124 @@ export class ExpensesPageComponent implements OnInit {
   vehicleFilter = 0;
   categoryFilter = 0;
 
+  // Felugró ablak az új kiadáshoz
+  @ViewChild('expenseDialog') dialog!: ElementRef<HTMLDialogElement>;
+  saving = false;
+  errors: string[] = [];
+  message = '';
+
+  readonly form = inject(FormBuilder).nonNullable.group({
+    vehicleId: [0, [Validators.required, Validators.min(1)]],
+    date: ['', Validators.required],
+    categoryId: [0, [Validators.required, Validators.min(1)]],
+    odometerKm: [0, [Validators.required, Validators.min(0), Validators.max(2147483647), integer]],
+    amount: [0, [Validators.required, Validators.min(0), Validators.max(9999999999.99), twoDecimals]],
+    location: ['', Validators.maxLength(200)],
+    description: ['', Validators.maxLength(500)]
+  });
+
   ngOnInit() {
     this.load();
+  }
+
+  // A kategória legördülőben külön csoportban vannak a beépített és a saját kategóriák.
+  get builtInCategories() {
+    return this.categories.filter(c => !c.isCustom);
+  }
+
+  get customCategories() {
+    return this.categories.filter(c => c.isCustom);
+  }
+
+  get selectedVehicle() {
+    return this.vehicles.find(v => v.id === this.form.controls.vehicleId.value);
+  }
+
+  invalid(field: keyof typeof this.form.controls) {
+    const control = this.form.controls[field];
+    return control.touched && control.invalid;
+  }
+
+  openCreate() {
+    if (!this.vehicles.length || this.loading || this.saving) return;
+
+    this.errors = [];
+    // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot.
+    const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
+    this.form.reset({
+      vehicleId: car.id,
+      date: today(),
+      categoryId: this.categoryFilter,
+      odometerKm: car.currentKm,
+      amount: 0,
+      location: '',
+      description: ''
+    });
+    this.dialog.nativeElement.showModal();
+  }
+
+  // Járműváltáskor a km-et a kiválasztott autó aktuális km-ére állítjuk.
+  onVehicleChange() {
+    this.form.controls.odometerKm.setValue(this.selectedVehicle?.currentKm ?? 0);
+  }
+
+  close() {
+    if (!this.saving) this.dialog.nativeElement.close();
+  }
+
+  cancel(event: Event) {
+    event.preventDefault();
+    this.close();
+  }
+
+  save() {
+    if (this.saving) return;
+    this.errors = [];
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const value = this.form.getRawValue();
+    const body: ExpenseRequest = {
+      date: value.date,
+      categoryId: value.categoryId,
+      odometerKm: value.odometerKm,
+      amount: value.amount,
+      location: value.location.trim() || null,
+      description: value.description.trim() || null
+    };
+
+    this.saving = true;
+    this.api.create(value.vehicleId, body).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.saving = false)
+    ).subscribe({
+      next: entry => {
+        this.entries = this.sorted([...this.entries, entry]);
+        this.message = 'A kiadást elmentettük.';
+        this.dialog.nativeElement.close();
+      },
+      error: (error: HttpErrorResponse) => this.showError(error)
+    });
+  }
+
+  private showError(error: HttpErrorResponse) {
+    // 400-nál a backend mezőnkénti hibákat küld, ezeket kiírjuk.
+    const details = error.error?.errors;
+    const messages = details && typeof details === 'object'
+      ? Object.values(details).flat().filter((value): value is string => typeof value === 'string')
+      : [];
+
+    if (messages.length) {
+      this.errors = messages;
+    } else if (error.status === 404) {
+      this.errors = ['A jármű vagy a kiadás már nem érhető el. Zárd be az ablakot, és frissítsd az adatokat.'];
+    } else if (error.status === 409) {
+      this.errors = ['Az adatok időközben megváltoztak. Frissítsd őket, majd próbáld újra.'];
+    } else {
+      this.errors = ['A mentés nem sikerült. Ellenőrizd a kapcsolatot, majd próbáld újra.'];
+    }
   }
 
   load() {

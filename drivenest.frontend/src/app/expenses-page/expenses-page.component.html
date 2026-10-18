@@ -4,8 +4,12 @@
       <h1>Kiadások</h1>
       <p class="muted">Biztosítás, matrica, parkolás és minden egyéb költség a járműveidhez.</p>
     </div>
-    <button type="button" class="button button-primary button-compact" disabled>+ Új kiadás</button>
+    <button type="button" class="button button-primary button-compact" (click)="openCreate()" [disabled]="loading || !!loadError || !vehicles.length">+ Új kiadás</button>
   </header>
+
+  @if (message) {
+    <p class="alert-success" role="status">{{ message }}</p>
+  }
 
   @if (loading) {
     <div class="panel empty-state" role="status">Kiadások betöltése…</div>
@@ -115,3 +119,86 @@
     </section>
   }
 </app-shell>
+
+<!-- Új kiadás felugró ablak -->
+<dialog #expenseDialog class="modal dashboard-theme" aria-labelledby="expense-title" (cancel)="cancel($event)">
+  <div class="panel-heading">
+    <h2 id="expense-title">Új kiadás</h2>
+    <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
+  </div>
+
+  <form id="expense-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <fieldset [disabled]="saving">
+      <div class="form-grid">
+        <div class="form-field form-wide">
+          <label for="expense-car">Jármű *</label>
+          <select id="expense-car" class="form-input" formControlName="vehicleId" (change)="onVehicleChange()">
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="expense-category">Kategória *</label>
+          <select id="expense-category" class="form-input" formControlName="categoryId" [attr.aria-invalid]="invalid('categoryId')">
+            <option [ngValue]="0" disabled>Válassz kategóriát…</option>
+            <optgroup label="Alap kategóriák">
+              @for (category of builtInCategories; track category.id) {
+                <option [ngValue]="category.id">{{ category.name }}</option>
+              }
+            </optgroup>
+            <!-- A saját kategóriák felvétele később jön, addig ez a csoport nem jelenik meg. -->
+            @if (customCategories.length) {
+              <optgroup label="Saját kategóriák">
+                @for (category of customCategories; track category.id) {
+                  <option [ngValue]="category.id">{{ category.name }}</option>
+                }
+              </optgroup>
+            }
+          </select>
+          @if (invalid('categoryId')) { <p class="field-error">Válassz egy kategóriát.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-date">Dátum *</label>
+          <input id="expense-date" class="form-input" type="date" formControlName="date" [attr.aria-invalid]="invalid('date')">
+          @if (invalid('date')) { <p class="field-error">Add meg a dátumot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-km">Kilométeróra (km) *</label>
+          <input id="expense-km" class="form-input" type="number" min="0" step="1" formControlName="odometerKm" [attr.aria-invalid]="invalid('odometerKm')">
+          @if (invalid('odometerKm')) { <p class="field-error">Adj meg egy nemnegatív egész számot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-amount">Összeg ({{ unit }}) *</label>
+          <input id="expense-amount" class="form-input" type="number" min="0" step="0.01" formControlName="amount" [attr.aria-invalid]="invalid('amount')">
+          @if (invalid('amount')) { <p class="field-error">Nemnegatív összeg, legfeljebb 2 tizedesjegy.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="expense-location">Helyszín</label>
+          <input id="expense-location" class="form-input" type="text" maxlength="200" formControlName="location" placeholder="pl. Shell autómosó">
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="expense-description">Megjegyzés</label>
+          <textarea id="expense-description" class="form-input" rows="3" maxlength="500" formControlName="description"></textarea>
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+  @if (errors.length) {
+    <div class="alert-error" role="alert">
+      @for (error of errors; track $index) { <p>{{ error }}</p> }
+    </div>
+  }
+
+  <div class="form-actions">
+    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+    <button type="submit" form="expense-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+  </div>
+</dialog>

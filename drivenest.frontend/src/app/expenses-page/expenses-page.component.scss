@@ -46,3 +46,8 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
   .page-heading { align-items: flex-start; flex-direction: column; }
   .filters .form-field { min-width: 0; flex: 1 1 100%; }
 }
+
+// Felugró ablak
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.modal { width: min(600px, calc(100% - 32px)); border-radius: 18px; }
+textarea.form-input { resize: vertical; font: inherit; }
