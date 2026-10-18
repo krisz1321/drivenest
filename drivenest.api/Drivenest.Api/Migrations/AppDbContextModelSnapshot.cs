@@ -460,12 +460,12 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 2,
-                            Name = "Műszaki vizsga"
+                            Name = "Műszaki ellenőrzés"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Fékrendszer"
+                            Name = "Fékek cseréje"
                         },
                         new
                         {
@@ -490,12 +490,562 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 8,
-                            Name = "Általános szerviz"
+                            Name = "Szervíz költség"
                         },
                         new
                         {
                             Id = 9,
-                            Name = "Egyéb javítás"
+                            Name = "Szerelés"
+                        },
+                        new
+                        {
+                            Id = 10,
+                            Name = "Ablakmosófolyadék"
+                        },
+                        new
+                        {
+                            Id = 11,
+                            Name = "Ablaktörlők"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Name = "Alvázvédő"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Name = "Blokk tömítés"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Name = "Bowden"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Name = "Desztillált víz"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Name = "Digitális kijelző"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Name = "Ellenőrzés"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Name = "Első féktárcsák"
+                        },
+                        new
+                        {
+                            Id = 19,
+                            Name = "Elsősegély készlet"
+                        },
+                        new
+                        {
+                            Id = 20,
+                            Name = "Fekete festék"
+                        },
+                        new
+                        {
+                            Id = 21,
+                            Name = "Felfüggesztés"
+                        },
+                        new
+                        {
+                            Id = 22,
+                            Name = "Felni"
+                        },
+                        new
+                        {
+                            Id = 23,
+                            Name = "Felső fékhenger"
+                        },
+                        new
+                        {
+                            Id = 24,
+                            Name = "Feszültségmérő"
+                        },
+                        new
+                        {
+                            Id = 25,
+                            Name = "Futómű beállítás"
+                        },
+                        new
+                        {
+                            Id = 26,
+                            Name = "Fék rugókészlet"
+                        },
+                        new
+                        {
+                            Id = 27,
+                            Name = "Fékbetét"
+                        },
+                        new
+                        {
+                            Id = 28,
+                            Name = "Fékcső"
+                        },
+                        new
+                        {
+                            Id = 29,
+                            Name = "Fékmunkahenger hátsó"
+                        },
+                        new
+                        {
+                            Id = 30,
+                            Name = "Fékolaj"
+                        },
+                        new
+                        {
+                            Id = 31,
+                            Name = "Fékpofa"
+                        },
+                        new
+                        {
+                            Id = 32,
+                            Name = "Féltengely"
+                        },
+                        new
+                        {
+                            Id = 33,
+                            Name = "Főfékhenger"
+                        },
+                        new
+                        {
+                            Id = 34,
+                            Name = "Főtengely szimering"
+                        },
+                        new
+                        {
+                            Id = 35,
+                            Name = "Fűtéskapcsoló"
+                        },
+                        new
+                        {
+                            Id = 36,
+                            Name = "Fűtő rendszer"
+                        },
+                        new
+                        {
+                            Id = 37,
+                            Name = "Generátor szíj"
+                        },
+                        new
+                        {
+                            Id = 38,
+                            Name = "Generátor feszültségszabályzó"
+                        },
+                        new
+                        {
+                            Id = 39,
+                            Name = "Gyújtás"
+                        },
+                        new
+                        {
+                            Id = 40,
+                            Name = "Gyújtógyertyák"
+                        },
+                        new
+                        {
+                            Id = 41,
+                            Name = "Gömbfej csere"
+                        },
+                        new
+                        {
+                            Id = 42,
+                            Name = "Használt turbó"
+                        },
+                        new
+                        {
+                            Id = 43,
+                            Name = "Hengerfej"
+                        },
+                        new
+                        {
+                            Id = 44,
+                            Name = "Hengerfej csavar"
+                        },
+                        new
+                        {
+                            Id = 45,
+                            Name = "Hengerfej tömítés"
+                        },
+                        new
+                        {
+                            Id = 46,
+                            Name = "Hátsó ablaktörlő motor"
+                        },
+                        new
+                        {
+                            Id = 47,
+                            Name = "Hátsó fékpofa"
+                        },
+                        new
+                        {
+                            Id = 48,
+                            Name = "Hűtő"
+                        },
+                        new
+                        {
+                            Id = 49,
+                            Name = "Hűtőfolyadék"
+                        },
+                        new
+                        {
+                            Id = 50,
+                            Name = "Hűtőrendszer"
+                        },
+                        new
+                        {
+                            Id = 51,
+                            Name = "Hűtőtisztítás"
+                        },
+                        new
+                        {
+                            Id = 52,
+                            Name = "Izzítógyertya"
+                        },
+                        new
+                        {
+                            Id = 53,
+                            Name = "Karburátor"
+                        },
+                        new
+                        {
+                            Id = 54,
+                            Name = "Karosszéria"
+                        },
+                        new
+                        {
+                            Id = 55,
+                            Name = "Karter tömítés"
+                        },
+                        new
+                        {
+                            Id = 56,
+                            Name = "Kerekek cseréje"
+                        },
+                        new
+                        {
+                            Id = 57,
+                            Name = "Keréknyomás"
+                        },
+                        new
+                        {
+                            Id = 58,
+                            Name = "Kiegyenlítő tartály"
+                        },
+                        new
+                        {
+                            Id = 59,
+                            Name = "Kiegyenlítő tartály sapka"
+                        },
+                        new
+                        {
+                            Id = 60,
+                            Name = "Kiegészítő tükör"
+                        },
+                        new
+                        {
+                            Id = 61,
+                            Name = "Kipufogó rendszer"
+                        },
+                        new
+                        {
+                            Id = 62,
+                            Name = "Kormánymű"
+                        },
+                        new
+                        {
+                            Id = 63,
+                            Name = "Kormánymű gumiharang"
+                        },
+                        new
+                        {
+                            Id = 64,
+                            Name = "Kuplung rendszer"
+                        },
+                        new
+                        {
+                            Id = 65,
+                            Name = "Kézifék bowden"
+                        },
+                        new
+                        {
+                            Id = 66,
+                            Name = "Kézifékszoknya"
+                        },
+                        new
+                        {
+                            Id = 67,
+                            Name = "Külső hőmérő szenzor"
+                        },
+                        new
+                        {
+                            Id = 68,
+                            Name = "Kürt, duda"
+                        },
+                        new
+                        {
+                            Id = 69,
+                            Name = "Lengőkar"
+                        },
+                        new
+                        {
+                            Id = 70,
+                            Name = "Levegőcső"
+                        },
+                        new
+                        {
+                            Id = 71,
+                            Name = "Lámpa"
+                        },
+                        new
+                        {
+                            Id = 72,
+                            Name = "Lámpák"
+                        },
+                        new
+                        {
+                            Id = 73,
+                            Name = "Lánc"
+                        },
+                        new
+                        {
+                            Id = 74,
+                            Name = "Láncfeszítő"
+                        },
+                        new
+                        {
+                            Id = 75,
+                            Name = "Lánckerék"
+                        },
+                        new
+                        {
+                            Id = 76,
+                            Name = "Láncszem"
+                        },
+                        new
+                        {
+                            Id = 77,
+                            Name = "Légkondícionáló"
+                        },
+                        new
+                        {
+                            Id = 78,
+                            Name = "Légzsák"
+                        },
+                        new
+                        {
+                            Id = 79,
+                            Name = "Légzsákspirál"
+                        },
+                        new
+                        {
+                            Id = 80,
+                            Name = "Motor javítása"
+                        },
+                        new
+                        {
+                            Id = 81,
+                            Name = "Motorolaj"
+                        },
+                        new
+                        {
+                            Id = 82,
+                            Name = "Műszerfal vízhőmérő"
+                        },
+                        new
+                        {
+                            Id = 83,
+                            Name = "Olaj"
+                        },
+                        new
+                        {
+                            Id = 84,
+                            Name = "Olajleeresztő csavar"
+                        },
+                        new
+                        {
+                            Id = 85,
+                            Name = "Olajszűrő"
+                        },
+                        new
+                        {
+                            Id = 86,
+                            Name = "Persely önindító"
+                        },
+                        new
+                        {
+                            Id = 87,
+                            Name = "Pollenszűrő"
+                        },
+                        new
+                        {
+                            Id = 88,
+                            Name = "Porlasztócsúcs"
+                        },
+                        new
+                        {
+                            Id = 89,
+                            Name = "Póttükör"
+                        },
+                        new
+                        {
+                            Id = 90,
+                            Name = "Pótblokk"
+                        },
+                        new
+                        {
+                            Id = 91,
+                            Name = "Pótféklámpa"
+                        },
+                        new
+                        {
+                            Id = 92,
+                            Name = "Rendszámtábla világítás búra"
+                        },
+                        new
+                        {
+                            Id = 93,
+                            Name = "Rádió"
+                        },
+                        new
+                        {
+                            Id = 94,
+                            Name = "Rádiókeret"
+                        },
+                        new
+                        {
+                            Id = 95,
+                            Name = "Sebességváltó olaj"
+                        },
+                        new
+                        {
+                            Id = 96,
+                            Name = "Stabilizátor pálcák"
+                        },
+                        new
+                        {
+                            Id = 97,
+                            Name = "Szelepfedél tömítés"
+                        },
+                        new
+                        {
+                            Id = 98,
+                            Name = "Szervoolaj csere"
+                        },
+                        new
+                        {
+                            Id = 99,
+                            Name = "Szénkefe önindítóba"
+                        },
+                        new
+                        {
+                            Id = 100,
+                            Name = "Szíjak"
+                        },
+                        new
+                        {
+                            Id = 101,
+                            Name = "Telefon adapter"
+                        },
+                        new
+                        {
+                            Id = 102,
+                            Name = "Termosztát"
+                        },
+                        new
+                        {
+                            Id = 103,
+                            Name = "Tirisztor"
+                        },
+                        new
+                        {
+                            Id = 104,
+                            Name = "Turbó felújítás"
+                        },
+                        new
+                        {
+                            Id = 105,
+                            Name = "Téli gumi"
+                        },
+                        new
+                        {
+                            Id = 106,
+                            Name = "Tömítés"
+                        },
+                        new
+                        {
+                            Id = 107,
+                            Name = "Tőcsavar"
+                        },
+                        new
+                        {
+                            Id = 108,
+                            Name = "Vacuumpumpa"
+                        },
+                        new
+                        {
+                            Id = 109,
+                            Name = "Varrattömítő"
+                        },
+                        new
+                        {
+                            Id = 110,
+                            Name = "Váltóolaj"
+                        },
+                        new
+                        {
+                            Id = 111,
+                            Name = "Váltószoknya"
+                        },
+                        new
+                        {
+                            Id = 112,
+                            Name = "Vízpumpa"
+                        },
+                        new
+                        {
+                            Id = 113,
+                            Name = "szabadonfutó"
+                        },
+                        new
+                        {
+                            Id = 114,
+                            Name = "Ék"
+                        },
+                        new
+                        {
+                            Id = 115,
+                            Name = "Övek"
+                        },
+                        new
+                        {
+                            Id = 116,
+                            Name = "Üveg"
+                        },
+                        new
+                        {
+                            Id = 117,
+                            Name = "Tükrök"
+                        },
+                        new
+                        {
+                            Id = 118,
+                            Name = "Üzemanyagpumpa"
+                        },
+                        new
+                        {
+                            Id = 119,
+                            Name = "Üzemanyagszűrő"
                         });
                 });
 

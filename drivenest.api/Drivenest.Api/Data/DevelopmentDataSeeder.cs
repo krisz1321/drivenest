@@ -174,13 +174,15 @@ namespace Drivenest.Api.Data
         private static async Task SeedServiceRecordsAsync(AppDbContext db, Vehicle swift, Vehicle octavia)
         {
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
-            var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki vizsga");
-            var brakesId = await GetServiceCategoryIdAsync(db, "Fékrendszer");
-            var laborId = await GetServiceCategoryIdAsync(db, "Általános szerviz");
+            var oilFilterId = await GetServiceCategoryIdAsync(db, "Olajszűrő");
+            var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki ellenőrzés");
+            var brakePadId = await GetServiceCategoryIdAsync(db, "Fékbetét");
+            var laborId = await GetServiceCategoryIdAsync(db, "Szervíz költség");
 
             // A munkadíj külön bejegyzés, ugyanazon a napon.
             db.ServiceRecords.AddRange(
-                ServiceRecord(swift, oilChangeId, 5, 25, 43700, "Autó-Szerviz Kft.", "Olaj- és olajszűrő csere", 14500),
+                ServiceRecord(swift, oilChangeId, 5, 25, 43700, "Autó-Szerviz Kft.", "Motorolaj 5W-30", 11000),
+                ServiceRecord(swift, oilFilterId, 5, 25, 43700, "Autó-Szerviz Kft.", null, 3500),
                 ServiceRecord(swift, laborId, 5, 25, 43700, "Autó-Szerviz Kft.", "Munkadíj", 8000),
                 // Három nappal később rögzítette, hogy az Audit módban látszódjon a különbség.
                 ServiceRecord(swift, inspectionId, 8, 20, 46450, "Műszaki Vizsgaállomás",
@@ -188,7 +190,7 @@ namespace Drivenest.Api.Data
                 ServiceRecord(octavia, oilChangeId, 6, 2, 120100, "Autó-Szerviz Kft.",
                     "Olaj-, olajszűrő és levegőszűrő csere", 21000),
                 ServiceRecord(octavia, laborId, 6, 2, 120100, "Autó-Szerviz Kft.", "Munkadíj", 9500),
-                ServiceRecord(octavia, brakesId, 9, 5, 123200, "Fék Centrum", "Első fékbetét és tárcsa csere", 38000),
+                ServiceRecord(octavia, brakePadId, 9, 5, 123200, "Fék Centrum", "Első fékbetét és tárcsa csere", 38000),
                 ServiceRecord(octavia, laborId, 9, 5, 123200, "Fék Centrum", "Munkadíj", 24000));
 
             await db.SaveChangesAsync();
@@ -258,8 +260,8 @@ namespace Drivenest.Api.Data
         {
             var dieselId = await db.FuelTypes.Where(f => f.Name == "Dízel").Select(f => f.Id).SingleAsync();
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
-            var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki vizsga");
-            var laborId = await GetServiceCategoryIdAsync(db, "Általános szerviz");
+            var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki ellenőrzés");
+            var laborId = await GetServiceCategoryIdAsync(db, "Szervíz költség");
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
             var carId = await GetExpenseCategoryIdAsync(db, "Autó");
             var washId = await GetExpenseCategoryIdAsync(db, "Autómosó");
@@ -327,7 +329,7 @@ namespace Drivenest.Api.Data
 
         private static Task<int> GetServiceCategoryIdAsync(AppDbContext db, string name)
         {
-            return db.ServiceCategories.Where(c => c.Name == name).Select(c => c.Id).SingleAsync();
+            return db.ServiceCategories.Where(c => c.UserId == null && c.Name == name).Select(c => c.Id).SingleAsync();
         }
 
         private static Task<int> GetExpenseCategoryIdAsync(AppDbContext db, string name)
@@ -336,7 +338,7 @@ namespace Drivenest.Api.Data
         }
 
         private static ServiceRecord ServiceRecord(Vehicle vehicle, int categoryId, int month, int day,
-            int odometerKm, string provider, string description, decimal amount, int recordedDaysLater = 0)
+            int odometerKm, string provider, string? description, decimal amount, int recordedDaysLater = 0)
         {
             var date = new DateOnly(2026, month, day);
 
