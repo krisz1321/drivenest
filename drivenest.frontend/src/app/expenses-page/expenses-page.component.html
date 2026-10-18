@@ -7,8 +7,111 @@
     <button type="button" class="button button-primary button-compact" disabled>+ Új kiadás</button>
   </header>
 
-  <section class="panel empty-state">
-    <h2>Hamarosan</h2>
-    <p>Itt fognak megjelenni a kiadásaid.</p>
-  </section>
+  @if (loading) {
+    <div class="panel empty-state" role="status">Kiadások betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else {
+    <!-- Összesítő kártyák -->
+    <section class="stat-grid" aria-label="Kiadások összesítése">
+      <article class="panel stat-card">
+        <div class="card-label">Ebben a hónapban<span class="stat-icon" aria-hidden="true">◷</span></div>
+        <strong>{{ number(monthlyTotal) }} <small>{{ unit }}</small></strong>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Összesen<span class="stat-icon" aria-hidden="true">¤</span></div>
+        <strong>{{ number(total) }} <small>{{ unit }}</small></strong>
+        <p>{{ filtered.length }} kiadás alapján</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Legnagyobb tétel<span class="stat-icon" aria-hidden="true">▥</span></div>
+        @if (topCategory; as top) {
+          <strong class="top-category">{{ top.name }}</strong>
+          <p>{{ number(top.amount) }} {{ unit }}</p>
+        } @else {
+          <strong>—</strong>
+        }
+      </article>
+    </section>
+
+    <section class="panel" aria-label="Kiadások listája">
+      <div class="panel-heading">
+        <h2>{{ filtered.length }} kiadás</h2>
+        <button type="button" class="text-button" (click)="load()">Frissítés ↻</button>
+      </div>
+
+      <!-- Szűrők -->
+      <div class="filters">
+        <div class="form-field">
+          <label for="filter-car">Jármű</label>
+          <select id="filter-car" class="form-input" [(ngModel)]="vehicleFilter">
+            <option [ngValue]="0">Összes jármű</option>
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="filter-category">Kategória</label>
+          <select id="filter-category" class="form-input" [(ngModel)]="categoryFilter">
+            <option [ngValue]="0">Összes kategória</option>
+            @for (category of categories; track category.id) {
+              <option [ngValue]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+        @if (hasFilter) {
+          <button type="button" class="text-button" (click)="clearFilters()">Szűrők törlése</button>
+        }
+      </div>
+
+      @if (filtered.length) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dátum</th>
+                <th>Jármű</th>
+                <th>Kategória</th>
+                <th>Km</th>
+                <th>Helyszín</th>
+                <th>Megjegyzés</th>
+                <th class="right">Összeg</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of filtered; track entry.id) {
+                <tr>
+                  <td class="nowrap">{{ entry.date | date:'yyyy. MM. dd.' }}</td>
+                  <td><a [routerLink]="['/garage', entry.vehicleId]">{{ vehicleName(entry.vehicleId) }}</a></td>
+                  <td><span class="badge">{{ entry.categoryName }}</span></td>
+                  <td class="nowrap">{{ number(entry.odometerKm, 0) }}</td>
+                  <td>{{ entry.location || '—' }}</td>
+                  <td class="muted">{{ entry.description || '—' }}</td>
+                  <td class="right nowrap"><strong>{{ number(entry.amount) }} {{ unit }}</strong></td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (entries.length) {
+        <div class="empty-state">
+          <h2>Nincs találat</h2>
+          <p>A kiválasztott szűrőknek egy kiadás sem felel meg.</p>
+          <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Még nincs kiadás</h2>
+          <p>{{ vehicles.length ? 'Rögzítsd az első kiadásodat az Új kiadás gombbal.' : 'Először adj hozzá egy járművet a garázsodhoz.' }}</p>
+          @if (!vehicles.length) {
+            <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+          }
+        </div>
+      }
+    </section>
+  }
 </app-shell>
