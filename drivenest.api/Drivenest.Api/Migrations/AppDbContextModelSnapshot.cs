@@ -441,9 +441,12 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<int?>("UserId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("Name")
+                    b.HasIndex("UserId", "Name")
                         .IsUnique();
 
                     b.ToTable("ServiceCategories", (string)null);
@@ -504,6 +507,9 @@ namespace Drivenest.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)");
+
                     b.Property<int>("CategoryId")
                         .HasColumnType("int");
 
@@ -519,18 +525,8 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
-                    b.Property<decimal>("LaborCost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(12,2)")
-                        .HasDefaultValue(0m);
-
                     b.Property<int>("OdometerKm")
                         .HasColumnType("int");
-
-                    b.Property<decimal>("PartsCost")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("decimal(12,2)")
-                        .HasDefaultValue(0m);
 
                     b.Property<string>("Provider")
                         .HasMaxLength(150)
@@ -548,11 +544,9 @@ namespace Drivenest.Api.Migrations
 
                     b.ToTable("ServiceRecords", null, t =>
                         {
-                            t.HasCheckConstraint("CK_ServiceRecords_LaborCost", "[LaborCost] >= 0");
+                            t.HasCheckConstraint("CK_ServiceRecords_Amount", "[Amount] >= 0");
 
                             t.HasCheckConstraint("CK_ServiceRecords_OdometerKm", "[OdometerKm] >= 0");
-
-                            t.HasCheckConstraint("CK_ServiceRecords_PartsCost", "[PartsCost] >= 0");
                         });
                 });
 
@@ -814,6 +808,16 @@ namespace Drivenest.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceCategory", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecord", b =>

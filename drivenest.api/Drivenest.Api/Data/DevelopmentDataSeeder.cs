@@ -176,17 +176,20 @@ namespace Drivenest.Api.Data
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki vizsga");
             var brakesId = await GetServiceCategoryIdAsync(db, "Fékrendszer");
+            var laborId = await GetServiceCategoryIdAsync(db, "Általános szerviz");
 
+            // A munkadíj külön bejegyzés, ugyanazon a napon.
             db.ServiceRecords.AddRange(
-                ServiceRecord(swift, oilChangeId, 5, 25, 43700, "Autó-Szerviz Kft.",
-                    "Olaj- és olajszűrő csere", partsCost: 14500, laborCost: 8000),
+                ServiceRecord(swift, oilChangeId, 5, 25, 43700, "Autó-Szerviz Kft.", "Olaj- és olajszűrő csere", 14500),
+                ServiceRecord(swift, laborId, 5, 25, 43700, "Autó-Szerviz Kft.", "Munkadíj", 8000),
                 // Három nappal később rögzítette, hogy az Audit módban látszódjon a különbség.
                 ServiceRecord(swift, inspectionId, 8, 20, 46450, "Műszaki Vizsgaállomás",
-                    "Műszaki vizsga, sikeres", partsCost: 0, laborCost: 22000, recordedDaysLater: 3),
+                    "Műszaki vizsga, sikeres", 22000, recordedDaysLater: 3),
                 ServiceRecord(octavia, oilChangeId, 6, 2, 120100, "Autó-Szerviz Kft.",
-                    "Olaj-, olajszűrő és levegőszűrő csere", partsCost: 21000, laborCost: 9500),
-                ServiceRecord(octavia, brakesId, 9, 5, 123200, "Fék Centrum",
-                    "Első fékbetét és tárcsa csere", partsCost: 38000, laborCost: 24000));
+                    "Olaj-, olajszűrő és levegőszűrő csere", 21000),
+                ServiceRecord(octavia, laborId, 6, 2, 120100, "Autó-Szerviz Kft.", "Munkadíj", 9500),
+                ServiceRecord(octavia, brakesId, 9, 5, 123200, "Fék Centrum", "Első fékbetét és tárcsa csere", 38000),
+                ServiceRecord(octavia, laborId, 9, 5, 123200, "Fék Centrum", "Munkadíj", 24000));
 
             await db.SaveChangesAsync();
         }
@@ -256,6 +259,7 @@ namespace Drivenest.Api.Data
             var dieselId = await db.FuelTypes.Where(f => f.Name == "Dízel").Select(f => f.Id).SingleAsync();
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki vizsga");
+            var laborId = await GetServiceCategoryIdAsync(db, "Általános szerviz");
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
             var carId = await GetExpenseCategoryIdAsync(db, "Autó");
             var washId = await GetExpenseCategoryIdAsync(db, "Autómosó");
@@ -282,10 +286,10 @@ namespace Drivenest.Api.Data
                 Refueling(astra, 9, 27, 409200, 39.6m, 24600));
 
             db.ServiceRecords.AddRange(
-                ServiceRecord(astra, oilChangeId, 6, 20, 406950, "Barkácsműhely",
-                    "Olaj- és olajszűrő csere", partsCost: 18000, laborCost: 7000),
+                ServiceRecord(astra, oilChangeId, 6, 20, 406950, "Barkácsműhely", "Olaj- és olajszűrő csere", 18000),
+                ServiceRecord(astra, laborId, 6, 20, 406950, "Barkácsműhely", "Munkadíj", 7000),
                 ServiceRecord(astra, inspectionId, 9, 14, 409000, "Műszaki Vizsgaállomás",
-                    "Műszaki vizsga, sikeres", partsCost: 12000, laborCost: 28000));
+                    "Műszaki vizsga, sikeres", 40000));
 
             db.Expenses.AddRange(
                 Expense(astra, insuranceId, 2, 10, 405000, 54000, null, "Éves kötelező biztosítás"),
@@ -332,8 +336,7 @@ namespace Drivenest.Api.Data
         }
 
         private static ServiceRecord ServiceRecord(Vehicle vehicle, int categoryId, int month, int day,
-            int odometerKm, string provider, string description, decimal partsCost, decimal laborCost,
-            int recordedDaysLater = 0)
+            int odometerKm, string provider, string description, decimal amount, int recordedDaysLater = 0)
         {
             var date = new DateOnly(2026, month, day);
 
@@ -345,8 +348,7 @@ namespace Drivenest.Api.Data
                 OdometerKm = odometerKm,
                 Provider = provider,
                 Description = description,
-                PartsCost = partsCost,
-                LaborCost = laborCost,
+                Amount = amount,
                 CreatedAt = date.AddDays(recordedDaysLater).ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc)
             };
         }

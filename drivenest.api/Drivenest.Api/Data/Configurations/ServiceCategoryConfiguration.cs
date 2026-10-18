@@ -14,8 +14,16 @@ namespace Drivenest.Api.Data.Configurations
                 .HasMaxLength(100)
                 .IsRequired();
 
-            builder.HasIndex(x => x.Name)
-                .IsUnique();
+            // Ugyanúgy, mint a kiadás-kategóriáknál: a név felhasználónként egyedi,
+            // a beépítettek (UserId = NULL) között is. Az EF alap szűrőjét kikapcsoljuk.
+            builder.HasIndex(x => new { x.UserId, x.Name })
+                .IsUnique()
+                .HasFilter(null);
+
+            builder.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Restrict);
 
             builder.HasData(
                 new ServiceCategory { Id = 1, Name = "Olajcsere" },

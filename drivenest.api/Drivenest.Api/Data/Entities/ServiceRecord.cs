@@ -16,9 +16,9 @@ namespace Drivenest.Api.Data.Entities
 
         public string? Description { get; set; }
 
-        public decimal PartsCost { get; set; }
-
-        public decimal LaborCost { get; set; }
+        // Egy bejegyzés = egy szerviztípus egy összeggel.
+        // A munkadíjat külön bejegyzésként lehet felvenni, a saját kategóriájával.
+        public decimal Amount { get; set; }
 
         public DateTime CreatedAt { get; set; }
 
