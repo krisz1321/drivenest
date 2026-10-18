@@ -194,10 +194,10 @@ namespace Drivenest.Api.Data
         private static async Task SeedExpensesAsync(AppDbContext db, Vehicle swift, Vehicle octavia)
         {
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
-            var vignetteId = await GetExpenseCategoryIdAsync(db, "Autópálya-matrica");
-            var washId = await GetExpenseCategoryIdAsync(db, "Mosás");
+            var vignetteId = await GetExpenseCategoryIdAsync(db, "Autópálya matrica");
+            var washId = await GetExpenseCategoryIdAsync(db, "Autómosó");
             var parkingId = await GetExpenseCategoryIdAsync(db, "Parkolás");
-            var tollId = await GetExpenseCategoryIdAsync(db, "Útdíj");
+            var tollId = await GetExpenseCategoryIdAsync(db, "Útdíjak");
 
             db.Expenses.AddRange(
                 Expense(swift, insuranceId, 4, 1, 42300, 62000, null, "Éves kötelező biztosítás"),
@@ -257,8 +257,8 @@ namespace Drivenest.Api.Data
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki vizsga");
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
-            var taxId = await GetExpenseCategoryIdAsync(db, "Adó");
-            var washId = await GetExpenseCategoryIdAsync(db, "Mosás");
+            var carId = await GetExpenseCategoryIdAsync(db, "Autó");
+            var washId = await GetExpenseCategoryIdAsync(db, "Autómosó");
 
             var astra = new Vehicle
             {
@@ -289,7 +289,7 @@ namespace Drivenest.Api.Data
 
             db.Expenses.AddRange(
                 Expense(astra, insuranceId, 2, 10, 405000, 54000, null, "Éves kötelező biztosítás"),
-                Expense(astra, taxId, 3, 15, 405300, 18000, null, "Gépjárműadó"),
+                Expense(astra, carId, 3, 15, 405300, 18000, null, "Gépjárműadó"),
                 Expense(astra, washId, 5, 30, 406500, 2500, "Kézi autómosó", null));
 
             db.Reminders.AddRange(

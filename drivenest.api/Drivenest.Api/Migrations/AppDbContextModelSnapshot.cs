@@ -211,17 +211,17 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 2,
-                            Name = "Autópálya-matrica"
+                            Name = "Autópálya matrica"
                         },
                         new
                         {
                             Id = 3,
-                            Name = "Adó"
+                            Name = "Autó"
                         },
                         new
                         {
                             Id = 4,
-                            Name = "Mosás"
+                            Name = "Autómosó"
                         },
                         new
                         {
@@ -231,12 +231,12 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 6,
-                            Name = "Egyéb"
+                            Name = "Vásárlás"
                         },
                         new
                         {
                             Id = 7,
-                            Name = "Útdíj"
+                            Name = "Útdíjak"
                         },
                         new
                         {
@@ -246,17 +246,52 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 9,
-                            Name = "Finanszírozás / hitel"
+                            Name = "Finanszírozás"
                         },
                         new
                         {
                             Id = 10,
-                            Name = "Forgalmi / regisztráció"
+                            Name = "Regisztráció"
                         },
                         new
                         {
                             Id = 11,
-                            Name = "Tartozék"
+                            Name = "Eredetiség vizsga"
+                        },
+                        new
+                        {
+                            Id = 12,
+                            Name = "Műszaki"
+                        },
+                        new
+                        {
+                            Id = 13,
+                            Name = "Műszaki vizsga"
+                        },
+                        new
+                        {
+                            Id = 14,
+                            Name = "Olajcsere"
+                        },
+                        new
+                        {
+                            Id = 15,
+                            Name = "Törzskönyv"
+                        },
+                        new
+                        {
+                            Id = 16,
+                            Name = "Visszafizetés"
+                        },
+                        new
+                        {
+                            Id = 17,
+                            Name = "Átruházási Illeték"
+                        },
+                        new
+                        {
+                            Id = 18,
+                            Name = "Új forgalmi"
                         });
                 });
 

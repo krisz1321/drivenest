@@ -4,6 +4,7 @@ using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
 
 namespace Drivenest.Api.Controllers;
 
@@ -27,11 +28,16 @@ public class ExpenseCategoriesController : ControllerBase
     {
         var userId = User.GetUserId();
 
-        // Előbb a beépítettek, utána a saját kategóriák.
-        return await _db.ExpenseCategories.AsNoTracking()
+        var categories = await _db.ExpenseCategories.AsNoTracking()
             .Where(c => c.UserId == null || c.UserId == userId)
-            .OrderBy(c => c.UserId != null).ThenBy(c => c.Id)
             .Select(c => new ExpenseCategoryDto(c.Id, c.Name, c.UserId != null))
             .ToListAsync(cancellationToken);
+
+        // Előbb a beépítettek, utána a saját kategóriák, mindkettő ábécérendben (magyar szabályok szerint, mint a Drivvo-ban).
+        var hungarian = StringComparer.Create(new CultureInfo("hu-HU"), ignoreCase: true);
+        return categories
+            .OrderBy(c => c.IsCustom)
+            .ThenBy(c => c.Name, hungarian)
+            .ToList();
     }
 }
