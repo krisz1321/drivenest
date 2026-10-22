@@ -1,6 +1,6 @@
 import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -8,7 +8,7 @@ import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
-import { ServiceCategory, ServiceRecord, ServiceRecordRequest, ServiceRecordService } from '../services/service-record.service';
+import { ServiceCategory, ServiceRecord, ServiceRecordItemRequest, ServiceRecordRequest, ServiceRecordService } from '../services/service-record.service';
 import { currencyLabel } from '../shared/units';
 
 // Egész szám (a km-hez)
@@ -19,11 +19,18 @@ const integer = (control: AbstractControl) =>
 const twoDecimals = (control: AbstractControl) =>
   control.value === null || Number(Number(control.value).toFixed(2)) === control.value ? null : { precision: true };
 
+// Legalább egy tétel legyen kiválasztva
+const atLeastOne = (control: AbstractControl) =>
+  (control as FormArray).length ? null : { required: true };
+
 const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' });
 
 // Kereséshez: kisbetűs, ékezet nélküli szöveg, így a "fek" is megtalálja a "Fékbetét"-et.
 const simplify = (text: string) =>
-  text.toLocaleLowerCase('hu').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+  text.toLocaleLowerCase('hu').normalize('NFD').replace(/[̀-ͯ]/g, '');
+
+// Egy tétel a formban: típus + összeg
+type ItemForm = FormGroup<{ categoryId: FormControl<number>; amount: FormControl<number> }>;
 
 @Component({
   selector: 'app-service-page',
@@ -63,15 +70,64 @@ export class ServicePageComponent implements OnInit {
   readonly form = inject(FormBuilder).nonNullable.group({
     vehicleId: [0, [Validators.required, Validators.min(1)]],
     date: ['', Validators.required],
-    categoryId: [0, [Validators.required, Validators.min(1)]],
     odometerKm: [0, [Validators.required, Validators.min(0), Validators.max(2147483647), integer]],
-    amount: [0, [Validators.required, Validators.min(0), Validators.max(9999999999.99), twoDecimals]],
     provider: ['', Validators.maxLength(150)],
-    description: ['', Validators.maxLength(2000)]
+    description: ['', Validators.maxLength(2000)],
+    // A kipipált típusok, mindegyikhez egy összeg
+    items: new FormArray<ItemForm>([], atLeastOne)
   });
 
   ngOnInit() {
     this.load();
+  }
+
+  get items() {
+    return this.form.controls.items;
+  }
+
+  private newItem(categoryId: number, amount = 0): ItemForm {
+    return new FormGroup({
+      categoryId: new FormControl(categoryId, { nonNullable: true }),
+      amount: new FormControl(amount, {
+        nonNullable: true,
+        validators: [Validators.required, Validators.min(0), Validators.max(9999999999.99), twoDecimals]
+      })
+    });
+  }
+
+  // A form tételeinek lecserélése (megnyitáskor)
+  private setItems(list: ServiceRecordItemRequest[]) {
+    this.items.clear();
+    for (const item of list) this.items.push(this.newItem(item.categoryId, item.amount));
+  }
+
+  isSelected(categoryId: number) {
+    return this.items.controls.some(i => i.controls.categoryId.value === categoryId);
+  }
+
+  // Pipáláskor bekerül a tételek közé, pipa levételekor kikerül.
+  toggleCategory(categoryId: number) {
+    const index = this.items.controls.findIndex(i => i.controls.categoryId.value === categoryId);
+    if (index >= 0) {
+      this.items.removeAt(index);
+    } else {
+      this.items.push(this.newItem(categoryId));
+    }
+    this.items.markAsTouched();
+  }
+
+  removeItem(index: number) {
+    this.items.removeAt(index);
+    this.items.markAsTouched();
+  }
+
+  // Az ablak alján látható végösszeg
+  get itemsTotal() {
+    return this.items.controls.reduce((total, i) => total + (Number(i.controls.amount.value) || 0), 0);
+  }
+
+  categoryName(id: number) {
+    return this.categories.find(c => c.id === id)?.name ?? '—';
   }
 
   // A keresőmező alapján látható típusok
@@ -89,17 +145,17 @@ export class ServicePageComponent implements OnInit {
     return this.visibleCategories.filter(c => c.isCustom);
   }
 
-  // Keresés közben is látszódjon, mi van kiválasztva.
-  get selectedCategoryName() {
-    return this.categories.find(c => c.id === this.form.controls.categoryId.value)?.name ?? '';
-  }
-
   get selectedVehicle() {
     return this.vehicles.find(v => v.id === this.form.controls.vehicleId.value);
   }
 
   invalid(field: keyof typeof this.form.controls) {
     const control = this.form.controls[field];
+    return control.touched && control.invalid;
+  }
+
+  itemInvalid(index: number) {
+    const control = this.items.at(index).controls.amount;
     return control.touched && control.invalid;
   }
 
@@ -117,17 +173,17 @@ export class ServicePageComponent implements OnInit {
     this.errors = [];
     this.categorySearch = '';
     this.form.controls.vehicleId.enable();
+
     // Ha a listában ki van szűrve egy jármű vagy típus, azzal nyitjuk meg az űrlapot.
     const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
     this.form.reset({
       vehicleId: car.id,
       date: today(),
-      categoryId: this.categoryFilter,
       odometerKm: car.currentKm,
-      amount: 0,
       provider: '',
       description: ''
     });
+    this.setItems(this.categoryFilter ? [{ categoryId: this.categoryFilter, amount: 0 }] : []);
     this.dialog.nativeElement.showModal();
   }
 
@@ -144,12 +200,11 @@ export class ServicePageComponent implements OnInit {
     this.form.reset({
       vehicleId: entry.vehicleId,
       date: entry.date,
-      categoryId: entry.categoryId,
       odometerKm: entry.odometerKm,
-      amount: entry.amount,
       provider: entry.provider ?? '',
       description: entry.description ?? ''
     });
+    this.setItems(entry.items);
     this.dialog.nativeElement.showModal();
   }
 
@@ -187,11 +242,10 @@ export class ServicePageComponent implements OnInit {
     const value = this.form.getRawValue();
     const body: ServiceRecordRequest = {
       date: value.date,
-      categoryId: value.categoryId,
       odometerKm: value.odometerKm,
-      amount: value.amount,
       provider: value.provider.trim() || null,
-      description: value.description.trim() || null
+      description: value.description.trim() || null,
+      items: value.items
     };
 
     // Szerkesztésnél PUT, egyébként POST
@@ -276,16 +330,21 @@ export class ServicePageComponent implements OnInit {
     });
   }
 
-  // A szűrőben csak azok a típusok jelennek meg, amikhez már van bejegyzés (különben 119 elem lenne benne).
-  get usedCategories() {
-    return this.categories.filter(c => this.entries.some(e => e.categoryId === c.id));
+  // Egy szerviz típusai vesszővel elválasztva (kártyán, törlésnél)
+  typeNames(entry: ServiceRecord) {
+    return entry.items.map(i => i.categoryName).join(', ');
   }
 
-  // A szűrők alapján látható szervizek
+  // A szűrőben csak azok a típusok jelennek meg, amikhez már van bejegyzés (különben 119 elem lenne benne).
+  get usedCategories() {
+    return this.categories.filter(c => this.entries.some(e => e.items.some(i => i.categoryId === c.id)));
+  }
+
+  // A szűrők alapján látható szervizek (típusnál az, amelyikben szerepel az adott típus)
   get filtered() {
     return this.entries.filter(e =>
       (this.vehicleFilter === 0 || e.vehicleId === this.vehicleFilter) &&
-      (this.categoryFilter === 0 || e.categoryId === this.categoryFilter));
+      (this.categoryFilter === 0 || e.items.some(i => i.categoryId === this.categoryFilter)));
   }
 
   get total() {
@@ -325,7 +384,7 @@ export class ServicePageComponent implements OnInit {
   }
 
   private sum(list: ServiceRecord[]) {
-    return list.reduce((total, e) => total + e.amount, 0);
+    return list.reduce((total, e) => total + e.total, 0);
   }
 
   private sorted(entries: ServiceRecord[]) {

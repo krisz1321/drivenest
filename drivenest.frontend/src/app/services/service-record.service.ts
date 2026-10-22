@@ -2,20 +2,35 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { API_BASE_URL } from './auth.service';
 
-export interface ServiceRecordRequest {
-  date: string;
+// Egy szerviz tétele: típus + összeg
+export interface ServiceRecordItemRequest {
   categoryId: number;
-  odometerKm: number;
   amount: number;
-  provider: string | null;
-  description: string | null;
 }
 
-export interface ServiceRecord extends ServiceRecordRequest {
+export interface ServiceRecordItem extends ServiceRecordItemRequest {
+  categoryName: string;
+}
+
+export interface ServiceRecordRequest {
+  date: string;
+  odometerKm: number;
+  provider: string | null;
+  description: string | null;
+  items: ServiceRecordItemRequest[];
+}
+
+// total = a tételek összege (a backend számolja)
+export interface ServiceRecord {
   id: number;
   vehicleId: number;
-  categoryName: string;
+  date: string;
+  odometerKm: number;
+  total: number;
+  provider: string | null;
+  description: string | null;
   createdAt: string;
+  items: ServiceRecordItem[];
 }
 
 // isCustom = a felhasználó saját szerviztípusa (ezek felvétele egy későbbi feladat)

@@ -53,8 +53,8 @@ fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 textarea.form-input { resize: vertical; font: inherit; }
 
 // Kereshető típuslista (119 elem, ezért görgethető)
-.selected-category { margin: 8px 0 6px; font-size: 13px; }
 .category-list {
+  margin-top: 8px;
   max-height: 220px;
   overflow-y: auto;
   border: 1px solid var(--color-border);
@@ -73,3 +73,29 @@ textarea.form-input { resize: vertical; font: inherit; }
 .category-option:hover { background: var(--color-primary-soft); }
 .category-group { margin: 8px 8px 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
 .category-empty { margin: 8px; }
+
+// Típus badge-ek a táblázatban
+.type-badges { display: flex; flex-wrap: wrap; gap: 4px; }
+
+// Kiválasztott tételek: név, összeg, eltávolítás
+.items-label { margin: 0 0 6px; font-size: 13px; font-weight: 600; }
+.item-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 180px auto;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+.item-row label { margin: 0; font-weight: 400; }
+.item-amount { display: flex; align-items: center; gap: 6px; }
+.items-total {
+  margin: 4px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  text-align: right;
+  font-size: 16px;
+}
+
+@media (max-width: 600px) {
+  .item-row { grid-template-columns: minmax(0, 1fr) 130px auto; }
+}
