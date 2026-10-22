@@ -84,6 +84,7 @@
                 <th>Szerviz / helyszín</th>
                 <th>Megjegyzés</th>
                 <th class="right">Összeg</th>
+                <th>Műveletek</th>
               </tr>
             </thead>
             <tbody>
@@ -96,6 +97,14 @@
                   <td>{{ entry.provider || '—' }}</td>
                   <td class="muted">{{ entry.description || '—' }}</td>
                   <td class="right nowrap"><strong>{{ number(entry.amount) }} {{ unit }}</strong></td>
+                  <td>
+                    <div class="action-row">
+                      <button type="button" class="text-button" (click)="openEdit(entry)" [disabled]="saving"
+                        [attr.aria-label]="entry.categoryName + ', ' + entry.date + ' szerkesztése'">Szerkesztés</button>
+                      <button type="button" class="text-button danger-text" (click)="openDelete(entry)" [disabled]="saving"
+                        [attr.aria-label]="entry.categoryName + ', ' + entry.date + ' törlése'">Törlés</button>
+                    </div>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -120,13 +129,20 @@
   }
 </app-shell>
 
-<!-- Felugró ablak: új szerviz -->
+<!-- Felugró ablak: új szerviz / szerkesztés / törlés -->
 <dialog #serviceDialog class="modal dashboard-theme" aria-labelledby="service-title" (cancel)="cancel($event)">
   <div class="panel-heading">
-    <h2 id="service-title">Új szerviz</h2>
+    <h2 id="service-title">{{ title }}</h2>
     <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
   </div>
 
+  @if (mode === 'delete') {
+    <p>
+      Biztosan törlöd a(z) {{ target?.date | date:'yyyy. MM. dd.' }} dátumú
+      <strong>{{ target?.categoryName }}</strong> szervizt ({{ target ? number(target.amount) : '' }} {{ unit }})?
+    </p>
+    <p class="muted">{{ target ? vehicleName(target.vehicleId) : '' }}</p>
+  } @else {
   <form id="service-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
     <fieldset [disabled]="saving">
       <div class="form-grid">
@@ -199,6 +215,7 @@
       </div>
     </fieldset>
   </form>
+  }
 
   @if (errors.length) {
     <div class="alert-error" role="alert">
@@ -208,6 +225,10 @@
 
   <div class="form-actions">
     <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
-    <button type="submit" form="service-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    @if (mode === 'delete') {
+      <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
+    } @else {
+      <button type="submit" form="service-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    }
   </div>
 </dialog>

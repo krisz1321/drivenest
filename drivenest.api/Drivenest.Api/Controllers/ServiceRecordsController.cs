@@ -9,7 +9,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Drivenest.Api.Controllers;
 
-// Szervizbejegyzések: ugyanúgy működik, mint a kiadások (ExpensesController).
+// Szervizbejegyzések: hasonló, mint a kiadások (ExpensesController), csak egy szervizhez több tétel tartozik.
 [ApiController]
 [Authorize]
 [Route("api/vehicles/{vehicleId:int}/service-records")]
@@ -39,18 +39,23 @@ public class ServiceRecordsController : ControllerBase
         return _db.ServiceCategories.Where(c => c.UserId == null || c.UserId == userId);
     }
 
+    // A szervizek a tételeikkel és a tételek típusával együtt
+    private IQueryable<ServiceRecord> WithItems()
+    {
+        return _db.ServiceRecords.Include(s => s.Items).ThenInclude(i => i.Category);
+    }
+
     [HttpGet]
     [ProducesResponseType(typeof(List<ServiceRecordDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<ServiceRecordDto>>> GetAll(int vehicleId, CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        return await _db.ServiceRecords.AsNoTracking()
+        var records = await WithItems().AsNoTracking()
             .Where(s => s.VehicleId == vehicleId)
             .OrderByDescending(s => s.Date).ThenByDescending(s => s.OdometerKm).ThenByDescending(s => s.Id)
-            .Select(s => new ServiceRecordDto(s.Id, s.VehicleId, s.CategoryId, s.Category.Name, s.Date,
-                s.OdometerKm, s.Amount, s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc)))
             .ToListAsync(cancellationToken);
+        return records.Select(ToDto).ToList();
     }
 
     [HttpGet("{id:int}")]
@@ -59,8 +64,7 @@ public class ServiceRecordsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        var record = await _db.ServiceRecords.AsNoTracking()
-            .Include(s => s.Category)
+        var record = await WithItems().AsNoTracking()
             .SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
         return record is null ? NotFound() : Ok(ToDto(record));
     }
@@ -73,7 +77,7 @@ public class ServiceRecordsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        await ValidateCategory(request, cancellationToken);
+        await ValidateCategories(request, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         var record = new ServiceRecord { VehicleId = vehicleId, CreatedAt = _clock.GetUtcNow().UtcDateTime };
@@ -83,9 +87,9 @@ public class ServiceRecordsController : ControllerBase
         var error = await Save(cancellationToken);
         if (error is not null) return error;
 
-        // A válaszban a típus neve is kell.
-        await _db.Entry(record).Reference(s => s.Category).LoadAsync(cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { vehicleId, id = record.Id }, ToDto(record));
+        // Újra betöltjük, hogy a válaszban a típusok neve is benne legyen.
+        var saved = await WithItems().AsNoTracking().SingleAsync(s => s.Id == record.Id, cancellationToken);
+        return CreatedAtAction(nameof(GetById), new { vehicleId, id = record.Id }, ToDto(saved));
     }
 
     [HttpPut("{id:int}")]
@@ -96,18 +100,19 @@ public class ServiceRecordsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        var record = await _db.ServiceRecords.SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
+        var record = await _db.ServiceRecords.Include(s => s.Items)
+            .SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
         if (record is null) return NotFound();
 
-        await ValidateCategory(request, cancellationToken);
+        await ValidateCategories(request, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         Apply(request, record);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
 
-        await _db.Entry(record).Reference(s => s.Category).LoadAsync(cancellationToken);
-        return Ok(ToDto(record));
+        var saved = await WithItems().AsNoTracking().SingleAsync(s => s.Id == record.Id, cancellationToken);
+        return Ok(ToDto(saved));
     }
 
     [HttpDelete("{id:int}")]
@@ -120,17 +125,21 @@ public class ServiceRecordsController : ControllerBase
         var record = await _db.ServiceRecords.SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
         if (record is null) return NotFound();
 
+        // A tételeket az adatbázis törli (cascade).
         _db.ServiceRecords.Remove(record);
         var error = await Save(cancellationToken);
         return error is not null ? error : NoContent();
     }
 
-    private async Task ValidateCategory(ServiceRecordRequest request, CancellationToken cancellationToken)
+    // Minden tétel típusa létezzen, és látható legyen a felhasználónak.
+    private async Task ValidateCategories(ServiceRecordRequest request, CancellationToken cancellationToken)
     {
-        if (request.CategoryId <= 0) return; // ezt már a [Range] jelezte
+        var ids = request.Items.Select(i => i.CategoryId).Where(id => id > 0).Distinct().ToList();
+        if (ids.Count == 0) return; // ezt már a validáció jelezte
 
-        if (!await VisibleCategories().AnyAsync(c => c.Id == request.CategoryId, cancellationToken))
-            ModelState.AddModelError(nameof(request.CategoryId), "The service type does not exist.");
+        var found = await VisibleCategories().CountAsync(c => ids.Contains(c.Id), cancellationToken);
+        if (found != ids.Count)
+            ModelState.AddModelError(nameof(request.Items), "A service type does not exist.");
     }
 
     private async Task<ActionResult?> Save(CancellationToken cancellationToken)
@@ -159,13 +168,23 @@ public class ServiceRecordsController : ControllerBase
     private static void Apply(ServiceRecordRequest request, ServiceRecord record)
     {
         record.Date = request.Date;
-        record.CategoryId = request.CategoryId;
         record.OdometerKm = request.OdometerKm!.Value;
-        record.Amount = request.Amount;
         record.Provider = CleanText(request.Provider);
         record.Description = CleanText(request.Description);
+
+        // Tételek: ami kimaradt, törlődik; ami megmaradt, új összeget kap; ami új, hozzáadódik.
+        record.Items.RemoveAll(i => !request.Items.Any(r => r.CategoryId == i.CategoryId));
+        foreach (var item in request.Items)
+        {
+            var existing = record.Items.FirstOrDefault(i => i.CategoryId == item.CategoryId);
+            if (existing is null)
+                record.Items.Add(new ServiceRecordItem { CategoryId = item.CategoryId, Amount = item.Amount });
+            else
+                existing.Amount = item.Amount;
+        }
     }
 
-    private static ServiceRecordDto ToDto(ServiceRecord s) => new(s.Id, s.VehicleId, s.CategoryId, s.Category.Name, s.Date,
-        s.OdometerKm, s.Amount, s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc));
+    private static ServiceRecordDto ToDto(ServiceRecord s) => new(s.Id, s.VehicleId, s.Date, s.OdometerKm,
+        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc),
+        s.Items.OrderBy(i => i.Id).Select(i => new ServiceRecordItemDto(i.CategoryId, i.Category.Name, i.Amount)).ToList());
 }

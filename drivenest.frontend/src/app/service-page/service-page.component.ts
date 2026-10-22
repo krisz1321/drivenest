@@ -49,8 +49,10 @@ export class ServicePageComponent implements OnInit {
   vehicleFilter = 0;
   categoryFilter = 0;
 
-  // Felugró ablak az új szervizhez
+  // Felugró ablak: ugyanazt használjuk új szervizhez, szerkesztéshez és törléshez is.
   @ViewChild('serviceDialog') dialog!: ElementRef<HTMLDialogElement>;
+  mode: 'create' | 'edit' | 'delete' = 'create';
+  target: ServiceRecord | null = null; // szerkesztésnél / törlésnél a kiválasztott szerviz
   saving = false;
   errors: string[] = [];
   message = '';
@@ -101,11 +103,20 @@ export class ServicePageComponent implements OnInit {
     return control.touched && control.invalid;
   }
 
+  get title() {
+    if (this.mode === 'edit') return 'Szerviz szerkesztése';
+    if (this.mode === 'delete') return 'Szerviz törlése';
+    return 'Új szerviz';
+  }
+
   openCreate() {
     if (!this.vehicles.length || this.loading || this.saving) return;
 
+    this.mode = 'create';
+    this.target = null;
     this.errors = [];
     this.categorySearch = '';
+    this.form.controls.vehicleId.enable();
     // Ha a listában ki van szűrve egy jármű vagy típus, azzal nyitjuk meg az űrlapot.
     const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
     this.form.reset({
@@ -117,6 +128,37 @@ export class ServicePageComponent implements OnInit {
       provider: '',
       description: ''
     });
+    this.dialog.nativeElement.showModal();
+  }
+
+  openEdit(entry: ServiceRecord) {
+    if (this.saving) return;
+
+    this.mode = 'edit';
+    this.target = entry;
+    this.errors = [];
+    this.categorySearch = '';
+    // Szerkesztésnél a jármű nem változtatható (a backend sem engedi átrakni).
+    this.form.controls.vehicleId.disable();
+
+    this.form.reset({
+      vehicleId: entry.vehicleId,
+      date: entry.date,
+      categoryId: entry.categoryId,
+      odometerKm: entry.odometerKm,
+      amount: entry.amount,
+      provider: entry.provider ?? '',
+      description: entry.description ?? ''
+    });
+    this.dialog.nativeElement.showModal();
+  }
+
+  openDelete(entry: ServiceRecord) {
+    if (this.saving) return;
+
+    this.mode = 'delete';
+    this.target = entry;
+    this.errors = [];
     this.dialog.nativeElement.showModal();
   }
 
@@ -152,14 +194,39 @@ export class ServicePageComponent implements OnInit {
       description: value.description.trim() || null
     };
 
+    // Szerkesztésnél PUT, egyébként POST
+    const request = this.mode === 'edit' && this.target
+      ? this.api.update(this.target.vehicleId, this.target.id, body)
+      : this.api.create(value.vehicleId, body);
+
     this.saving = true;
-    this.api.create(value.vehicleId, body).pipe(
+    request.pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.saving = false)
     ).subscribe({
       next: entry => {
-        this.entries = this.sorted([...this.entries, entry]);
-        this.message = 'A szervizt elmentettük.';
+        // A régi változatot (ha volt) kicseréljük az újra.
+        this.entries = this.sorted([...this.entries.filter(e => e.id !== entry.id), entry]);
+        this.message = this.mode === 'edit' ? 'A szervizt módosítottuk.' : 'A szervizt elmentettük.';
+        this.dialog.nativeElement.close();
+      },
+      error: (error: HttpErrorResponse) => this.showError(error)
+    });
+  }
+
+  remove() {
+    if (this.saving || !this.target) return;
+    const id = this.target.id;
+
+    this.saving = true;
+    this.errors = [];
+    this.api.delete(this.target.vehicleId, id).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.saving = false)
+    ).subscribe({
+      next: () => {
+        this.entries = this.entries.filter(e => e.id !== id);
+        this.message = 'A szervizt töröltük.';
         this.dialog.nativeElement.close();
       },
       error: (error: HttpErrorResponse) => this.showError(error)

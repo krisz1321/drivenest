@@ -1,4 +1,7 @@
 namespace Drivenest.Api.Dtos.ServiceRecords;
 
-public record ServiceRecordDto(int Id, int VehicleId, int CategoryId, string CategoryName, DateOnly Date,
-    int OdometerKm, decimal Amount, string? Provider, string? Description, DateTime CreatedAt);
+// Total = a tételek összege
+public record ServiceRecordDto(int Id, int VehicleId, DateOnly Date, int OdometerKm, decimal Total,
+    string? Provider, string? Description, DateTime CreatedAt, List<ServiceRecordItemDto> Items);
+
+public record ServiceRecordItemDto(int CategoryId, string CategoryName, decimal Amount);

@@ -6,8 +6,6 @@ namespace Drivenest.Api.Data.Entities
 
         public int VehicleId { get; set; }
 
-        public int CategoryId { get; set; }
-
         public DateOnly Date { get; set; }
 
         public int OdometerKm { get; set; }
@@ -16,14 +14,12 @@ namespace Drivenest.Api.Data.Entities
 
         public string? Description { get; set; }
 
-        // Egy bejegyzés = egy szerviztípus egy összeggel.
-        // A munkadíjat külön bejegyzésként lehet felvenni, a saját kategóriájával.
-        public decimal Amount { get; set; }
-
         public DateTime CreatedAt { get; set; }
 
         public Vehicle Vehicle { get; set; } = null!;
 
-        public ServiceCategory Category { get; set; } = null!;
+        // Egy szervizhez több tétel tartozhat (pl. Olajcsere + Olajszűrő + Szervíz költség),
+        // mindegyiknek saját típusa és összege van. A szerviz végösszege ezek összege.
+        public List<ServiceRecordItem> Items { get; set; } = new();
     }
 }

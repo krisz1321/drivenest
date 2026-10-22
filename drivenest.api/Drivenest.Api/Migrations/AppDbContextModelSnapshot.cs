@@ -1057,12 +1057,6 @@ namespace Drivenest.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<decimal>("Amount")
-                        .HasColumnType("decimal(12,2)");
-
-                    b.Property<int>("CategoryId")
-                        .HasColumnType("int");
-
                     b.Property<DateTime>("CreatedAt")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("datetime2(3)")
@@ -1087,16 +1081,42 @@ namespace Drivenest.Api.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CategoryId");
-
                     b.HasIndex("VehicleId", "Date", "OdometerKm")
                         .IsDescending(false, true, true);
 
                     b.ToTable("ServiceRecords", null, t =>
                         {
-                            t.HasCheckConstraint("CK_ServiceRecords_Amount", "[Amount] >= 0");
-
                             t.HasCheckConstraint("CK_ServiceRecords_OdometerKm", "[OdometerKm] >= 0");
+                        });
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecordItem", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("decimal(12,2)");
+
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ServiceRecordId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CategoryId");
+
+                    b.HasIndex("ServiceRecordId", "CategoryId")
+                        .IsUnique();
+
+                    b.ToTable("ServiceRecordItems", null, t =>
+                        {
+                            t.HasCheckConstraint("CK_ServiceRecordItems_Amount", "[Amount] >= 0");
                         });
                 });
 
@@ -1372,21 +1392,32 @@ namespace Drivenest.Api.Migrations
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecord", b =>
                 {
-                    b.HasOne("Drivenest.Api.Data.Entities.ServiceCategory", "Category")
-                        .WithMany()
-                        .HasForeignKey("CategoryId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("Drivenest.Api.Data.Entities.Vehicle", "Vehicle")
                         .WithMany()
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.Navigation("Vehicle");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecordItem", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.ServiceCategory", "Category")
+                        .WithMany()
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("Drivenest.Api.Data.Entities.ServiceRecord", "ServiceRecord")
+                        .WithMany("Items")
+                        .HasForeignKey("ServiceRecordId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("Category");
 
-                    b.Navigation("Vehicle");
+                    b.Navigation("ServiceRecord");
                 });
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.Vehicle", b =>
@@ -1457,6 +1488,11 @@ namespace Drivenest.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecord", b =>
+                {
+                    b.Navigation("Items");
                 });
 #pragma warning restore 612, 618
         }

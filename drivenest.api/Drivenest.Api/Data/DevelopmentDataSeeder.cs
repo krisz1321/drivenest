@@ -175,23 +175,23 @@ namespace Drivenest.Api.Data
         {
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
             var oilFilterId = await GetServiceCategoryIdAsync(db, "Olajszűrő");
+            var airFilterId = await GetServiceCategoryIdAsync(db, "Levegőszűrő");
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki ellenőrzés");
             var brakePadId = await GetServiceCategoryIdAsync(db, "Fékbetét");
+            var brakeDiscId = await GetServiceCategoryIdAsync(db, "Első féktárcsák");
             var laborId = await GetServiceCategoryIdAsync(db, "Szervíz költség");
 
-            // A munkadíj külön bejegyzés, ugyanazon a napon.
+            // Egy szerviz több tételből áll, a munkadíj is egy tétel ("Szervíz költség").
             db.ServiceRecords.AddRange(
-                ServiceRecord(swift, oilChangeId, 5, 25, 43700, "Autó-Szerviz Kft.", "Motorolaj 5W-30", 11000),
-                ServiceRecord(swift, oilFilterId, 5, 25, 43700, "Autó-Szerviz Kft.", null, 3500),
-                ServiceRecord(swift, laborId, 5, 25, 43700, "Autó-Szerviz Kft.", "Munkadíj", 8000),
+                ServiceRecord(swift, 5, 25, 43700, "Autó-Szerviz Kft.", "Motorolaj 5W-30",
+                    [Item(oilChangeId, 11000), Item(oilFilterId, 3500), Item(laborId, 8000)]),
                 // Három nappal később rögzítette, hogy az Audit módban látszódjon a különbség.
-                ServiceRecord(swift, inspectionId, 8, 20, 46450, "Műszaki Vizsgaállomás",
-                    "Műszaki vizsga, sikeres", 22000, recordedDaysLater: 3),
-                ServiceRecord(octavia, oilChangeId, 6, 2, 120100, "Autó-Szerviz Kft.",
-                    "Olaj-, olajszűrő és levegőszűrő csere", 21000),
-                ServiceRecord(octavia, laborId, 6, 2, 120100, "Autó-Szerviz Kft.", "Munkadíj", 9500),
-                ServiceRecord(octavia, brakePadId, 9, 5, 123200, "Fék Centrum", "Első fékbetét és tárcsa csere", 38000),
-                ServiceRecord(octavia, laborId, 9, 5, 123200, "Fék Centrum", "Munkadíj", 24000));
+                ServiceRecord(swift, 8, 20, 46450, "Műszaki Vizsgaállomás", "Műszaki vizsga, sikeres",
+                    [Item(inspectionId, 22000)], recordedDaysLater: 3),
+                ServiceRecord(octavia, 6, 2, 120100, "Autó-Szerviz Kft.", "Olaj-, olajszűrő és levegőszűrő csere",
+                    [Item(oilChangeId, 13000), Item(oilFilterId, 4000), Item(airFilterId, 4000), Item(laborId, 9500)]),
+                ServiceRecord(octavia, 9, 5, 123200, "Fék Centrum", "Első fékbetét és tárcsa csere",
+                    [Item(brakePadId, 16000), Item(brakeDiscId, 22000), Item(laborId, 24000)]));
 
             await db.SaveChangesAsync();
         }
@@ -260,6 +260,7 @@ namespace Drivenest.Api.Data
         {
             var dieselId = await db.FuelTypes.Where(f => f.Name == "Dízel").Select(f => f.Id).SingleAsync();
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
+            var oilFilterId = await GetServiceCategoryIdAsync(db, "Olajszűrő");
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki ellenőrzés");
             var laborId = await GetServiceCategoryIdAsync(db, "Szervíz költség");
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
@@ -288,10 +289,10 @@ namespace Drivenest.Api.Data
                 Refueling(astra, 9, 27, 409200, 39.6m, 24600));
 
             db.ServiceRecords.AddRange(
-                ServiceRecord(astra, oilChangeId, 6, 20, 406950, "Barkácsműhely", "Olaj- és olajszűrő csere", 18000),
-                ServiceRecord(astra, laborId, 6, 20, 406950, "Barkácsműhely", "Munkadíj", 7000),
-                ServiceRecord(astra, inspectionId, 9, 14, 409000, "Műszaki Vizsgaállomás",
-                    "Műszaki vizsga, sikeres", 40000));
+                ServiceRecord(astra, 6, 20, 406950, "Barkácsműhely", "Olaj- és olajszűrő csere",
+                    [Item(oilChangeId, 14000), Item(oilFilterId, 4000), Item(laborId, 7000)]),
+                ServiceRecord(astra, 9, 14, 409000, "Műszaki Vizsgaállomás", "Műszaki vizsga, sikeres",
+                    [Item(inspectionId, 40000)]));
 
             db.Expenses.AddRange(
                 Expense(astra, insuranceId, 2, 10, 405000, 54000, null, "Éves kötelező biztosítás"),
@@ -337,22 +338,26 @@ namespace Drivenest.Api.Data
             return db.ExpenseCategories.Where(c => c.UserId == null && c.Name == name).Select(c => c.Id).SingleAsync();
         }
 
-        private static ServiceRecord ServiceRecord(Vehicle vehicle, int categoryId, int month, int day,
-            int odometerKm, string provider, string? description, decimal amount, int recordedDaysLater = 0)
+        private static ServiceRecord ServiceRecord(Vehicle vehicle, int month, int day, int odometerKm,
+            string provider, string? description, List<ServiceRecordItem> items, int recordedDaysLater = 0)
         {
             var date = new DateOnly(2026, month, day);
 
             return new ServiceRecord
             {
                 Vehicle = vehicle,
-                CategoryId = categoryId,
                 Date = date,
                 OdometerKm = odometerKm,
                 Provider = provider,
                 Description = description,
-                Amount = amount,
+                Items = items,
                 CreatedAt = date.AddDays(recordedDaysLater).ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc)
             };
+        }
+
+        private static ServiceRecordItem Item(int categoryId, decimal amount)
+        {
+            return new ServiceRecordItem { CategoryId = categoryId, Amount = amount };
         }
 
         private static Expense Expense(Vehicle vehicle, int categoryId, int month, int day,
