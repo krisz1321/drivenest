@@ -46,3 +46,30 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
   .page-heading { align-items: flex-start; flex-direction: column; }
   .filters .form-field { min-width: 0; flex: 1 1 100%; }
 }
+
+// Felugró ablak
+fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
+.modal { width: min(600px, calc(100% - 32px)); border-radius: 18px; }
+textarea.form-input { resize: vertical; font: inherit; }
+
+// Kereshető típuslista (119 elem, ezért görgethető)
+.selected-category { margin: 8px 0 6px; font-size: 13px; }
+.category-list {
+  max-height: 220px;
+  overflow-y: auto;
+  border: 1px solid var(--color-border);
+  border-radius: 10px;
+  padding: 4px;
+}
+.category-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: 6px;
+  font-weight: 400;
+  cursor: pointer;
+}
+.category-option:hover { background: var(--color-primary-soft); }
+.category-group { margin: 8px 8px 4px; font-size: 12px; font-weight: 600; text-transform: uppercase; }
+.category-empty { margin: 8px; }

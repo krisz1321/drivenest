@@ -1,19 +1,34 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormsModule } from '@angular/forms';
+import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
+import { HttpErrorResponse } from '@angular/common/http';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
-import { ServiceCategory, ServiceRecord, ServiceRecordService } from '../services/service-record.service';
+import { ServiceCategory, ServiceRecord, ServiceRecordRequest, ServiceRecordService } from '../services/service-record.service';
 import { currencyLabel } from '../shared/units';
+
+// Egész szám (a km-hez)
+const integer = (control: AbstractControl) =>
+  control.value === null || Number.isInteger(control.value) ? null : { integer: true };
+
+// Legfeljebb 2 tizedesjegy (az összeghez)
+const twoDecimals = (control: AbstractControl) =>
+  control.value === null || Number(Number(control.value).toFixed(2)) === control.value ? null : { precision: true };
+
+const today = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' });
+
+// Kereséshez: kisbetűs, ékezet nélküli szöveg, így a "fek" is megtalálja a "Fékbetét"-et.
+const simplify = (text: string) =>
+  text.toLocaleLowerCase('hu').normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
 @Component({
   selector: 'app-service-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AppShellComponent],
+  imports: [CommonModule, FormsModule, ReactiveFormsModule, RouterLink, AppShellComponent],
   templateUrl: './service-page.component.html',
   styleUrl: './service-page.component.scss'
 })
@@ -34,8 +49,139 @@ export class ServicePageComponent implements OnInit {
   vehicleFilter = 0;
   categoryFilter = 0;
 
+  // Felugró ablak az új szervizhez
+  @ViewChild('serviceDialog') dialog!: ElementRef<HTMLDialogElement>;
+  saving = false;
+  errors: string[] = [];
+  message = '';
+
+  // A típuslista keresőmezője (nem része a formnak, csak szűri a listát)
+  categorySearch = '';
+
+  readonly form = inject(FormBuilder).nonNullable.group({
+    vehicleId: [0, [Validators.required, Validators.min(1)]],
+    date: ['', Validators.required],
+    categoryId: [0, [Validators.required, Validators.min(1)]],
+    odometerKm: [0, [Validators.required, Validators.min(0), Validators.max(2147483647), integer]],
+    amount: [0, [Validators.required, Validators.min(0), Validators.max(9999999999.99), twoDecimals]],
+    provider: ['', Validators.maxLength(150)],
+    description: ['', Validators.maxLength(2000)]
+  });
+
   ngOnInit() {
     this.load();
+  }
+
+  // A keresőmező alapján látható típusok
+  get visibleCategories() {
+    const search = simplify(this.categorySearch.trim());
+    return this.categories.filter(c => simplify(c.name).includes(search));
+  }
+
+  // A listában külön csoportban vannak a beépített és a saját típusok.
+  get builtInCategories() {
+    return this.visibleCategories.filter(c => !c.isCustom);
+  }
+
+  get customCategories() {
+    return this.visibleCategories.filter(c => c.isCustom);
+  }
+
+  // Keresés közben is látszódjon, mi van kiválasztva.
+  get selectedCategoryName() {
+    return this.categories.find(c => c.id === this.form.controls.categoryId.value)?.name ?? '';
+  }
+
+  get selectedVehicle() {
+    return this.vehicles.find(v => v.id === this.form.controls.vehicleId.value);
+  }
+
+  invalid(field: keyof typeof this.form.controls) {
+    const control = this.form.controls[field];
+    return control.touched && control.invalid;
+  }
+
+  openCreate() {
+    if (!this.vehicles.length || this.loading || this.saving) return;
+
+    this.errors = [];
+    this.categorySearch = '';
+    // Ha a listában ki van szűrve egy jármű vagy típus, azzal nyitjuk meg az űrlapot.
+    const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
+    this.form.reset({
+      vehicleId: car.id,
+      date: today(),
+      categoryId: this.categoryFilter,
+      odometerKm: car.currentKm,
+      amount: 0,
+      provider: '',
+      description: ''
+    });
+    this.dialog.nativeElement.showModal();
+  }
+
+  // Járműváltáskor a km-et a kiválasztott autó aktuális km-ére állítjuk.
+  onVehicleChange() {
+    this.form.controls.odometerKm.setValue(this.selectedVehicle?.currentKm ?? 0);
+  }
+
+  close() {
+    if (!this.saving) this.dialog.nativeElement.close();
+  }
+
+  cancel(event: Event) {
+    event.preventDefault();
+    this.close();
+  }
+
+  save() {
+    if (this.saving) return;
+    this.errors = [];
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      return;
+    }
+
+    const value = this.form.getRawValue();
+    const body: ServiceRecordRequest = {
+      date: value.date,
+      categoryId: value.categoryId,
+      odometerKm: value.odometerKm,
+      amount: value.amount,
+      provider: value.provider.trim() || null,
+      description: value.description.trim() || null
+    };
+
+    this.saving = true;
+    this.api.create(value.vehicleId, body).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.saving = false)
+    ).subscribe({
+      next: entry => {
+        this.entries = this.sorted([...this.entries, entry]);
+        this.message = 'A szervizt elmentettük.';
+        this.dialog.nativeElement.close();
+      },
+      error: (error: HttpErrorResponse) => this.showError(error)
+    });
+  }
+
+  private showError(error: HttpErrorResponse) {
+    // 400-nál a backend mezőnkénti hibákat küld, ezeket kiírjuk.
+    const details = error.error?.errors;
+    const messages = details && typeof details === 'object'
+      ? Object.values(details).flat().filter((value): value is string => typeof value === 'string')
+      : [];
+
+    if (messages.length) {
+      this.errors = messages;
+    } else if (error.status === 404) {
+      this.errors = ['A jármű vagy a szerviz már nem érhető el. Zárd be az ablakot, és frissítsd az adatokat.'];
+    } else if (error.status === 409) {
+      this.errors = ['Az adatok időközben megváltoztak. Frissítsd őket, majd próbáld újra.'];
+    } else {
+      this.errors = ['A mentés nem sikerült. Ellenőrizd a kapcsolatot, majd próbáld újra.'];
+    }
   }
 
   load() {

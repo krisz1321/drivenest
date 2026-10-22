@@ -4,8 +4,12 @@
       <h1>Szerviz</h1>
       <p class="muted">Olajcsere, fékek, műszaki és minden javítás a járműveidhez.</p>
     </div>
-    <button type="button" class="button button-primary button-compact" disabled>+ Új szerviz</button>
+    <button type="button" class="button button-primary button-compact" (click)="openCreate()" [disabled]="loading || !!loadError || !vehicles.length">+ Új szerviz</button>
   </header>
+
+  @if (message) {
+    <p class="alert-success" role="status">{{ message }}</p>
+  }
 
   @if (loading) {
     <div class="panel empty-state" role="status">Szervizek betöltése…</div>
@@ -115,3 +119,95 @@
     </section>
   }
 </app-shell>
+
+<!-- Felugró ablak: új szerviz -->
+<dialog #serviceDialog class="modal dashboard-theme" aria-labelledby="service-title" (cancel)="cancel($event)">
+  <div class="panel-heading">
+    <h2 id="service-title">Új szerviz</h2>
+    <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
+  </div>
+
+  <form id="service-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <fieldset [disabled]="saving">
+      <div class="form-grid">
+        <div class="form-field form-wide">
+          <label for="service-car">Jármű *</label>
+          <select id="service-car" class="form-input" formControlName="vehicleId" (change)="onVehicleChange()">
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Szerviztípus: keresőmező + görgethető lista, egy típus választható -->
+        <div class="form-field form-wide">
+          <label id="service-category-label" for="service-category-search">Szerviz típusa *</label>
+          <input id="service-category-search" class="form-input" type="search" placeholder="Keresés, pl. olaj, fék…"
+            [(ngModel)]="categorySearch" [ngModelOptions]="{ standalone: true }" (keydown.enter)="$event.preventDefault()">
+          <p class="selected-category">Kiválasztva: <strong>{{ selectedCategoryName || '—' }}</strong></p>
+          <div class="category-list" role="radiogroup" aria-labelledby="service-category-label" [attr.aria-invalid]="invalid('categoryId')">
+            @for (category of builtInCategories; track category.id) {
+              <label class="category-option">
+                <input type="radio" name="categoryId" formControlName="categoryId" [value]="category.id">
+                {{ category.name }}
+              </label>
+            }
+            <!-- A saját típusok felvétele később jön, addig ez a csoport nem jelenik meg. -->
+            @if (customCategories.length) {
+              <p class="category-group">Saját típusok</p>
+              @for (category of customCategories; track category.id) {
+                <label class="category-option">
+                  <input type="radio" name="categoryId" formControlName="categoryId" [value]="category.id">
+                  {{ category.name }}
+                </label>
+              }
+            }
+            @if (!visibleCategories.length) {
+              <p class="muted category-empty">Nincs ilyen típus.</p>
+            }
+          </div>
+          @if (invalid('categoryId')) { <p class="field-error">Válassz egy szerviztípust.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="service-date">Dátum *</label>
+          <input id="service-date" class="form-input" type="date" formControlName="date" [attr.aria-invalid]="invalid('date')">
+          @if (invalid('date')) { <p class="field-error">Add meg a dátumot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="service-km">Kilométeróra (km) *</label>
+          <input id="service-km" class="form-input" type="number" min="0" step="1" formControlName="odometerKm" [attr.aria-invalid]="invalid('odometerKm')">
+          @if (invalid('odometerKm')) { <p class="field-error">Adj meg egy nemnegatív egész számot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="service-amount">Összeg ({{ unit }}) *</label>
+          <input id="service-amount" class="form-input" type="number" min="0" step="0.01" formControlName="amount" [attr.aria-invalid]="invalid('amount')">
+          @if (invalid('amount')) { <p class="field-error">Nemnegatív összeg, legfeljebb 2 tizedesjegy.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="service-provider">Szerviz / helyszín</label>
+          <input id="service-provider" class="form-input" type="text" maxlength="150" formControlName="provider" placeholder="pl. Autó-Szerviz Kft.">
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="service-description">Megjegyzés</label>
+          <textarea id="service-description" class="form-input" rows="3" maxlength="2000" formControlName="description"></textarea>
+        </div>
+      </div>
+    </fieldset>
+  </form>
+
+  @if (errors.length) {
+    <div class="alert-error" role="alert">
+      @for (error of errors; track $index) { <p>{{ error }}</p> }
+    </div>
+  }
+
+  <div class="form-actions">
+    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+    <button type="submit" form="service-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+  </div>
+</dialog>
