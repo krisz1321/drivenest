@@ -490,7 +490,7 @@ namespace Drivenest.Api.Migrations
                         new
                         {
                             Id = 8,
-                            Name = "Szervíz költség"
+                            Name = "Munkadíj"
                         },
                         new
                         {

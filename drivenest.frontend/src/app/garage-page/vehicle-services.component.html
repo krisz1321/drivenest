@@ -1,0 +1,18 @@
+@if (message) { <p class="alert-success" role="status">{{ message }}</p> }
+@if (loading) { <p class="form-help" role="status">Szervizek betöltése…</p> }
+@if (loadError) { <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div> }
+<details class="service-history">
+  <summary>Szervizek @if (!loading && !loadError) { <span class="badge">{{ entries.length }}</span> } <span class="muted">Előzmények és szerkesztés</span></summary>
+  @if (!loading && !loadError) {
+    <div class="history-heading"><p class="form-help">Havi szervizköltség: <strong>{{ number(monthlyTotal) }} {{ unit }}</strong></p><button type="button" class="text-button" (click)="load()">Frissítés ↻</button></div>
+    @if (entries.length) {
+      <div class="table-scroll"><table class="data-table"><caption class="visually-hidden">{{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.licensePlate }} szervizei</caption><thead><tr><th>Dátum / óraállás</th><th>Típusok</th><th>Szerviz / helyszín</th><th class="right">Összeg</th><th class="right">Műveletek</th></tr></thead><tbody>
+        @for (entry of entries; track entry.id) { <tr><td><strong>{{ entry.date }}</strong><small>{{ number(entry.odometerKm, 0) }} km</small></td><td><div class="type-badges">@for (item of entry.items; track item.categoryId) { <span class="badge" [title]="number(item.amount) + ' ' + unit">{{ item.categoryName }}</span> }</div></td><td>{{ entry.provider || '—' }}</td><td class="right">{{ number(entry.total) }} {{ unit }}</td><td><div class="action-row row-actions"><button type="button" class="text-button" (click)="serviceDialog.openEdit(entry)" [attr.aria-label]="entry.date + ' szerviz szerkesztése, ' + vehicle.licensePlate">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="serviceDialog.openDelete(entry)" [attr.aria-label]="entry.date + ' szerviz törlése, ' + vehicle.licensePlate">Törlés</button></div></td></tr> }
+      </tbody></table></div>
+    } @else { <p class="form-help">Ehhez az autóhoz még nincs szerviz. Rögzítsd az elsőt a fenti gombbal.</p> }
+  }
+</details>
+
+<!-- Csak ez az egy jármű választható, így az ablakban nem kell járművet választani. -->
+<app-service-dialog #serviceDialog [vehicles]="[vehicle]" [categories]="categories" [unit]="unit"
+  (saved)="onSaved($event)" (deleted)="onDeleted($event)" />

@@ -179,9 +179,9 @@ namespace Drivenest.Api.Data
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki ellenőrzés");
             var brakePadId = await GetServiceCategoryIdAsync(db, "Fékbetét");
             var brakeDiscId = await GetServiceCategoryIdAsync(db, "Első féktárcsák");
-            var laborId = await GetServiceCategoryIdAsync(db, "Szervíz költség");
+            var laborId = await GetServiceCategoryIdAsync(db, "Munkadíj");
 
-            // Egy szerviz több tételből áll, a munkadíj is egy tétel ("Szervíz költség").
+            // Egy szerviz több tételből áll, a munkadíj is egy tétel ("Munkadíj").
             db.ServiceRecords.AddRange(
                 ServiceRecord(swift, 5, 25, 43700, "Autó-Szerviz Kft.", "Motorolaj 5W-30",
                     [Item(oilChangeId, 11000), Item(oilFilterId, 3500), Item(laborId, 8000)]),
@@ -262,7 +262,7 @@ namespace Drivenest.Api.Data
             var oilChangeId = await GetServiceCategoryIdAsync(db, "Olajcsere");
             var oilFilterId = await GetServiceCategoryIdAsync(db, "Olajszűrő");
             var inspectionId = await GetServiceCategoryIdAsync(db, "Műszaki ellenőrzés");
-            var laborId = await GetServiceCategoryIdAsync(db, "Szervíz költség");
+            var laborId = await GetServiceCategoryIdAsync(db, "Munkadíj");
             var insuranceId = await GetExpenseCategoryIdAsync(db, "Biztosítás");
             var carId = await GetExpenseCategoryIdAsync(db, "Autó");
             var washId = await GetExpenseCategoryIdAsync(db, "Autómosó");

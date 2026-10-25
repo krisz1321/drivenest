@@ -35,7 +35,8 @@ namespace Drivenest.Api.Data.Configurations
                 new ServiceCategory { Id = 5, Name = "Vezérlés" },
                 new ServiceCategory { Id = 6, Name = "Levegőszűrő" },
                 new ServiceCategory { Id = 7, Name = "Akkumulátor" },
-                new ServiceCategory { Id = 8, Name = "Szervíz költség" },
+                // Régen "Szervíz költség" volt. A szerelő munkadíja külön tétel, így alkatrész + munkadíj bontásban látszik a szerviz.
+                new ServiceCategory { Id = 8, Name = "Munkadíj" },
                 new ServiceCategory { Id = 9, Name = "Szerelés" });
 
             // A többi típus 10-es Id-tól, a Drivvo-s sorrendben.
