@@ -1,16 +1,53 @@
 <app-shell active="dashboard" section="Vezérlőpult">
-  <div class="heading"><div><p class="eyebrow">MINDEN KILOMÉTER SZÁMÍT</p><h1>A garázsod, egy pillantásra.</h1><p class="muted">Fogyasztás, kiadások és teendők — minden egy helyen.</p></div><a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a></div>
-  @if (loadErrors.length) { <div class="alert-error" role="alert">@for (error of loadErrors; track $index) { <p>{{ error }}</p> }<button type="button" class="button button-secondary button-compact" (click)="load()" [disabled]="loading">Újrapróbálás</button></div> }
+  <header class="page-heading">
+    <div>
+      <h1>Vezérlőpult</h1>
+      <p class="muted">Az összes járműved adatai összesítve.</p>
+    </div>
+    <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+  </header>
 
+  @if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()" [disabled]="loading">Újrapróbálás</button>
+    </div>
+  }
 
-  <section class="stat-grid" aria-label="Jármű összesítése – előkészítés alatt">
-    @for (stat of stats; track stat.label) { <article class="panel stat-card"><div class="card-label">{{ stat.label }}<span class="stat-icon" aria-hidden="true">{{ stat.icon }}</span></div><strong>— <small>{{ stat.unit }}</small></strong><p>{{ stat.detail }}</p><span class="badge">Előkészítés alatt</span></article> }
+  <!-- Összesítő kártyák (az értékek egy későbbi lépésben jönnek) -->
+  <section class="stat-grid" aria-label="Összesítés">
+    @for (stat of stats; track stat.label) {
+      <article class="panel stat-card">
+        <div class="card-label">{{ stat.label }}</div>
+        <strong>— <small>{{ stat.unit }}</small></strong>
+        <p>{{ stat.detail }}</p>
+        <span class="badge">Előkészítés alatt</span>
+      </article>
+    }
   </section>
 
   <div class="content-grid">
-    <section id="reminders" class="panel"><div class="panel-heading"><h2>Közelgő teendők</h2><span class="badge badge-warning">Hamarosan</span></div><p class="panel-description">Legyen a következő lépés mindig tervezhető.</p><div class="empty-state"><span class="empty-icon" aria-hidden="true">◷</span><h3>Minden teendőnek meglesz a helye.</h3><p>Az emlékeztetők a következő bővítéssel érkeznek. Itt most nem jelenítünk meg minta határidőket.</p></div></section>
-    <section id="events" class="panel"><div class="panel-heading"><h2>További események</h2><button type="button" class="text-button" disabled title="Az események API-ja még nem érhető el.">CSV letöltése ↓</button></div><div class="table-scroll"><table class="data-table"><thead><tr><th>Esemény</th><th>Dátum</th><th class="right">Összeg</th></tr></thead><tbody><tr><td colspan="3"><div class="empty-state"><span class="empty-icon" aria-hidden="true">≡</span><p>A szervizek és egyéb kiadások itt jelennek majd meg. </p><span class="badge badge-warning">Előkészítés alatt</span></div></td></tr></tbody></table></div></section>
-    <section id="costs" class="panel"><div class="panel-heading"><h2>Hová ment a pénz?</h2><span class="badge">{{ month }}</span></div><p class="panel-description">A havi kiadások megoszlása</p>@for (category of ['Tankolás', 'Szerviz', 'Egyéb kiadás']; track category) { <div class="cost-row"><div><span>{{ category }}</span><strong>—</strong></div><div class="bar-track" aria-hidden="true"></div></div> }<div class="cost-total"><span>Összesen</span><strong>—</strong></div><p class="form-help">A költségkimutatás a kiadások kezelésével együtt válik elérhetővé.</p></section>
+    <!-- Legutóbbi események -->
+    <section id="events" class="panel">
+      <div class="panel-heading">
+        <h2>Legutóbbi események</h2>
+      </div>
+      <p class="empty-state">A tankolások, szervizek és kiadások itt jelennek majd meg.</p>
+    </section>
+
+    <!-- Havi költségek kategóriánként -->
+    <section id="costs" class="panel">
+      <div class="panel-heading">
+        <h2>Hová ment a pénz?</h2>
+        <span class="badge">{{ month }}</span>
+      </div>
+      @for (category of ['Tankolás', 'Szerviz', 'Egyéb kiadás']; track category) {
+        <div class="cost-row">
+          <div><span>{{ category }}</span><strong>—</strong></div>
+          <div class="bar-track" aria-hidden="true"></div>
+        </div>
+      }
+      <div class="cost-total"><span>Összesen</span><strong>—</strong></div>
+    </section>
   </div>
-  <footer><span>DriveNest · Gondoskodás minden kilométeren.</span><button type="button" class="text-button" (click)="load()" [disabled]="loading">{{ loading ? 'Frissítés…' : 'Áttekintés frissítése ↻' }}</button></footer>
 </app-shell>
