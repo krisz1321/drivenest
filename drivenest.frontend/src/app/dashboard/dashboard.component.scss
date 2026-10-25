@@ -27,6 +27,9 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
   gap: 24px;
 }
 
+// A "Hová ment a pénz?" sávjainak kitöltése (a .bar-track a styles.scss-ben van)
+.bar-fill { height: 100%; border-radius: inherit; background: var(--color-primary); }
+
 // A sidebar linkjei ide görgetnek, ne tapadjon a panel a képernyő tetejére.
 section[id] { scroll-margin-top: 20px; }
 

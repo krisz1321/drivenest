@@ -41,13 +41,23 @@
         <h2>Hová ment a pénz?</h2>
         <span class="badge">{{ month }}</span>
       </div>
-      @for (category of ['Tankolás', 'Szerviz', 'Egyéb kiadás']; track category) {
-        <div class="cost-row">
-          <div><span>{{ category }}</span><strong>—</strong></div>
-          <div class="bar-track" aria-hidden="true"></div>
-        </div>
+      @if (loading) {
+        <p class="form-help" role="status">Betöltés…</p>
+      } @else if (!loadError) {
+        @if (monthlyTotal) {
+          @for (cost of costs; track cost.label) {
+            <div class="cost-row">
+              <div><span>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }}</strong></div>
+              <div class="bar-track" aria-hidden="true">
+                <div class="bar-fill" [style.width.%]="percent(cost.amount)"></div>
+              </div>
+            </div>
+          }
+          <div class="cost-total"><span>Összesen</span><strong>{{ number(monthlyTotal) }} {{ unit }}</strong></div>
+        } @else {
+          <p class="empty-state">Ebben a hónapban még nincs kiadás.</p>
+        }
       }
-      <div class="cost-total"><span>Összesen</span><strong>—</strong></div>
     </section>
   </div>
 </app-shell>
