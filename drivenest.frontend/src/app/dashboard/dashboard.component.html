@@ -32,7 +32,35 @@
       <div class="panel-heading">
         <h2>Legutóbbi események</h2>
       </div>
-      <p class="empty-state">A tankolások, szervizek és kiadások itt jelennek majd meg.</p>
+      @if (loading) {
+        <p class="form-help" role="status">Betöltés…</p>
+      } @else if (!loadError) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Esemény</th>
+                <th>Dátum</th>
+                <th class="right">Összeg</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (event of latestEvents; track $index) {
+                <tr>
+                  <td>
+                    <a [routerLink]="event.link">{{ event.title }}</a>
+                    <small>{{ event.type }} · {{ plate(event.vehicleId) }}</small>
+                  </td>
+                  <td class="nowrap">{{ event.date | date:'yyyy. MM. dd.' }}</td>
+                  <td class="right nowrap"><strong>{{ number(event.amount) }} {{ unit }}</strong></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="empty-state">Még nincs rögzített esemény.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
     </section>
 
     <!-- Havi költségek kategóriánként -->

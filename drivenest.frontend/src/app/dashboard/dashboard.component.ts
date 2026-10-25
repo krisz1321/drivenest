@@ -1,4 +1,5 @@
 import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { DatePipe } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
@@ -10,10 +11,20 @@ import { Expense, ExpenseService } from '../services/expense.service';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { currencyLabel, distanceLabel } from '../shared/units';
 
+// Egy sor a "Legutóbbi események" táblázatban (tankolás, szerviz vagy kiadás)
+interface DashboardEvent {
+  type: string;
+  title: string;
+  vehicleId: number;
+  date: string;
+  amount: number;
+  link: string;
+}
+
 @Component({
   selector: 'app-dashboard',
   standalone: true,
-  imports: [AppShellComponent, RouterLink],
+  imports: [AppShellComponent, RouterLink, DatePipe],
   templateUrl: './dashboard.component.html',
   styleUrl: './dashboard.component.scss'
 })
@@ -101,6 +112,29 @@ export class DashboardComponent implements OnInit {
   // A sáv szélessége: a kategória hány százaléka a havi összegnek
   percent(amount: number) {
     return this.monthlyTotal ? amount / this.monthlyTotal * 100 : 0;
+  }
+
+  // A három lista egy közös listába, dátum szerint csökkenőben, az utolsó 8 bejegyzés
+  get latestEvents(): DashboardEvent[] {
+    const events: DashboardEvent[] = [
+      ...this.refuelings.map(r => ({
+        type: 'Tankolás', title: `Tankolás (${this.number(r.liters, 2)} l)`,
+        vehicleId: r.vehicleId, date: r.date, amount: r.totalAmount, link: '/refuelings'
+      })),
+      ...this.services.map(s => ({
+        type: 'Szerviz', title: s.items.map(i => i.categoryName).join(', '),
+        vehicleId: s.vehicleId, date: s.date, amount: s.total, link: '/service'
+      })),
+      ...this.expenses.map(e => ({
+        type: 'Egyéb kiadás', title: e.categoryName,
+        vehicleId: e.vehicleId, date: e.date, amount: e.amount, link: '/expenses'
+      }))
+    ];
+    return events.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  }
+
+  plate(vehicleId: number) {
+    return this.vehicles.find(v => v.id === vehicleId)?.licensePlate ?? '—';
   }
 
   get unit() {
