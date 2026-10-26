@@ -9,7 +9,7 @@ import { Refueling, RefuelingService } from '../services/refueling.service';
 import { ServiceRecord, ServiceRecordService } from '../services/service-record.service';
 import { Expense, ExpenseService } from '../services/expense.service';
 import { AppShellComponent } from '../layout/app-shell.component';
-import { currencyLabel, distanceLabel } from '../shared/units';
+import { currencyLabel, distanceLabel, toDistance } from '../shared/units';
 
 // Egy sor a "Legutóbbi események" táblázatban (tankolás, szerviz vagy kiadás)
 interface DashboardEvent {
@@ -47,16 +47,6 @@ export class DashboardComponent implements OnInit {
 
   loading = false;
   loadError = '';
-
-  get stats() {
-    const { currency, distanceUnit } = this.profile.preferences();
-    return [
-      { label: 'E havi kiadás', unit: currencyLabel(currency), detail: 'Tankolás, szerviz és egyéb' },
-      { label: 'Összes kiadás', unit: currencyLabel(currency), detail: 'Az összes bejegyzés alapján' },
-      { label: 'Kilométerköltség', unit: `${currencyLabel(currency)}/${distanceLabel(distanceUnit)}`, detail: 'Az összes kiadás alapján' },
-      { label: 'Járművek', unit: 'db', detail: 'A garázsodban' }
-    ];
-  }
 
   ngOnInit() {
     this.load();
@@ -107,6 +97,32 @@ export class DashboardComponent implements OnInit {
 
   get monthlyTotal() {
     return this.sum(this.costs.map(c => c.amount));
+  }
+
+  // Az összes tankolás, szerviz és kiadás összege
+  get allTotal() {
+    return this.sum(this.refuelings.map(r => r.totalAmount))
+      + this.sum(this.services.map(s => s.total))
+      + this.sum(this.expenses.map(e => e.amount));
+  }
+
+  get entryCount() {
+    return this.refuelings.length + this.services.length + this.expenses.length;
+  }
+
+  // Megtett táv: járművenként az aktuális és a kezdő óraállás különbsége (a választott egységben)
+  get distance() {
+    const km = this.sum(this.vehicles.map(v => v.currentKm - v.initialKm));
+    return toDistance(km, this.profile.preferences().distanceUnit);
+  }
+
+  // Ha még nincs megtett táv, nem tudunk km-költséget számolni.
+  get costPerDistance() {
+    return this.distance > 0 ? this.allTotal / this.distance : null;
+  }
+
+  get distanceUnit() {
+    return distanceLabel(this.profile.preferences().distanceUnit);
   }
 
   // A sáv szélessége: a kategória hány százaléka a havi összegnek
