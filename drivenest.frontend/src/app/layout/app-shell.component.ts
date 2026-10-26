@@ -15,7 +15,7 @@ export class AppShellComponent {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly profile = inject(ProfileService);
-  @Input() active: 'dashboard' | 'settings' | 'garage' | 'refuelings' | 'expenses' | 'service' = 'dashboard';
+  @Input() active: 'dashboard' | 'settings' | 'garage' | 'refuelings' | 'expenses' | 'service' | 'reminders' = 'dashboard';
   @Input() section = 'Vezérlőpult';
   readonly dateLabel = new Date().toLocaleDateString('hu-HU', {
     year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Budapest'

@@ -11,6 +11,7 @@
   --color-error: #b42332;
   --color-error-soft: #fff0f1;
   --color-success: #237354;
+  --color-success-soft: #ecf7f1;
   --radius-sm: 10px;
   --radius-lg: 24px;
   --shadow-card: 0 12px 50px rgb(25 36 59 / 5%);
@@ -73,6 +74,8 @@ button:disabled { cursor: not-allowed; }
 .panel-description { color: var(--color-muted); font-size: 12px; margin: 10px 0 22px; }
 .badge { display: inline-flex; align-items: center; padding: 5px 9px; border-radius: 6px; font-size: 10px; background: var(--color-background); color: var(--color-muted); }
 .badge-warning { background: var(--color-warning-soft); color: var(--color-warning); }
+.badge-danger { background: var(--color-error-soft); color: var(--color-error); }
+.badge-success { background: var(--color-success-soft); color: var(--color-success); }
 .empty-state { text-align: center; padding: 32px 16px; color: var(--color-muted); }
 .empty-state h2, .empty-state h3 { color: var(--color-text); margin-bottom: 8px; }
 .empty-state p { font-size: 13px; max-width: 390px; margin: 0 auto 18px; }

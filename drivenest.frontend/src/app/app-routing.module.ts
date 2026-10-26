@@ -10,6 +10,7 @@ import { GaragePageComponent } from './garage-page/garage-page.component';
 import { FillUpComponentComponent } from './fill-up-component/fill-up-component.component';
 import { ExpensesPageComponent } from './expenses-page/expenses-page.component';
 import { ServicePageComponent } from './service-page/service-page.component';
+import { RemindersPageComponent } from './reminders-page/reminders-page.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -21,6 +22,7 @@ const routes: Routes = [
   { path: 'refuelings', component: FillUpComponentComponent, canActivate: [authGuard] },
   { path: 'expenses', component: ExpensesPageComponent, canActivate: [authGuard] },
   { path: 'service', component: ServicePageComponent, canActivate: [authGuard] },
+  { path: 'reminders', component: RemindersPageComponent, canActivate: [authGuard] },
   { path: 'settings', component: SettingsPageComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'login' }
 ];
