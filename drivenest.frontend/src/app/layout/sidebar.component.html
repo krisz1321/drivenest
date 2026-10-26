@@ -8,11 +8,9 @@
       <a class="nav-item" [class.active]="active === 'expenses'" routerLink="/expenses" [attr.aria-current]="active === 'expenses' ? 'page' : null" aria-label="Kiadások"><span aria-hidden="true">¤</span><span class="nav-text">Kiadások</span></a>
       <a class="nav-item" [class.active]="active === 'service'" routerLink="/service" [attr.aria-current]="active === 'service' ? 'page' : null" aria-label="Szerviz"><span aria-hidden="true">⚒</span><span class="nav-text">Szerviz</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="events" aria-label="Események"><span aria-hidden="true">≡</span><span class="nav-text">Események</span></a>
-      <a class="nav-item" routerLink="/dashboard" fragment="reminders" aria-label="Emlékeztetők"><span aria-hidden="true">◷</span><span class="nav-text">Emlékeztetők</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="costs" aria-label="Költségáttekintés"><span aria-hidden="true">▥</span><span class="nav-text">Költségáttekintés</span></a>
       <a class="nav-item" [class.active]="active === 'settings'" routerLink="/settings" [attr.aria-current]="active === 'settings' ? 'page' : null" aria-label="Beállítások"><span aria-hidden="true">⚙</span><span class="nav-text">Beállítások</span></a>
     </nav>
-    <div class="sidebar-note"><span>EGY HELYEN, ÁTLÁTHATÓAN</span><p>A járműved története.<br>A kezedben.</p></div>
     <div class="profile"><span class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</span><div><strong>{{ displayName }}</strong><small>Saját garázs</small></div></div>
     <button type="button" class="signout" (click)="signOut.emit()" aria-label="Kijelentkezés"><span aria-hidden="true">↪</span><span class="nav-text">Kijelentkezés</span></button>
   </aside>

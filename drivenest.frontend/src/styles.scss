@@ -113,10 +113,7 @@ button:disabled { cursor: not-allowed; }
 .nav-item > span:first-child { width: 22px; text-align: center; font-size: 21px; }
 .nav-item:hover, .nav-item.active { background: rgb(255 255 255 / 8%); color: var(--color-surface); }
 .nav-item.active { box-shadow: inset 3px 0 var(--color-primary); }
-.sidebar-note { margin-top: auto; padding: 40px 10px 25px; color: var(--color-sidebar-text); }
-.sidebar-note > span { color: var(--color-primary); font-size: 9px; letter-spacing: 1px; }
-.sidebar-note p { line-height: 1.7; margin: 12px 0 0; }
-.sidebar .profile { display: flex; gap: 12px; align-items: center; border-top: 1px solid rgb(255 255 255 / 15%); padding-top: 22px; }
+.sidebar .profile { margin-top: auto; display: flex; gap: 12px; align-items: center; border-top: 1px solid rgb(255 255 255 / 15%); padding-top: 22px; }
 .sidebar .profile div { min-width: 0; overflow-wrap: anywhere; }
 .sidebar .profile strong, .sidebar .profile small { display: block; font-size: 12px; }
 .sidebar .profile small { color: var(--color-sidebar-text); margin-top: 4px; font-size: 11px; }

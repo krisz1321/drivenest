@@ -1,9 +1,8 @@
 :host { display: block; font-size: 14px; }
 @media (max-width: 900px) {
   .sidebar { padding: 24px 10px; }
-  .brand-name, .nav-label, .sidebar-note, .profile div, .nav-text { display: none; }
+  .brand-name, .nav-label, .profile div, .nav-text { display: none; }
   .sidebar .brand, .profile, .signout { justify-content: center; }
   .sidebar nav { margin-top: 40px; }
   .nav-item { justify-content: center; padding: 12px 0; }
-  .profile { margin-top: auto; }
 }
