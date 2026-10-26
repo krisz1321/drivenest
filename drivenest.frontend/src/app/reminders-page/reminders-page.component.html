@@ -4,7 +4,12 @@
       <h1>Emlékeztetők</h1>
       <p class="muted">Olajcsere, műszaki vizsga és a többi esedékes teendő a járműveidhez.</p>
     </div>
+    <button type="button" class="button button-primary button-compact" (click)="openCreate()" [disabled]="loading || !!loadError || !vehicles.length">+ Új emlékeztető</button>
   </header>
+
+  @if (message) {
+    <p class="alert-success" role="status">{{ message }}</p>
+  }
 
   @if (loading) {
     <div class="panel empty-state" role="status">Emlékeztetők betöltése…</div>
@@ -73,6 +78,7 @@
                 <th>Állapot</th>
                 <th>Esedékes</th>
                 <th>Ismétlődés</th>
+                <th>Műveletek</th>
               </tr>
             </thead>
             <tbody>
@@ -99,6 +105,14 @@
                     }
                   </td>
                   <td class="muted">{{ repeat(entry) }}</td>
+                  <td>
+                    <div class="action-row">
+                      <button type="button" class="text-button" (click)="dialog.openEdit(entry)"
+                        [attr.aria-label]="entry.title + ' szerkesztése'">Szerkesztés</button>
+                      <button type="button" class="text-button danger-text" (click)="dialog.openDelete(entry)"
+                        [attr.aria-label]="entry.title + ' törlése'">Törlés</button>
+                    </div>
+                  </td>
                 </tr>
               }
             </tbody>
@@ -113,7 +127,7 @@
       } @else {
         <div class="empty-state">
           <h2>Még nincs emlékeztető</h2>
-          <p>{{ vehicles.length ? 'A járműveidhez még nem tartozik emlékeztető.' : 'Először adj hozzá egy járművet a garázsodhoz.' }}</p>
+          <p>{{ vehicles.length ? 'Vedd fel az első emlékeztetőt az Új emlékeztető gombbal.' : 'Először adj hozzá egy járművet a garázsodhoz.' }}</p>
           @if (!vehicles.length) {
             <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
           }
@@ -122,3 +136,7 @@
     </section>
   }
 </app-shell>
+
+<!-- Felugró ablak: új emlékeztető / szerkesztés / törlés -->
+<app-reminder-dialog [vehicles]="vehicles" [distanceUnit]="distanceUnit"
+  (saved)="onSaved($event)" (deleted)="onDeleted($event)" />

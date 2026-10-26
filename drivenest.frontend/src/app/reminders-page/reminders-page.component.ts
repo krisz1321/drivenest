@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
@@ -9,6 +9,7 @@ import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { Reminder, ReminderService, ReminderStatus, WARNING_DAYS, WARNING_KM, daysUntil, reminderStatus } from '../services/reminder.service';
 import { distanceLabel, toDistance } from '../shared/units';
+import { ReminderDialogComponent } from './reminder-dialog.component';
 
 // A sürgősebb állapot kerül előre a listában.
 const STATUS_ORDER: Record<ReminderStatus, number> = { overdue: 0, soon: 1, ok: 2 };
@@ -16,7 +17,7 @@ const STATUS_ORDER: Record<ReminderStatus, number> = { overdue: 0, soon: 1, ok: 
 @Component({
   selector: 'app-reminders-page',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterLink, AppShellComponent],
+  imports: [CommonModule, FormsModule, RouterLink, AppShellComponent, ReminderDialogComponent],
   templateUrl: './reminders-page.component.html',
   styleUrl: './reminders-page.component.scss'
 })
@@ -33,13 +34,36 @@ export class RemindersPageComponent implements OnInit {
 
   loading = false;
   loadError = '';
+  message = '';
 
   // Szűrők: 0 / '' = mindegyik
   vehicleFilter = 0;
   statusFilter: ReminderStatus | '' = '';
 
+  // Az új emlékeztető / szerkesztés / törlés ablaka külön komponensben van.
+  @ViewChild(ReminderDialogComponent) dialog!: ReminderDialogComponent;
+
   ngOnInit() {
     this.load();
+  }
+
+  openCreate() {
+    if (!this.vehicles.length || this.loading) return;
+
+    // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot.
+    const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
+    this.dialog.openCreate(car.id);
+  }
+
+  // A régi változatot (ha volt) kicseréljük az újra, a sorrendet a filtered getter intézi.
+  onSaved(result: { entry: Reminder; edited: boolean }) {
+    this.entries = [...this.entries.filter(e => e.id !== result.entry.id), result.entry];
+    this.message = result.edited ? 'Az emlékeztetőt módosítottuk.' : 'Az emlékeztetőt elmentettük.';
+  }
+
+  onDeleted(id: number) {
+    this.entries = this.entries.filter(e => e.id !== id);
+    this.message = 'Az emlékeztetőt töröltük.';
   }
 
   load() {
@@ -124,6 +148,10 @@ export class RemindersPageComponent implements OnInit {
   distance(km: number) {
     const unit = this.profile.preferences().distanceUnit;
     return `${toDistance(km, unit).toLocaleString('hu-HU')} ${distanceLabel(unit)}`;
+  }
+
+  get distanceUnit() {
+    return this.profile.preferences().distanceUnit;
   }
 
   get warningDistance() {

@@ -10,6 +10,7 @@
 
 h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
 .page-heading p { margin-bottom: 0; font-size: 13px; }
+.page-heading .button { flex-shrink: 0; }
 
 // Összesítő kártyák (ugyanúgy, mint a Szerviz oldalon)
 .stat-grid {
