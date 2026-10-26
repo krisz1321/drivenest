@@ -35,6 +35,8 @@ export class RemindersPageComponent implements OnInit {
   loading = false;
   loadError = '';
   message = '';
+  error = '';
+  completingId: number | null = null; // amelyik emlékeztetőnél épp fut az "Elvégezve"
 
   // Szűrők: 0 / '' = mindegyik
   vehicleFilter = 0;
@@ -59,11 +61,44 @@ export class RemindersPageComponent implements OnInit {
   onSaved(result: { entry: Reminder; edited: boolean }) {
     this.entries = [...this.entries.filter(e => e.id !== result.entry.id), result.entry];
     this.message = result.edited ? 'Az emlékeztetőt módosítottuk.' : 'Az emlékeztetőt elmentettük.';
+    this.error = '';
+  }
+
+  // Ismétlődőnél a szerver kiszámolja a következő esedékességet, az egyszerit törlésre ajánljuk fel.
+  complete(entry: Reminder) {
+    if (this.completingId !== null) return;
+    if (!entry.intervalMonths && !entry.intervalKm) {
+      this.dialog.openDelete(entry);
+      return;
+    }
+
+    this.completingId = entry.id;
+    this.message = '';
+    this.error = '';
+    this.api.complete(entry.vehicleId, entry.id).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.completingId = null)
+    ).subscribe({
+      next: updated => {
+        this.entries = this.entries.map(e => e.id === updated.id ? updated : e);
+        this.message = `${updated.title}: elvégezve. Következő esedékesség: ${this.nextDue(updated)}.`;
+      },
+      error: () => this.error = 'Nem sikerült elvégzettnek jelölni. Frissítsd az adatokat, majd próbáld újra.'
+    });
+  }
+
+  // Pl. "2027. 10. 26. · 57 770 km"
+  private nextDue(entry: Reminder) {
+    const parts: string[] = [];
+    if (entry.dueDate) parts.push(entry.dueDate.replaceAll('-', '. ') + '.');
+    if (entry.dueOdometerKm !== null) parts.push(this.distance(entry.dueOdometerKm));
+    return parts.join(' · ');
   }
 
   onDeleted(id: number) {
     this.entries = this.entries.filter(e => e.id !== id);
     this.message = 'Az emlékeztetőt töröltük.';
+    this.error = '';
   }
 
   load() {

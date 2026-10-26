@@ -10,6 +10,9 @@
   @if (message) {
     <p class="alert-success" role="status">{{ message }}</p>
   }
+  @if (error) {
+    <p class="alert-error" role="alert">{{ error }}</p>
+  }
 
   @if (loading) {
     <div class="panel empty-state" role="status">Emlékeztetők betöltése…</div>
@@ -107,6 +110,8 @@
                   <td class="muted">{{ repeat(entry) }}</td>
                   <td>
                     <div class="action-row">
+                      <button type="button" class="text-button" (click)="complete(entry)" [disabled]="completingId !== null"
+                        [attr.aria-label]="entry.title + ' elvégezve'">{{ completingId === entry.id ? 'Mentés…' : 'Elvégezve' }}</button>
                       <button type="button" class="text-button" (click)="dialog.openEdit(entry)"
                         [attr.aria-label]="entry.title + ' szerkesztése'">Szerkesztés</button>
                       <button type="button" class="text-button danger-text" (click)="dialog.openDelete(entry)"
