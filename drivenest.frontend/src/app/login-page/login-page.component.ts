@@ -45,11 +45,10 @@ export class LoginPageComponent {
         void this.router.navigateByUrl('/dashboard');
       },
       error: (error: HttpErrorResponse) => {
-        this.error = error.status === 401 ? 'The username or password is incorrect. Please try again.'
-          : error.status === 0 ? 'We couldn’t connect. Check your connection and try again.'
-          : 'We couldn’t sign you in right now. Please try again shortly.';
+        this.error = error.status === 401 ? 'Hibás felhasználónév vagy jelszó.'
+          : error.status === 0 ? 'Nem sikerült kapcsolódni a szerverhez. Ellenőrizd a kapcsolatot, majd próbáld újra.'
+          : 'A bejelentkezés most nem sikerült. Próbáld újra később.';
       }
     });
   }
-
 }
