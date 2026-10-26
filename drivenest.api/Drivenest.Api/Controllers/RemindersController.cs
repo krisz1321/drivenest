@@ -17,10 +17,12 @@ namespace Drivenest.Api.Controllers;
 public class RemindersController : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly TimeProvider _clock;
 
-    public RemindersController(AppDbContext db)
+    public RemindersController(AppDbContext db, TimeProvider clock)
     {
         _db = db;
+        _clock = clock;
     }
 
     private Task<bool> OwnsVehicle(int vehicleId, CancellationToken cancellationToken)
@@ -102,6 +104,32 @@ public class RemindersController : ControllerBase
         _db.Reminders.Remove(entry);
         var error = await Save(cancellationToken);
         return error is not null ? error : NoContent();
+    }
+
+    // Elvégezve: ismétlődő emlékeztetőnél beállítja a következő esedékességet (mától, illetve a jelenlegi km-től).
+    [HttpPost("{id:int}/complete")]
+    [ProducesResponseType(typeof(ReminderDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
+    public async Task<ActionResult<ReminderDto>> Complete(int vehicleId, int id, CancellationToken cancellationToken)
+    {
+        if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
+
+        var entry = await _db.Reminders.Include(r => r.Vehicle)
+            .SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
+        if (entry is null) return NotFound();
+
+        // Az egyszeri emlékeztetőt a felületen törléssel lehet lezárni.
+        if (entry.IntervalMonths is null && entry.IntervalKm is null)
+            return Problem(statusCode: 400, title: "This reminder does not repeat. Delete it instead.");
+
+        // Amihez nincs ismétlődés, azt kiürítjük, különben a régi határidő miatt lejártnak látszana.
+        var today = DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
+        entry.DueDate = entry.IntervalMonths is null ? null : today.AddMonths(entry.IntervalMonths.Value);
+        entry.DueOdometerKm = entry.IntervalKm is null ? null : entry.Vehicle.CurrentKm + entry.IntervalKm.Value;
+
+        var error = await Save(cancellationToken);
+        return error is not null ? error : Ok(ToDto(entry));
     }
 
     private async Task<ActionResult?> Save(CancellationToken cancellationToken)
