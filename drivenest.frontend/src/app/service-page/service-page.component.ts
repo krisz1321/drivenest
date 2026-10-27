@@ -55,11 +55,21 @@ export class ServicePageComponent implements OnInit {
   onSaved(result: { entry: ServiceRecord; edited: boolean }) {
     this.entries = this.sorted([...this.entries.filter(e => e.id !== result.entry.id), result.entry]);
     this.message = result.edited ? 'A szervizt módosítottuk.' : 'A szervizt elmentettük.';
+    this.refreshVehicles();
   }
 
   onDeleted(id: number) {
     this.entries = this.entries.filter(e => e.id !== id);
     this.message = 'A szervizt töröltük.';
+    this.refreshVehicles();
+  }
+
+  // Mentés/törlés után a szerver frissíti a jármű óraállását, ezért újratöltjük a járműveket.
+  private refreshVehicles() {
+    this.vehicleApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: vehicles => this.vehicles = vehicles,
+      error: () => {} // ha nem sikerül, marad a régi lista
+    });
   }
 
   load() {

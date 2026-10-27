@@ -1,4 +1,4 @@
-import { Component, DestroyRef, Input, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin } from 'rxjs';
 import { Vehicle } from '../services/vehicle.service';
@@ -15,6 +15,8 @@ import { Currency, currencyLabel } from '../shared/units';
 export class VehicleServicesComponent implements OnInit {
   @Input({ required: true }) vehicle!: Vehicle;
   @Input() currency: Currency = 'HUF';
+  // Mentés/törlés után jelez, hogy a szülő újratölthesse a jármű óraállását.
+  @Output() changed = new EventEmitter<void>();
   @ViewChild(ServiceDialogComponent) dialog!: ServiceDialogComponent;
   private readonly api = inject(ServiceRecordService);
   private readonly destroyRef = inject(DestroyRef);
@@ -56,11 +58,13 @@ export class VehicleServicesComponent implements OnInit {
   onSaved(result: { entry: ServiceRecord; edited: boolean }) {
     this.entries = this.sorted([...this.entries.filter(e => e.id !== result.entry.id), result.entry]);
     this.message = result.edited ? 'A szervizt módosítottuk.' : 'A szervizt elmentettük.';
+    this.changed.emit();
   }
 
   onDeleted(id: number) {
     this.entries = this.entries.filter(e => e.id !== id);
     this.message = 'A szervizt töröltük.';
+    this.changed.emit();
   }
 
   private sorted(entries: ServiceRecord[]) {

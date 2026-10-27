@@ -14,8 +14,8 @@
         <button type="button" class="button button-secondary button-compact" disabled title="A kiadások rögzítése hamarosan elérhető.">Egyéb kiadás · Hamarosan</button>
       </div>
     </div>
-    <app-vehicle-refuelings #refuelings [vehicle]="car" [currency]="currency" />
-    <app-vehicle-services #services [vehicle]="car" [currency]="currency" />
+    <app-vehicle-refuelings #refuelings [vehicle]="car" [currency]="currency" (changed)="refreshVehicles()" />
+    <app-vehicle-services #services [vehicle]="car" [currency]="currency" (changed)="refreshVehicles()" />
     </section>
   } @else if (loading) {
     <div class="panel empty-state" role="status">Jármű betöltése…</div>

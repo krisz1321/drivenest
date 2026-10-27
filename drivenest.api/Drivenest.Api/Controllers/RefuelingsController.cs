@@ -65,6 +65,7 @@ public class RefuelingsController : ControllerBase
         _db.Refuelings.Add(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { vehicleId, id = entry.Id }, ToDto(entry));
     }
 
@@ -77,9 +78,12 @@ public class RefuelingsController : ControllerBase
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
         var entry = await _db.Refuelings.SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
+        var oldKm = entry.OdometerKm;
         Apply(request, entry);
         var error = await Save(cancellationToken);
-        return error is not null ? error : Ok(ToDto(entry));
+        if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
+        return Ok(ToDto(entry));
     }
 
     [HttpDelete("{id:int}")]
@@ -92,7 +96,9 @@ public class RefuelingsController : ControllerBase
         if (entry is null) return NotFound();
         _db.Refuelings.Remove(entry);
         var error = await Save(cancellationToken);
-        return error is not null ? error : NoContent();
+        if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, entry.OdometerKm, cancellationToken);
+        return NoContent();
     }
 
     private async Task<ActionResult?> Save(CancellationToken cancellationToken)

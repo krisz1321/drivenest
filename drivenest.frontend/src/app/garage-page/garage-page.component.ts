@@ -87,6 +87,14 @@ export class GaragePageComponent implements OnInit {
   }
 
 
+  // Tankolás/szerviz mentése után a szerver frissíti az óraállást, ezért újratöltjük a járműveket.
+  refreshVehicles() {
+    this.api.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: vehicles => this.vehicles = vehicles,
+      error: () => {} // ha nem sikerül, marad a régi lista
+    });
+  }
+
   open(mode: 'create' | 'edit' | 'delete', vehicle: Vehicle | null = null) {
     if (this.saving || (mode !== 'create' && !vehicle)) return;
     this.mode = mode;

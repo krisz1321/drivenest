@@ -133,6 +133,7 @@ export class FillUpComponentComponent implements OnInit {
         this.entries = this.sorted([...this.entries.filter(e => e.id !== entry.id), entry]);
         this.message = 'A tankolást mentettük.';
         this.dialog.nativeElement.close();
+        this.refreshVehicles();
       }, error: (error: HttpErrorResponse) => this.showError(error)
     });
   }
@@ -146,7 +147,14 @@ export class FillUpComponentComponent implements OnInit {
         this.entries = this.entries.filter(e => e.id !== id);
         this.message = 'A tankolást töröltük.';
         this.dialog.nativeElement.close();
+        this.refreshVehicles();
       }, error: (error: HttpErrorResponse) => this.showError(error)
+    });
+  }
+  // Mentés/törlés után a szerver frissíti a jármű óraállását, ezért újratöltjük a járműveket.
+  private refreshVehicles() {
+    this.vehicleApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: vehicles => this.vehicles = vehicles, error: () => {} // ha nem sikerül, marad a régi lista
     });
   }
   private sorted(entries: Refueling[]) {
