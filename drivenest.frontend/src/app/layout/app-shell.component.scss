@@ -1,4 +1,9 @@
 :host { display: block; font-size: 14px; }
+@media print {
+  app-sidebar, .topbar { display: none; }
+  main { margin-left: 0 !important; }
+  .page-content { padding: 0 !important; max-width: none; }
+}
 .dashboard { min-height: 100svh; background: var(--color-background); }
 main { margin-left: var(--sidebar-width); }
 .topbar { min-height: 76px; padding: 16px 36px; display: flex; justify-content: space-between; align-items: center; gap: 12px; border-bottom: 1px solid var(--color-border); background: var(--color-surface); color: var(--color-muted); font-size: 12px; }

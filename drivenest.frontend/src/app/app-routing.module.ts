@@ -9,6 +9,7 @@ import { GaragePageComponent } from './garage-page/garage-page.component';
 
 import { FillUpComponentComponent } from './fill-up-component/fill-up-component.component';
 import { ExpensesPageComponent } from './expenses-page/expenses-page.component';
+import { ServiceRecordsComponent } from './service-records/service-records.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -19,6 +20,7 @@ const routes: Routes = [
   { path: 'garage', component: GaragePageComponent, canActivate: [authGuard] },
   { path: 'refuelings', component: FillUpComponentComponent, canActivate: [authGuard] },
   { path: 'expenses', component: ExpensesPageComponent, canActivate: [authGuard] },
+  { path: 'service-records', component: ServiceRecordsComponent, canActivate: [authGuard] },
   { path: 'settings', component: SettingsPageComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'login' }
 ];

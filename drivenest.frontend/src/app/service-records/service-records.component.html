@@ -1,0 +1,78 @@
+﻿<app-shell active="service-records" section="Szervizkönyv">
+  <section class="service-book">
+    <header class="page-heading">
+      <div>
+        <h1>Digitális szervizkönyv</h1>
+        <p class="muted">{{ selectedVehicle ? selectedVehicle.make + ' ' + selectedVehicle.model + ' · eladási nézet' : 'A járműved szerviztörténete' }}</p>
+      </div>
+      <button type="button" class="button button-compact pdf-button" (click)="print()" [disabled]="loading || !!error || !entries.length">PDF mentése</button>
+    </header>
+
+    @if (vehicles.length > 1) {
+      <div class="vehicle-picker">
+        <label for="service-vehicle">Jármű</label>
+        <select id="service-vehicle" class="form-input" [(ngModel)]="vehicleId" (ngModelChange)="loadRecords()">
+          @for (car of vehicles; track car.id) {
+            <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+          }
+        </select>
+      </div>
+    }
+
+    <div class="audit-bar">
+      <label class="audit-toggle">
+        <input type="checkbox" role="switch" [(ngModel)]="showTimestamps">
+        <span class="switch-track" aria-hidden="true"></span>
+        <span>Időbélyegek megjelenítése (Audit mód)</span>
+      </label>
+      <p class="muted">A rögzítés időpontja utólag nem írható felül.</p>
+    </div>
+
+    @if (loading) {
+      <div class="panel empty-state" role="status">Szervizbejegyzések betöltése…</div>
+    } @else if (error) {
+      <div class="alert-error" role="alert">
+        <p>{{ error }}</p>
+        <button type="button" class="button button-secondary button-compact" (click)="retry()">Újrapróbálás</button>
+      </div>
+    } @else if (!vehicles.length) {
+      <div class="panel empty-state">
+        <h2>Még nincs járműved</h2>
+        <p>Először adj hozzá egy járművet a garázsodhoz.</p>
+        <a routerLink="/garage" class="button button-secondary button-compact">Garázs megnyitása</a>
+      </div>
+    } @else if (!entries.length) {
+      <div class="panel empty-state">
+        <h2>Még nincs szervizbejegyzés</h2>
+        <p>Ennek a járműnek még nincs rögzített szervize.</p>
+      </div>
+    } @else {
+      <div class="panel record-panel table-scroll">
+        <table class="data-table" aria-label="Szervizbejegyzések">
+          <thead>
+            <tr>
+              <th>Javítás napja</th>
+              @if (showTimestamps) { <th>Rögzítve (CreatedAt)</th> }
+              <th>Km</th>
+              <th>Munka</th>
+              <th class="right">Költség</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of entries; track entry.id) {
+              <tr>
+                <td class="nowrap">{{ entry.date | date:'yyyy. MM. dd.' }}</td>
+                @if (showTimestamps) {
+                  <td class="timestamp nowrap">{{ timestamp(entry.createdAt) }}</td>
+                }
+                <td class="nowrap">{{ number(entry.odometerKm) }}</td>
+                <td class="work">{{ entry.description || entry.categoryName }}<span *ngIf="entry.provider"> · {{ entry.provider }}</span></td>
+                <td class="right nowrap">{{ number(entry.partsCost + entry.laborCost) }} Ft</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    }
+  </section>
+</app-shell>
