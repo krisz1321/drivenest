@@ -86,6 +86,13 @@ namespace Drivenest.Api.Extensions
         {
             services.AddSwaggerGen(options =>
             {
+                options.MapType<DateOnly>(() => new OpenApiSchema
+                {
+                    Type = "string",
+                    Format = "date",
+                    Example = new Microsoft.OpenApi.Any.OpenApiString("2026-10-27")
+                });
+
                 options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
                 {
                     Name = "Authorization",
