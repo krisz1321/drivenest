@@ -1,4 +1,4 @@
-import { Component, DestroyRef, ElementRef, Input, OnInit, ViewChild, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { AbstractControl, FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -23,6 +23,8 @@ const validDate = (control: AbstractControl) => {
 export class VehicleRefuelingsComponent implements OnInit {
   @Input({ required: true }) vehicle!: Vehicle;
   @Input() currency = 'HUF';
+  // Mentés/törlés után jelez, hogy a szülő újratölthesse a jármű óraállását.
+  @Output() changed = new EventEmitter<void>();
   @ViewChild('refuelingDialog') dialog!: ElementRef<HTMLDialogElement>;
   private readonly api = inject(RefuelingService);
   private readonly destroyRef = inject(DestroyRef);
@@ -84,6 +86,7 @@ export class VehicleRefuelingsComponent implements OnInit {
         this.entries = this.sorted([...this.entries.filter(e => e.id !== entry.id), entry]);
         this.message = 'A tankolást mentettük.';
         this.dialog.nativeElement.close();
+        this.changed.emit();
       }, error: (error: HttpErrorResponse) => this.showError(error)
     });
   }
@@ -97,6 +100,7 @@ export class VehicleRefuelingsComponent implements OnInit {
         this.entries = this.entries.filter(e => e.id !== id);
         this.message = 'A tankolást töröltük.';
         this.dialog.nativeElement.close();
+        this.changed.emit();
       }, error: (error: HttpErrorResponse) => this.showError(error)
     });
   }

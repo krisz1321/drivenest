@@ -62,6 +62,9 @@ describe('FillUpComponentComponent', () => {
     request.flush({ ...entry, ...request.request.body, id: 3, vehicleId: 8 });
     expect(component.dialog.nativeElement.open).toBeFalse();
     expect(component.entries[0].id).toBe(3);
+    // Mentés után a frissült óraállás miatt újratölti a járműveket.
+    http.expectOne(req => req.url.endsWith('/ownvehicles')).flush([cars[0], { ...cars[1], currentKm: 66000 }]);
+    expect(component.vehicles[1].currentKm).toBe(66000);
   });
 
   it('shows an empty state without making fill-up requests for an empty garage', () => {

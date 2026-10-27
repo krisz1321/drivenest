@@ -190,6 +190,7 @@ export class ExpensesPageComponent implements OnInit {
         this.entries = this.sorted([...this.entries.filter(e => e.id !== entry.id), entry]);
         this.message = this.mode === 'edit' ? 'A kiadást módosítottuk.' : 'A kiadást elmentettük.';
         this.dialog.nativeElement.close();
+        this.refreshVehicles();
       },
       error: (error: HttpErrorResponse) => this.showError(error)
     });
@@ -209,6 +210,7 @@ export class ExpensesPageComponent implements OnInit {
         this.entries = this.entries.filter(e => e.id !== id);
         this.message = 'A kiadást töröltük.';
         this.dialog.nativeElement.close();
+        this.refreshVehicles();
       },
       error: (error: HttpErrorResponse) => this.showError(error)
     });
@@ -307,6 +309,14 @@ export class ExpensesPageComponent implements OnInit {
 
   number(value: number, digits = 2) {
     return value.toLocaleString('hu-HU', { maximumFractionDigits: digits });
+  }
+
+  // Mentés/törlés után a szerver frissíti a jármű óraállását, ezért újratöltjük a járműveket.
+  private refreshVehicles() {
+    this.vehicleApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+      next: vehicles => this.vehicles = vehicles,
+      error: () => {} // ha nem sikerül, marad a régi lista
+    });
   }
 
   private sum(list: Expense[]) {
