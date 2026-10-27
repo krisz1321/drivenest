@@ -81,6 +81,7 @@ public class ExpensesController : ControllerBase
 
         var error = await Save(cancellationToken);
         if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
 
         // A válaszban a kategória neve is kell.
         await _db.Entry(entry).Reference(e => e.Category).LoadAsync(cancellationToken);
@@ -101,9 +102,11 @@ public class ExpensesController : ControllerBase
         await ValidateCategory(request, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+        var oldKm = entry.OdometerKm;
         Apply(request, entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
 
         await _db.Entry(entry).Reference(e => e.Category).LoadAsync(cancellationToken);
         return Ok(ToDto(entry));
@@ -121,7 +124,9 @@ public class ExpensesController : ControllerBase
 
         _db.Expenses.Remove(entry);
         var error = await Save(cancellationToken);
-        return error is not null ? error : NoContent();
+        if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, entry.OdometerKm, cancellationToken);
+        return NoContent();
     }
 
     private async Task ValidateCategory(ExpenseRequest request, CancellationToken cancellationToken)

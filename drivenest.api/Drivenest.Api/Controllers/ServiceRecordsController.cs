@@ -86,6 +86,7 @@ public class ServiceRecordsController : ControllerBase
 
         var error = await Save(cancellationToken);
         if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
 
         // Újra betöltjük, hogy a válaszban a típusok neve is benne legyen.
         var saved = await WithItems().AsNoTracking().SingleAsync(s => s.Id == record.Id, cancellationToken);
@@ -107,9 +108,11 @@ public class ServiceRecordsController : ControllerBase
         await ValidateCategories(request, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+        var oldKm = record.OdometerKm;
         Apply(request, record);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
 
         var saved = await WithItems().AsNoTracking().SingleAsync(s => s.Id == record.Id, cancellationToken);
         return Ok(ToDto(saved));
@@ -128,7 +131,9 @@ public class ServiceRecordsController : ControllerBase
         // A tételeket az adatbázis törli (cascade).
         _db.ServiceRecords.Remove(record);
         var error = await Save(cancellationToken);
-        return error is not null ? error : NoContent();
+        if (error is not null) return error;
+        await _db.UpdateCurrentKm(vehicleId, record.OdometerKm, cancellationToken);
+        return NoContent();
     }
 
     // Minden tétel típusa létezzen, és látható legyen a felhasználónak.
