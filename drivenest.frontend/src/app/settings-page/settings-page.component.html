@@ -1,0 +1,55 @@
+<app-shell active="settings" section="Beállítások">
+  <div class="heading"><div><p class="eyebrow">SAJÁT FIÓK</p><h1>Beállítások</h1><p class="muted">Profil, pénznem és mértékegységek — mentés után az egész alkalmazásban érvényesek.</p></div></div>
+
+  @if (loading) {
+    <div class="panel empty-state" role="status">A beállítások betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div>
+  } @else {
+    <section class="panel settings-panel" aria-labelledby="profile-title">
+      <div class="panel-heading"><h2 id="profile-title">Profil és mértékegységek</h2></div>
+      <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" [attr.aria-busy]="saving === 'profile'" novalidate>
+        <fieldset [disabled]="saving !== null"><div class="form-grid">
+          <div class="form-field form-wide"><label for="set-name">Megjelenített név *</label><input class="form-input" id="set-name" formControlName="displayName" maxlength="100" autocomplete="name" [attr.aria-invalid]="invalid(profileForm.controls.displayName)" aria-describedby="set-name-error">@if (invalid(profileForm.controls.displayName)) { <p id="set-name-error" class="field-error">Adj meg egy nevet, legfeljebb 100 karakterrel.</p> }</div>
+          <div class="form-field"><label for="set-currency">Pénznem</label><select class="form-input" id="set-currency" formControlName="currency">@for (item of currencies; track item.value) { <option [value]="item.value">{{ item.label }}</option> }</select></div>
+          <div class="form-field"><label for="set-distance">Távolság</label><select class="form-input" id="set-distance" formControlName="distanceUnit">@for (item of distanceUnits; track item.value) { <option [value]="item.value">{{ item.label }}</option> }</select></div>
+          <div class="form-field"><label for="set-volume">Térfogat</label><select class="form-input" id="set-volume" formControlName="volumeUnit">@for (item of volumeUnits; track item.value) { <option [value]="item.value">{{ item.label }}</option> }</select></div>
+          <div class="form-field"><label for="set-consumption">Fogyasztás</label><select class="form-input" id="set-consumption" formControlName="consumptionUnit">@for (item of consumptionUnits; track item.value) { <option [value]="item.value">{{ item.label }}</option> }</select></div>
+        </div></fieldset>
+        <p class="form-help">A pénznem csak jelölés: a már rögzített összegek számértéke nem változik, árfolyam-átváltás nincs. Az óraállás és a mennyiség az adatbázisban továbbra is km-ben és literben tárolódik.</p>
+        @if (messages.profile) { <div class="alert-success" role="status"><span>{{ messages.profile }}</span></div> }
+        @if (errors.profile.length) { <div class="alert-error" role="alert">@for (error of errors.profile; track $index) { <p>{{ error }}</p> }</div> }
+        <div class="form-actions"><button type="submit" class="button button-primary button-compact" [disabled]="saving !== null">{{ saving === 'profile' ? 'Mentés…' : 'Beállítások mentése' }}</button></div>
+      </form>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="email-title">
+      <div class="panel-heading"><h2 id="email-title">E-mail-cím</h2></div>
+      <p class="panel-description">Jelenlegi cím: <strong>{{ profile()?.email }}</strong>. A módosításhoz meg kell adnod a jelenlegi jelszavadat.</p>
+      <form [formGroup]="emailForm" (ngSubmit)="changeEmail()" [attr.aria-busy]="saving === 'email'" novalidate>
+        <fieldset [disabled]="saving !== null"><div class="form-grid">
+          <div class="form-field"><label for="set-email">Új e-mail-cím *</label><input class="form-input" id="set-email" type="email" formControlName="email" maxlength="256" autocomplete="email" autocapitalize="none" spellcheck="false" [attr.aria-invalid]="invalid(emailForm.controls.email)" aria-describedby="set-email-error">@if (invalid(emailForm.controls.email)) { <p id="set-email-error" class="field-error">Adj meg egy érvényes e-mail-címet.</p> }</div>
+          <div class="form-field"><label for="set-email-confirm">Új e-mail-cím megerősítése *</label><input class="form-input" id="set-email-confirm" type="email" formControlName="confirmEmail" maxlength="256" autocomplete="off" autocapitalize="none" spellcheck="false" [attr.aria-invalid]="emailForm.controls.confirmEmail.touched && (emailForm.hasError('emailMismatch') || emailForm.controls.confirmEmail.invalid)" aria-describedby="set-email-confirm-error">@if (emailForm.controls.confirmEmail.touched && (emailForm.hasError('emailMismatch') || emailForm.controls.confirmEmail.invalid)) { <p id="set-email-confirm-error" class="field-error">A két e-mail-címnek egyeznie kell.</p> }</div>
+          <div class="form-field"><label for="set-email-password">Jelenlegi jelszó *</label><input class="form-input" id="set-email-password" type="password" formControlName="currentPassword" autocomplete="current-password" [attr.aria-invalid]="invalid(emailForm.controls.currentPassword)" aria-describedby="set-email-password-error">@if (invalid(emailForm.controls.currentPassword)) { <p id="set-email-password-error" class="field-error">Add meg a jelenlegi jelszavadat.</p> }</div>
+        </div></fieldset>
+        @if (messages.email) { <div class="alert-success" role="status"><span>{{ messages.email }}</span></div> }
+        @if (errors.email.length) { <div class="alert-error" role="alert">@for (error of errors.email; track $index) { <p>{{ error }}</p> }</div> }
+        <div class="form-actions"><button type="submit" class="button button-primary button-compact" [disabled]="saving !== null">{{ saving === 'email' ? 'Mentés…' : 'E-mail-cím módosítása' }}</button></div>
+      </form>
+    </section>
+
+    <section class="panel settings-panel" aria-labelledby="password-title">
+      <div class="panel-heading"><h2 id="password-title">Jelszó</h2></div>
+      <form [formGroup]="passwordForm" (ngSubmit)="changePassword()" [attr.aria-busy]="saving === 'password'" novalidate>
+        <fieldset [disabled]="saving !== null"><div class="form-grid">
+          <div class="form-field form-wide"><label for="set-current">Jelenlegi jelszó *</label><input class="form-input" id="set-current" type="password" formControlName="currentPassword" autocomplete="current-password" [attr.aria-invalid]="invalid(passwordForm.controls.currentPassword)" aria-describedby="set-current-error">@if (invalid(passwordForm.controls.currentPassword)) { <p id="set-current-error" class="field-error">Add meg a jelenlegi jelszavadat.</p> }</div>
+          <div class="form-field"><label for="set-new">Új jelszó *</label><input class="form-input" id="set-new" type="password" formControlName="password" autocomplete="new-password" [attr.aria-invalid]="invalid(passwordForm.controls.password)" aria-describedby="set-new-help"><p id="set-new-help" class="form-help" [class.field-error]="invalid(passwordForm.controls.password)">Legalább 8 karakter, kis- és nagybetűvel, valamint számmal.</p></div>
+          <div class="form-field"><label for="set-confirm">Új jelszó megerősítése *</label><input class="form-input" id="set-confirm" type="password" formControlName="confirmPassword" autocomplete="new-password" [attr.aria-invalid]="passwordForm.controls.confirmPassword.touched && (passwordForm.hasError('passwordMismatch') || passwordForm.controls.confirmPassword.invalid)" aria-describedby="set-confirm-error">@if (passwordForm.controls.confirmPassword.touched && (passwordForm.hasError('passwordMismatch') || passwordForm.controls.confirmPassword.invalid)) { <p id="set-confirm-error" class="field-error">A két jelszónak egyeznie kell.</p> }</div>
+        </div></fieldset>
+        @if (messages.password) { <div class="alert-success" role="status"><span>{{ messages.password }}</span></div> }
+        @if (errors.password.length) { <div class="alert-error" role="alert">@for (error of errors.password; track $index) { <p>{{ error }}</p> }</div> }
+        <div class="form-actions"><button type="submit" class="button button-primary button-compact" [disabled]="saving !== null">{{ saving === 'password' ? 'Mentés…' : 'Jelszó módosítása' }}</button></div>
+      </form>
+    </section>
+  }
+</app-shell>

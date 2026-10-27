@@ -1,0 +1,54 @@
+<div class="register-shell">
+  <header>
+    <a class="brand" routerLink="/login" aria-label="DriveNest home"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="m5 17 4-9h14l4 9v8h-4v-4H9v4H5v-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 16h18M10 19h2m8 0h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>DriveNest.</a>
+    <a class="back-link" routerLink="/login">← Back to sign in</a>
+  </header>
+  <main>
+    <section class="register-intro" aria-labelledby="intro-title">
+      <p class="eyebrow">A FRESH START FOR EVERY MILE</p>
+      <h1 id="intro-title">Your car has a story.<br><span>Give it a home.</span></h1>
+      <p class="muted">From the first fill-up to the next service, keep the little details together. Start your DriveNest journey today.</p>
+      <div class="benefit"><span aria-hidden="true">01</span><div><h2>One home for your cars</h2><p class="muted">Your vehicles, neatly organized.</p></div></div>
+      <div class="benefit"><span aria-hidden="true">02</span><div><h2>Stay ahead of maintenance</h2><p class="muted">Keep track of the care your car needs.</p></div></div>
+      <div class="benefit"><span aria-hidden="true">03</span><div><h2>Know where your money goes</h2><p class="muted">Keep fuel and expenses in view.</p></div></div>
+    </section>
+    <section class="surface-card register-card" aria-labelledby="register-title">
+      @if (registered) {
+        <p class="eyebrow">READY FOR THE ROAD</p>
+        <h2 id="register-title">You’re all set.</h2>
+        <p class="alert-success" role="status">Your account has been created. Sign in with your email and password to get started.</p>
+        <a class="button button-primary" routerLink="/login">Continue to sign in →</a>
+      } @else {
+        <p class="eyebrow muted">WELCOME TO DRIVENEST</p>
+        <h2 id="register-title">Create your account.</h2>
+        <p class="muted subtitle">A little organization. A lot more peace of mind.</p>
+        <form [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="submitting" novalidate>
+          <div class="form-field">
+            <label for="register-name">Your name</label>
+            <input class="form-input" id="register-name" formControlName="displayName" autocomplete="name" placeholder="Enter your name" maxlength="100" [attr.aria-invalid]="invalid('displayName')" aria-describedby="name-error">
+            @if (invalid('displayName')) { <p class="field-error" id="name-error">Enter your name (up to 100 characters).</p> }
+          </div>
+          <div class="form-field">
+            <label for="register-email">Email address</label>
+            <input class="form-input" id="register-email" type="email" formControlName="email" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@example.com" maxlength="256" [attr.aria-invalid]="invalid('email')" aria-describedby="email-error">
+            @if (invalid('email')) { <p class="field-error" id="email-error">Enter a valid email address.</p> }
+          </div>
+          <div class="form-field">
+            <div class="password-label"><label for="register-password">Password</label><button type="button" class="visibility-toggle" (click)="showPassword = !showPassword" [attr.aria-pressed]="showPassword" [attr.aria-label]="showPassword ? 'Hide passwords' : 'Show passwords'">{{ showPassword ? 'Hide' : 'Show' }}</button></div>
+            <input class="form-input" id="register-password" [type]="showPassword ? 'text' : 'password'" formControlName="password" autocomplete="new-password" placeholder="Create a password" [attr.aria-invalid]="invalid('password')" aria-describedby="password-help">
+            <p id="password-help" class="password-help" [class.field-error]="invalid('password')">At least 8 characters with an uppercase letter, a lowercase letter, and a number.</p>
+          </div>
+          <div class="form-field">
+            <label for="register-confirm">Confirm password</label>
+            <input class="form-input" id="register-confirm" [type]="showPassword ? 'text' : 'password'" formControlName="confirmPassword" autocomplete="new-password" placeholder="Enter your password again" [attr.aria-invalid]="form.controls.confirmPassword.touched && (form.hasError('passwordMismatch') || form.controls.confirmPassword.invalid)" aria-describedby="confirm-error">
+            @if (form.controls.confirmPassword.touched && (form.hasError('passwordMismatch') || form.controls.confirmPassword.invalid)) { <p class="field-error" id="confirm-error">Your passwords must match.</p> }
+          </div>
+          @if (errors.length) { <div class="alert-error" role="alert">@for (error of errors; track $index) { <p>{{ error }}</p> }</div> }
+          <button class="button button-primary" type="submit" [disabled]="submitting">{{ submitting ? 'Creating your account…' : 'Create account' }} <span aria-hidden="true">→</span></button>
+        </form>
+        <p class="auth-switch">Already have an account? <a routerLink="/login">Sign in</a></p>
+      }
+    </section>
+  </main>
+  <footer class="muted">© 2026 DriveNest <span>Made for the miles ahead.</span></footer>
+</div>

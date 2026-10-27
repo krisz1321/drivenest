@@ -1,0 +1,8 @@
+<div class="dashboard dashboard-theme">
+  <app-sidebar [active]="active" [displayName]="displayName" (signOut)="signOut()" />
+
+  <main [attr.id]="active === 'dashboard' ? 'overview' : null">
+    <header class="topbar"><span>Garázs <span class="separator">/</span><strong>{{ section }}</strong></span><span class="date">{{ dateLabel }}</span></header>
+    <div class="page-content"><ng-content /></div>
+  </main>
+</div>

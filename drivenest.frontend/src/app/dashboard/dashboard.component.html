@@ -1,0 +1,128 @@
+<app-shell active="dashboard" section="Vezérlőpult">
+  <header class="page-heading">
+    <div>
+      <h1>Vezérlőpult</h1>
+      <p class="muted">Az összes járműved adatai összesítve.</p>
+    </div>
+    <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+  </header>
+
+  @if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()" [disabled]="loading">Újrapróbálás</button>
+    </div>
+  }
+
+  <!-- Összesítő kártyák -->
+  @if (!loadError) {
+    <section class="stat-grid" aria-label="Összesítés">
+      <article class="panel stat-card">
+        <div class="card-label">E havi kiadás</div>
+        <strong>{{ number(monthlyTotal) }} <small>{{ unit }}</small></strong>
+        <p>Tankolás, szerviz és egyéb · {{ month }}</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Összes kiadás</div>
+        <strong>{{ number(allTotal) }} <small>{{ unit }}</small></strong>
+        <p>{{ entryCount }} bejegyzés alapján</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Kilométerköltség</div>
+        <strong>{{ costPerDistance === null ? '—' : number(costPerDistance, 1) }} <small>{{ unit }}/{{ distanceUnit }}</small></strong>
+        <p>{{ number(distance) }} {{ distanceUnit }} megtett táv alapján</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Járművek</div>
+        <strong>{{ vehicles.length }} <small>db</small></strong>
+        <p>A garázsodban</p>
+      </article>
+    </section>
+  }
+
+  <!-- Közelgő teendők (lejárt és hamarosan esedékes emlékeztetők) -->
+  <section id="reminders" class="panel">
+    <div class="panel-heading">
+      <h2>Közelgő teendők</h2>
+      <a class="text-button" routerLink="/reminders">Összes emlékeztető →</a>
+    </div>
+    @if (loading) {
+      <p class="form-help" role="status">Betöltés…</p>
+    } @else if (!loadError) {
+      @for (item of upcomingReminders; track item.entry.id) {
+        <div class="reminder-row">
+          <div>
+            <strong>{{ item.entry.title }}</strong>
+            <small>{{ plate(item.entry.vehicleId) }}</small>
+          </div>
+          <span class="badge" [class.badge-danger]="item.status === 'overdue'" [class.badge-warning]="item.status === 'soon'">{{ remaining(item.entry) }}</span>
+        </div>
+      } @empty {
+        <p class="empty-state">Nincs közelgő teendő.</p>
+      }
+    }
+  </section>
+
+  <div class="content-grid">
+    <!-- Legutóbbi események -->
+    <section id="events" class="panel">
+      <div class="panel-heading">
+        <h2>Legutóbbi események</h2>
+      </div>
+      @if (loading) {
+        <p class="form-help" role="status">Betöltés…</p>
+      } @else if (!loadError) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Esemény</th>
+                <th>Dátum</th>
+                <th class="right">Összeg</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (event of latestEvents; track $index) {
+                <tr>
+                  <td>
+                    <a [routerLink]="event.link">{{ event.title }}</a>
+                    <small>{{ event.type }} · {{ plate(event.vehicleId) }}</small>
+                  </td>
+                  <td class="nowrap">{{ event.date | date:'yyyy. MM. dd.' }}</td>
+                  <td class="right nowrap"><strong>{{ number(event.amount) }} {{ unit }}</strong></td>
+                </tr>
+              } @empty {
+                <tr><td colspan="3" class="empty-state">Még nincs rögzített esemény.</td></tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      }
+    </section>
+
+    <!-- Havi költségek kategóriánként -->
+    <section id="costs" class="panel">
+      <div class="panel-heading">
+        <h2>Hová ment a pénz?</h2>
+        <span class="badge">{{ month }}</span>
+      </div>
+      @if (loading) {
+        <p class="form-help" role="status">Betöltés…</p>
+      } @else if (!loadError) {
+        @if (monthlyTotal) {
+          @for (cost of costs; track cost.label) {
+            <div class="cost-row">
+              <div><span>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }}</strong></div>
+              <div class="bar-track" aria-hidden="true">
+                <div class="bar-fill" [style.width.%]="percent(cost.amount)"></div>
+              </div>
+            </div>
+          }
+          <div class="cost-total"><span>Összesen</span><strong>{{ number(monthlyTotal) }} {{ unit }}</strong></div>
+        } @else {
+          <p class="empty-state">Ebben a hónapban még nincs kiadás.</p>
+        }
+      }
+    </section>
+  </div>
+</app-shell>

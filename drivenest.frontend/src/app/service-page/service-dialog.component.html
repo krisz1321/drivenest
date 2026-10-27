@@ -1,0 +1,118 @@
+<dialog #serviceDialog class="modal dashboard-theme" aria-labelledby="service-title" (cancel)="cancel($event)">
+  <div class="panel-heading">
+    <h2 id="service-title">{{ title }}</h2>
+    <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
+  </div>
+
+  @if (mode === 'delete') {
+    <p>
+      Biztosan törlöd a(z) {{ target?.date | date:'yyyy. MM. dd.' }} dátumú
+      <strong>{{ target ? typeNames(target) : '' }}</strong> szervizt ({{ target ? number(target.total) : '' }} {{ unit }})?
+    </p>
+    <p class="muted">{{ target ? vehicleName(target.vehicleId) : '' }}</p>
+  } @else {
+  <form id="service-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <fieldset [disabled]="saving">
+      <div class="form-grid">
+        <div class="form-field form-wide">
+          <label for="service-car">Jármű *</label>
+          <select id="service-car" class="form-input" formControlName="vehicleId" (change)="onVehicleChange()">
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+
+        <!-- Szerviztípusok: keresőmező + görgethető pipálós lista, több típus is választható -->
+        <div class="form-field form-wide">
+          <label id="service-category-label" for="service-category-search">Szerviz típusai *</label>
+          <input id="service-category-search" class="form-input" type="search" placeholder="Keresés, pl. olaj, fék…"
+            [(ngModel)]="categorySearch" [ngModelOptions]="{ standalone: true }" (keydown.enter)="$event.preventDefault()">
+          <div class="category-list" role="group" aria-labelledby="service-category-label" [attr.aria-invalid]="invalid('items')">
+            @for (category of builtInCategories; track category.id) {
+              <label class="category-option">
+                <input type="checkbox" [checked]="isSelected(category.id)" (change)="toggleCategory(category.id)">
+                {{ category.name }}
+              </label>
+            }
+            <!-- A saját típusok felvétele később jön, addig ez a csoport nem jelenik meg. -->
+            @if (customCategories.length) {
+              <p class="category-group">Saját típusok</p>
+              @for (category of customCategories; track category.id) {
+                <label class="category-option">
+                  <input type="checkbox" [checked]="isSelected(category.id)" (change)="toggleCategory(category.id)">
+                  {{ category.name }}
+                </label>
+              }
+            }
+            @if (!visibleCategories.length) {
+              <p class="muted category-empty">Nincs ilyen típus.</p>
+            }
+          </div>
+          @if (invalid('items')) { <p class="field-error">Válassz legalább egy szerviztípust.</p> }
+        </div>
+
+        <!-- A kipipált típusok, mindegyik mellett az összege -->
+        @if (items.length) {
+          <div class="form-field form-wide" formArrayName="items">
+            <p class="items-label">Kiválasztott tételek</p>
+            @for (item of items.controls; track item.controls.categoryId.value; let i = $index) {
+              <div class="item-row" [formGroupName]="i">
+                <label [for]="'service-item-' + i">{{ categoryName(item.controls.categoryId.value) }}</label>
+                <div class="item-amount">
+                  <input [id]="'service-item-' + i" class="form-input" type="number" min="0" step="0.01"
+                    formControlName="amount" [attr.aria-invalid]="itemInvalid(i)">
+                  <span>{{ unit }}</span>
+                </div>
+                <button type="button" class="modal-close" (click)="removeItem(i)"
+                  [attr.aria-label]="categoryName(item.controls.categoryId.value) + ' eltávolítása'">×</button>
+              </div>
+              @if (itemInvalid(i)) { <p class="field-error">Nemnegatív összeg, legfeljebb 2 tizedesjegy.</p> }
+            }
+          </div>
+        }
+
+        <div class="form-field">
+          <label for="service-date">Dátum *</label>
+          <input id="service-date" class="form-input" type="date" formControlName="date" [attr.aria-invalid]="invalid('date')">
+          @if (invalid('date')) { <p class="field-error">Add meg a dátumot.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="service-km">Kilométeróra (km) *</label>
+          <input id="service-km" class="form-input" type="number" min="0" step="1" formControlName="odometerKm" [attr.aria-invalid]="invalid('odometerKm')">
+          @if (invalid('odometerKm')) { <p class="field-error">Adj meg egy nemnegatív egész számot.</p> }
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="service-provider">Szerviz / helyszín</label>
+          <input id="service-provider" class="form-input" type="text" maxlength="150" formControlName="provider" placeholder="pl. Autó-Szerviz Kft.">
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="service-description">Megjegyzés</label>
+          <textarea id="service-description" class="form-input" rows="3" maxlength="2000" formControlName="description"></textarea>
+        </div>
+      </div>
+    </fieldset>
+
+    <!-- Végösszeg: a tételek összege -->
+    <p class="items-total">Összesen: <strong>{{ number(itemsTotal) }} {{ unit }}</strong></p>
+  </form>
+  }
+
+  @if (errors.length) {
+    <div class="alert-error" role="alert">
+      @for (error of errors; track $index) { <p>{{ error }}</p> }
+    </div>
+  }
+
+  <div class="form-actions">
+    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+    @if (mode === 'delete') {
+      <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
+    } @else {
+      <button type="submit" form="service-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    }
+  </div>
+</dialog>

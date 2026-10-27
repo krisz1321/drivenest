@@ -1,0 +1,60 @@
+<div class="login-shell">
+  <header class="page-header">
+    <a class="brand" href="/" aria-label="DriveNest kezdőlap">
+      <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 32 32" fill="none"><path d="m5 17 4-9h14l4 9v8h-4v-4H9v4H5v-8Z" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 16h18M10 19h2m8 0h2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></span>
+      DriveNest
+    </a>
+  </header>
+
+  <main class="login-layout">
+    <!-- Rövid bemutatás a bal oldalon (mobilon a kártya fölött) -->
+    <section class="intro" aria-labelledby="intro-title">
+      <h1 id="intro-title">Járműnyilvántartás és költségkövetés</h1>
+      <p class="intro-description">Vezesd egy helyen a járműveid tankolásait, szervizeit és egyéb kiadásait, és nézd meg, mennyibe kerül a fenntartásuk.</p>
+      <ul class="feature-list">
+        <li>Tankolások és fogyasztás</li>
+        <li>Szerviznapló</li>
+        <li>Kiadások és havi összesítő</li>
+      </ul>
+    </section>
+
+    <!-- Bejelentkezés -->
+    <section class="login-card" aria-labelledby="login-title">
+      <h2 id="login-title">Bejelentkezés</h2>
+      <p class="login-subtitle muted">Add meg a fiókod adatait.</p>
+
+      <form [formGroup]="form" (ngSubmit)="submit()" [attr.aria-busy]="submitting" novalidate>
+        <div class="form-field">
+          <label for="login-username">E-mail-cím vagy felhasználónév</label>
+          <input class="form-input" id="login-username" type="text" formControlName="userNameOrEmail"
+            autocomplete="username" autocapitalize="none" spellcheck="false"
+            [attr.aria-invalid]="form.controls.userNameOrEmail.touched && form.controls.userNameOrEmail.invalid" aria-describedby="username-error">
+          <p class="field-error" id="username-error">
+            @if (form.controls.userNameOrEmail.touched && form.controls.userNameOrEmail.invalid) { Add meg az e-mail-címed vagy a felhasználóneved. }
+          </p>
+        </div>
+
+        <div class="form-field">
+          <label for="login-password">Jelszó</label>
+          <div class="password-field">
+            <input class="form-input" id="login-password" [type]="showPassword ? 'text' : 'password'" formControlName="password"
+              autocomplete="current-password"
+              [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid" aria-describedby="password-error">
+            <button class="password-toggle" type="button" (click)="showPassword = !showPassword"
+              [attr.aria-label]="showPassword ? 'Jelszó elrejtése' : 'Jelszó megjelenítése'" [attr.aria-pressed]="showPassword">{{ showPassword ? 'Elrejtés' : 'Mutasd' }}</button>
+          </div>
+          <p class="field-error" id="password-error">
+            @if (form.controls.password.touched && form.controls.password.invalid) { Add meg a jelszavad. }
+          </p>
+        </div>
+
+        @if (error) { <p class="alert-error" role="alert">{{ error }}</p> }
+        <button class="button button-primary full-width" type="submit" [disabled]="submitting">{{ submitting ? 'Bejelentkezés…' : 'Bejelentkezés' }}</button>
+      </form>
+
+      <p class="auth-switch">Még nincs fiókod? <a routerLink="/register">Regisztráció</a></p>
+    </section>
+  </main>
+
+  <footer class="page-footer">© 2026 DriveNest</footer>
+</div>

@@ -1,0 +1,86 @@
+<dialog #reminderDialog class="modal dashboard-theme" aria-labelledby="reminder-title" (cancel)="cancel($event)">
+  <div class="panel-heading">
+    <h2 id="reminder-title">{{ title }}</h2>
+    <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
+  </div>
+
+  @if (mode === 'delete') {
+    <p>Biztosan törlöd a(z) <strong>{{ target?.title }}</strong> emlékeztetőt?</p>
+    <p class="muted">{{ target ? vehicleName(target.vehicleId) : '' }}</p>
+  } @else {
+  <form id="reminder-form" [formGroup]="form" (ngSubmit)="save()" novalidate>
+    <fieldset [disabled]="saving">
+      <div class="form-grid">
+        <div class="form-field form-wide">
+          <label for="reminder-car">Jármű *</label>
+          <select id="reminder-car" class="form-input" formControlName="vehicleId">
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="form-field form-wide">
+          <label for="reminder-name">Teendő *</label>
+          <input id="reminder-name" class="form-input" type="text" maxlength="150" formControlName="title"
+            list="reminder-suggestions" placeholder="pl. Olajcsere" [attr.aria-invalid]="invalid('title')">
+          <datalist id="reminder-suggestions">
+            @for (name of suggestions; track name) { <option [value]="name"></option> }
+          </datalist>
+          @if (invalid('title')) { <p class="field-error">Add meg, mi a teendő.</p> }
+        </div>
+
+        <!-- Esedékesség: dátum és/vagy óraállás -->
+        <div class="form-field">
+          <label for="reminder-date">Esedékes dátum</label>
+          <input id="reminder-date" class="form-input" type="date" formControlName="dueDate" [attr.aria-invalid]="dueMissing">
+        </div>
+
+        <div class="form-field">
+          <label for="reminder-km">Esedékes óraállás ({{ unit }})</label>
+          <input id="reminder-km" class="form-input" type="number" min="0" [max]="maxDistance" step="1"
+            formControlName="dueOdometer" [attr.aria-invalid]="dueMissing || invalid('dueOdometer')">
+          @if (invalid('dueOdometer')) { <p class="field-error">Adj meg egy nemnegatív egész számot.</p> }
+          @else if (currentDistance) { <p class="form-help">Jelenleg: {{ currentDistance }} {{ unit }}</p> }
+        </div>
+
+        @if (dueMissing) {
+          <p class="field-error form-wide">Adj meg dátumot vagy óraállást (vagy mindkettőt).</p>
+        }
+
+        <!-- Ismétlődés: ha meg van adva, az "Elvégezve" után ennyivel tolódik tovább -->
+        <div class="form-field">
+          <label for="reminder-months">Ismétlődés (hónap)</label>
+          <input id="reminder-months" class="form-input" type="number" min="1" max="120" step="1"
+            formControlName="intervalMonths" placeholder="pl. 12" [attr.aria-invalid]="invalid('intervalMonths')">
+          @if (invalid('intervalMonths')) { <p class="field-error">1 és 120 közötti egész szám.</p> }
+        </div>
+
+        <div class="form-field">
+          <label for="reminder-interval-km">Ismétlődés ({{ unit }})</label>
+          <input id="reminder-interval-km" class="form-input" type="number" min="1" step="1"
+            formControlName="intervalDistance" placeholder="pl. 10000" [attr.aria-invalid]="invalid('intervalDistance')">
+          @if (invalid('intervalDistance')) { <p class="field-error">Pozitív egész szám.</p> }
+        </div>
+
+        <p class="form-help form-wide">Ha nem adsz meg ismétlődést, az emlékeztető egyszeri.</p>
+      </div>
+    </fieldset>
+  </form>
+  }
+
+  @if (errors.length) {
+    <div class="alert-error" role="alert">
+      @for (error of errors; track $index) { <p>{{ error }}</p> }
+    </div>
+  }
+
+  <div class="form-actions">
+    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+    @if (mode === 'delete') {
+      <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
+    } @else {
+      <button type="submit" form="reminder-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+    }
+  </div>
+</dialog>

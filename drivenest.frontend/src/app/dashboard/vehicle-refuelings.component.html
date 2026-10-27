@@ -1,0 +1,35 @@
+@if (message) { <p class="alert-success" role="status">{{ message }}</p> }
+@if (loading) { <p class="form-help" role="status">Tankolások betöltése…</p> }
+@if (loadError) { <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div> }
+<details class="refueling-history">
+  <summary>Tankolások @if (!loading && !loadError) { <span class="badge">{{ entries.length }}</span> } <span class="muted">Előzmények és szerkesztés</span></summary>
+  @if (!loading && !loadError) {
+    <div class="history-heading"><p class="form-help">Havi üzemanyagköltség: <strong>{{ number(monthlyTotal) }} {{ unit }}</strong></p><button type="button" class="text-button" (click)="load()" [disabled]="saving">Frissítés ↻</button></div>
+    @if (entries.length) {
+      <div class="table-scroll"><table class="data-table"><caption class="visually-hidden">{{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.licensePlate }} tankolásai</caption><thead><tr><th>Dátum / óraállás</th><th>Mennyiség</th><th class="right">Összeg</th><th class="right">Műveletek</th></tr></thead><tbody>
+        @for (entry of entries; track entry.id) { <tr><td><strong>{{ entry.date }}</strong><small>{{ number(entry.odometerKm, 0) }} km</small></td><td>{{ number(entry.liters, 3) }} l<small>{{ entry.isFullTank ? 'Tele tank' : 'Részleges tankolás' }}</small></td><td class="right">{{ number(entry.totalAmount) }} {{ unit }}</td><td><div class="action-row row-actions"><button type="button" class="text-button" (click)="open('edit', entry)" [disabled]="saving" [attr.aria-label]="entry.date + ' tankolás szerkesztése, ' + vehicle.licensePlate">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="open('delete', entry)" [disabled]="saving" [attr.aria-label]="entry.date + ' tankolás törlése, ' + vehicle.licensePlate">Törlés</button></div></td></tr> }
+      </tbody></table></div>
+    } @else { <p class="form-help">Ehhez az autóhoz még nincs tankolás. Rögzítsd az elsőt a fenti gombbal.</p> }
+  }
+</details>
+
+<dialog #refuelingDialog class="modal dashboard-theme" [attr.aria-labelledby]="'refueling-title-' + vehicle.id" (cancel)="cancel($event)">
+  <div class="panel-heading"><h2 [id]="'refueling-title-' + vehicle.id">{{ title }}</h2><button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button></div>
+  <p class="form-help"><strong>{{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.licensePlate }}</strong></p>
+  @if (mode === 'delete') {
+    <p>Biztosan törlöd a(z) <strong>{{ target?.date }}</strong> dátumú tankolást? Ez a művelet végleges.</p>
+  } @else {
+    <form [id]="'refueling-form-' + vehicle.id" [formGroup]="form" (ngSubmit)="save()" [attr.aria-busy]="saving" novalidate>
+      <fieldset [disabled]="saving"><div class="form-grid">
+        <div class="form-field"><label [for]="'refuel-date-' + vehicle.id">Dátum *</label><input class="form-input" [id]="'refuel-date-' + vehicle.id" type="date" formControlName="date" [attr.aria-invalid]="invalid('date')" [attr.aria-describedby]="'refuel-date-error-' + vehicle.id">@if (invalid('date')) { <p class="field-error" [id]="'refuel-date-error-' + vehicle.id">Adj meg érvényes dátumot.</p> }</div>
+        <div class="form-field"><label [for]="'refuel-km-' + vehicle.id">Óraállás (km) *</label><input class="form-input" [id]="'refuel-km-' + vehicle.id" type="number" formControlName="odometerKm" min="0" max="2147483647" step="1" [attr.aria-invalid]="invalid('odometerKm')" [attr.aria-describedby]="'refuel-km-error-' + vehicle.id">@if (invalid('odometerKm')) { <p class="field-error" [id]="'refuel-km-error-' + vehicle.id">Nemnegatív egész számot adj meg.</p> }</div>
+        <div class="form-field"><label [for]="'refuel-liters-' + vehicle.id">Mennyiség (liter) *</label><input class="form-input" [id]="'refuel-liters-' + vehicle.id" type="number" formControlName="liters" min="0.001" max="999999.999" step="0.001" [attr.aria-invalid]="invalid('liters')" [attr.aria-describedby]="'refuel-liters-error-' + vehicle.id">@if (invalid('liters')) { <p class="field-error" [id]="'refuel-liters-error-' + vehicle.id">0,001–999 999,999 litert adj meg, legfeljebb 3 tizedesjeggyel.</p> }</div>
+        <div class="form-field"><label [for]="'refuel-amount-' + vehicle.id">Összeg ({{ unit }}) *</label><input class="form-input" [id]="'refuel-amount-' + vehicle.id" type="number" formControlName="totalAmount" min="0" max="9999999999.99" step="0.01" [attr.aria-invalid]="invalid('totalAmount')" [attr.aria-describedby]="'refuel-amount-error-' + vehicle.id">@if (invalid('totalAmount')) { <p class="field-error" [id]="'refuel-amount-error-' + vehicle.id">0–9 999 999 999,99 közötti összeget adj meg, legfeljebb 2 tizedesjeggyel.</p> }</div>
+        <label class="checkbox-field form-wide"><input type="checkbox" formControlName="isFullTank"> Tele tank</label>
+      </div></fieldset>
+      <p class="form-help">Korábbi tankolást is rögzíthetsz. Az itt megadott óraállás nem módosítja az autó aktuális óraállását.</p>
+    </form>
+  }
+  @if (errors.length) { <div class="alert-error" role="alert">@for (error of errors; track $index) { <p>{{ error }}</p> }</div> }
+  <div class="form-actions"><button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>@if (mode === 'delete') { <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Tankolás törlése' }}</button> } @else { <button type="submit" [attr.form]="'refueling-form-' + vehicle.id" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Tankolás mentése' }}</button> }</div>
+</dialog>

@@ -1,0 +1,55 @@
+:host { display: block; }
+
+.login-shell {
+  max-width: 1200px;
+  min-height: 100svh;
+  margin: auto;
+  padding: 32px 6%;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-layout {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr minmax(0, 440px);
+  align-items: center;
+  gap: 64px;
+  padding: 48px 0;
+}
+
+// Bal oldal: rövid bemutatás
+h1 { font-size: 36px; line-height: 1.2; letter-spacing: -1px; margin-bottom: 16px; }
+.intro-description { max-width: 440px; color: var(--color-muted); font-size: 15px; line-height: 1.7; }
+.feature-list { margin: 24px 0 0; padding-left: 20px; color: var(--color-muted); font-size: 14px; line-height: 2; }
+
+// Jobb oldal: bejelentkező kártya
+.login-card {
+  padding: 36px 32px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+h2 { font-size: 26px; margin-bottom: 6px; }
+.login-subtitle { font-size: 14px; margin-bottom: 24px; }
+
+form { display: grid; gap: 12px; }
+.field-error { min-height: 17px; }
+.password-field { position: relative; }
+.password-field input { padding-right: 90px; }
+.password-toggle { position: absolute; right: 3px; top: 3px; min-height: 44px; padding: 0 12px; background: transparent; border: 0; border-radius: var(--radius-sm); color: var(--color-muted); font-size: 12px; }
+.full-width { width: 100%; }
+
+.page-footer { color: var(--color-muted); font-size: 11px; padding-top: 12px; }
+
+// Mobilon egymás alatt: előbb a bemutatás, alatta a kártya
+@media (max-width: 760px) {
+  .login-shell { padding: 22px 16px; }
+  .login-layout { grid-template-columns: 1fr; gap: 24px; padding: 32px 0; }
+  .intro { text-align: center; }
+  h1 { font-size: 28px; }
+  .intro-description { margin: 0 auto; font-size: 14px; }
+  .feature-list { display: none; }
+  .login-card { width: 100%; max-width: 440px; margin: 0 auto; padding: 28px 20px; }
+}
