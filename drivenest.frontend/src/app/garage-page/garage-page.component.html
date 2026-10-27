@@ -5,7 +5,17 @@
     <section class="panel vehicle-detail-page"><div class="panel-heading"><div><h2 id="car-details-title">{{ name(car) }}</h2><p class="form-help">{{ car.licensePlate }} · {{ details(car) }}</p></div></div>
     <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>N/A</strong></span></div>
     <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
-    <app-vehicle-refuelings [vehicle]="car" [currency]="currency" />
+    <!-- Gyors rögzítés: a gombok a lenti listák felugró ablakait nyitják meg -->
+    <div class="car-quick-actions">
+      <span class="eyebrow">Gyors rögzítés</span>
+      <div class="action-row">
+        <button type="button" class="button button-primary button-compact" (click)="refuelings.open('create')" [attr.aria-label]="'Tankolás rögzítése: ' + car.licensePlate">+ Tankolás</button>
+        <button type="button" class="button button-primary button-compact" (click)="services.openCreate()" [attr.aria-label]="'Szerviz rögzítése: ' + car.licensePlate">+ Szerviz</button>
+        <button type="button" class="button button-secondary button-compact" disabled title="A kiadások rögzítése hamarosan elérhető.">Egyéb kiadás · Hamarosan</button>
+      </div>
+    </div>
+    <app-vehicle-refuelings #refuelings [vehicle]="car" [currency]="currency" />
+    <app-vehicle-services #services [vehicle]="car" [currency]="currency" />
     </section>
   } @else if (loading) {
     <div class="panel empty-state" role="status">Jármű betöltése…</div>

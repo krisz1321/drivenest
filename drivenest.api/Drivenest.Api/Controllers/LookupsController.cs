@@ -28,16 +28,7 @@ namespace Drivenest.Api.Controllers
                 .ToListAsync();
         }
 
-        [HttpGet("service-categories")]
-        public async Task<ActionResult<List<LookupDto>>> GetServiceCategories()
-        {
-            return await _db.ServiceCategories
-                .AsNoTracking()
-                .OrderBy(x => x.Id)
-                .Select(x => new LookupDto(x.Id, x.Name))
-                .ToListAsync();
-        }
-
-        // A kiadás-kategóriák külön végponton vannak: api/expense-categories (ExpenseCategoriesController).
+        // A kiadás- és szerviztípusok külön végponton vannak:
+        // api/expense-categories (ExpenseCategoriesController), api/service-categories (ServiceCategoriesController).
     }
 }

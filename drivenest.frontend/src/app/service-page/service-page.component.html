@@ -1,0 +1,140 @@
+<app-shell active="service" section="Szerviz">
+  <header class="page-heading">
+    <div>
+      <h1>Szerviz</h1>
+      <p class="muted">Olajcsere, fékek, műszaki és minden javítás a járműveidhez.</p>
+    </div>
+    <button type="button" class="button button-primary button-compact" (click)="openCreate()" [disabled]="loading || !!loadError || !vehicles.length">+ Új szerviz</button>
+  </header>
+
+  @if (message) {
+    <p class="alert-success" role="status">{{ message }}</p>
+  }
+
+  @if (loading) {
+    <div class="panel empty-state" role="status">Szervizek betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else {
+    <!-- Összesítő kártyák -->
+    <section class="stat-grid" aria-label="Szervizek összesítése">
+      <article class="panel stat-card">
+        <div class="card-label">Ebben a hónapban<span class="stat-icon" aria-hidden="true">◷</span></div>
+        <strong>{{ number(monthlyTotal) }} <small>{{ unit }}</small></strong>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Összesen<span class="stat-icon" aria-hidden="true">¤</span></div>
+        <strong>{{ number(total) }} <small>{{ unit }}</small></strong>
+        <p>{{ filtered.length }} szerviz alapján</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Utolsó szerviz<span class="stat-icon" aria-hidden="true">⚒</span></div>
+        @if (lastService; as last) {
+          <strong class="last-service">{{ typeNames(last) }}</strong>
+          <p>{{ last.date | date:'yyyy. MM. dd.' }} · {{ number(last.odometerKm, 0) }} km</p>
+        } @else {
+          <strong>—</strong>
+        }
+      </article>
+    </section>
+
+    <section class="panel" aria-label="Szervizek listája">
+      <div class="panel-heading">
+        <h2>{{ filtered.length }} szerviz</h2>
+        <button type="button" class="text-button" (click)="load()">Frissítés ↻</button>
+      </div>
+
+      <!-- Szűrők -->
+      <div class="filters">
+        <div class="form-field">
+          <label for="filter-car">Jármű</label>
+          <select id="filter-car" class="form-input" [(ngModel)]="vehicleFilter">
+            <option [ngValue]="0">Összes jármű</option>
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="filter-category">Típus</label>
+          <select id="filter-category" class="form-input" [(ngModel)]="categoryFilter">
+            <option [ngValue]="0">Összes típus</option>
+            @for (category of usedCategories; track category.id) {
+              <option [ngValue]="category.id">{{ category.name }}</option>
+            }
+          </select>
+        </div>
+        @if (hasFilter) {
+          <button type="button" class="text-button" (click)="clearFilters()">Szűrők törlése</button>
+        }
+      </div>
+
+      @if (filtered.length) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Dátum</th>
+                <th>Jármű</th>
+                <th>Típusok</th>
+                <th>Km</th>
+                <th>Szerviz / helyszín</th>
+                <th>Megjegyzés</th>
+                <th class="right">Összeg</th>
+                <th>Műveletek</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of filtered; track entry.id) {
+                <tr>
+                  <td class="nowrap">{{ entry.date | date:'yyyy. MM. dd.' }}</td>
+                  <td><a [routerLink]="['/garage', entry.vehicleId]">{{ vehicleName(entry.vehicleId) }}</a></td>
+                  <td>
+                    <div class="type-badges">
+                      @for (item of entry.items; track item.categoryId) {
+                        <span class="badge" [title]="number(item.amount) + ' ' + unit">{{ item.categoryName }}</span>
+                      }
+                    </div>
+                  </td>
+                  <td class="nowrap">{{ number(entry.odometerKm, 0) }}</td>
+                  <td>{{ entry.provider || '—' }}</td>
+                  <td class="muted">{{ entry.description || '—' }}</td>
+                  <td class="right nowrap"><strong>{{ number(entry.total) }} {{ unit }}</strong></td>
+                  <td>
+                    <div class="action-row">
+                      <button type="button" class="text-button" (click)="dialog.openEdit(entry)"
+                        [attr.aria-label]="typeNames(entry) + ', ' + entry.date + ' szerkesztése'">Szerkesztés</button>
+                      <button type="button" class="text-button danger-text" (click)="dialog.openDelete(entry)"
+                        [attr.aria-label]="typeNames(entry) + ', ' + entry.date + ' törlése'">Törlés</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (entries.length) {
+        <div class="empty-state">
+          <h2>Nincs találat</h2>
+          <p>A kiválasztott szűrőknek egy szerviz sem felel meg.</p>
+          <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Még nincs szerviz</h2>
+          <p>{{ vehicles.length ? 'Rögzítsd az első szervizedet az Új szerviz gombbal.' : 'Először adj hozzá egy járművet a garázsodhoz.' }}</p>
+          @if (!vehicles.length) {
+            <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+          }
+        </div>
+      }
+    </section>
+  }
+</app-shell>
+
+<!-- Felugró ablak: új szerviz / szerkesztés / törlés -->
+<app-service-dialog [vehicles]="vehicles" [categories]="categories" [unit]="unit"
+  (saved)="onSaved($event)" (deleted)="onDeleted($event)" />

@@ -10,6 +10,7 @@ import { ProfileService } from '../services/profile.service';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { distanceLabel, toDistance } from '../shared/units';
 import { VehicleRefuelingsComponent } from '../dashboard/vehicle-refuelings.component';
+import { VehicleServicesComponent } from './vehicle-services.component';
 
 function mileageOrder(form: AbstractControl): ValidationErrors | null {
   return form.get('currentKm')!.value < form.get('initialKm')!.value ? { mileageOrder: true } : null;
@@ -20,7 +21,7 @@ const integer = (control: AbstractControl): ValidationErrors | null =>
 @Component({
   selector: 'app-garage-page',
   standalone: true,
-  imports: [RouterLink, CommonModule, ReactiveFormsModule, AppShellComponent, VehicleRefuelingsComponent],
+  imports: [RouterLink, CommonModule, ReactiveFormsModule, AppShellComponent, VehicleRefuelingsComponent, VehicleServicesComponent],
   templateUrl: './garage-page.component.html',
   styleUrl: './garage-page.component.scss'
 })

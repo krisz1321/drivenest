@@ -23,6 +23,8 @@ namespace Drivenest.Api.Data
 
         public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();
 
+        public DbSet<ServiceRecordItem> ServiceRecordItems => Set<ServiceRecordItem>();
+
         public DbSet<Expense> Expenses => Set<Expense>();
 
         public DbSet<Reminder> Reminders => Set<Reminder>();

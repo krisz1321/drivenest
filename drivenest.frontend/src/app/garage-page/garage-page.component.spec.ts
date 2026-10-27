@@ -62,10 +62,13 @@ describe('GaragePageComponent', () => {
     params.next(convertToParamMap({ id: '4' }));
     respond([{ id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'TEST-42', currentKm: 42000, initialKm: 0, year: 2020, fuelTypeId: 1, vin: null }]);
     http.expectOne(req => req.url.endsWith('/vehicles/4/refuelings')).flush([]);
+    http.expectOne(req => req.url.endsWith('/vehicles/4/service-records')).flush([]);
+    http.expectOne(req => req.url.endsWith('/service-categories')).flush([]);
     fixture.detectChanges();
     const page = fixture.nativeElement.querySelector('.vehicle-detail-page');
     expect(page.textContent).toContain('Toyota Yaris');
     expect(page.querySelector('app-vehicle-refuelings')).toBeTruthy();
+    expect(page.querySelector('app-vehicle-services')).toBeTruthy();
     expect(fixture.nativeElement.querySelector('.back-to-garage').getAttribute('href')).toBe('/garage');
     expect(fixture.nativeElement.querySelector('.vehicle-grid')).toBeNull();
     params.next(convertToParamMap({}));

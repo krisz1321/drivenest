@@ -1,11 +1,3 @@
-<div class="car-quick-actions">
-  <span class="eyebrow">Gyors rögzítés</span>
-  <div class="action-row">
-    <button type="button" class="button button-primary button-compact" (click)="open('create')" [disabled]="loading || saving" [attr.aria-label]="'Tankolás rögzítése: ' + vehicle.licensePlate">+ Tankolás</button>
-    <button type="button" class="button button-secondary button-compact" disabled title="A szerviz rögzítése hamarosan elérhető.">Szerviz · Hamarosan</button>
-    <button type="button" class="button button-secondary button-compact" disabled title="A kiadások rögzítése hamarosan elérhető.">Egyéb kiadás · Hamarosan</button>
-  </div>
-</div>
 @if (message) { <p class="alert-success" role="status">{{ message }}</p> }
 @if (loading) { <p class="form-help" role="status">Tankolások betöltése…</p> }
 @if (loadError) { <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div> }
