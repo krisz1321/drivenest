@@ -52,7 +52,7 @@ describe('LoginPageComponent', () => {
     component.form.setValue({ userNameOrEmail: 'demo1', password: 'wrong' });
     component.submit();
     fixture.detectChanges();
-    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('incorrect');
+    expect(fixture.nativeElement.querySelector('[role="alert"]').textContent).toContain('Hibás felhasználónév vagy jelszó');
     expect(component.submitting).toBeFalse();
     expect(TestBed.inject(Router).navigateByUrl).not.toHaveBeenCalled();
   });
