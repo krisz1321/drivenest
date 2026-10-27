@@ -1,0 +1,147 @@
+<app-shell active="reminders" section="Emlékeztetők">
+  <header class="page-heading">
+    <div>
+      <h1>Emlékeztetők</h1>
+      <p class="muted">Olajcsere, műszaki vizsga és a többi esedékes teendő a járműveidhez.</p>
+    </div>
+    <button type="button" class="button button-primary button-compact" (click)="openCreate()" [disabled]="loading || !!loadError || !vehicles.length">+ Új emlékeztető</button>
+  </header>
+
+  @if (message) {
+    <p class="alert-success" role="status">{{ message }}</p>
+  }
+  @if (error) {
+    <p class="alert-error" role="alert">{{ error }}</p>
+  }
+
+  @if (loading) {
+    <div class="panel empty-state" role="status">Emlékeztetők betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else {
+    <!-- Összesítő kártyák állapot szerint -->
+    <section class="stat-grid" aria-label="Emlékeztetők összesítése">
+      <article class="panel stat-card">
+        <div class="card-label">Lejárt<span class="stat-icon" aria-hidden="true">!</span></div>
+        <strong>{{ count('overdue') }}</strong>
+        <p>Már esedékes teendők</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Hamarosan<span class="stat-icon" aria-hidden="true">◷</span></div>
+        <strong>{{ count('soon') }}</strong>
+        <p>{{ warningDays }} napon vagy {{ warningDistance }}-en belül</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Rendben<span class="stat-icon" aria-hidden="true">✓</span></div>
+        <strong>{{ count('ok') }}</strong>
+        <p>Még ráér</p>
+      </article>
+    </section>
+
+    <section class="panel" aria-label="Emlékeztetők listája">
+      <div class="panel-heading">
+        <h2>{{ filtered.length }} emlékeztető</h2>
+        <button type="button" class="text-button" (click)="load()">Frissítés ↻</button>
+      </div>
+
+      <!-- Szűrők -->
+      <div class="filters">
+        <div class="form-field">
+          <label for="filter-car">Jármű</label>
+          <select id="filter-car" class="form-input" [(ngModel)]="vehicleFilter">
+            <option [ngValue]="0">Összes jármű</option>
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="filter-status">Állapot</label>
+          <select id="filter-status" class="form-input" [(ngModel)]="statusFilter">
+            <option value="">Összes állapot</option>
+            <option value="overdue">Lejárt</option>
+            <option value="soon">Hamarosan</option>
+            <option value="ok">Rendben</option>
+          </select>
+        </div>
+        @if (hasFilter) {
+          <button type="button" class="text-button" (click)="clearFilters()">Szűrők törlése</button>
+        }
+      </div>
+
+      @if (filtered.length) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Teendő</th>
+                <th>Állapot</th>
+                <th>Esedékes</th>
+                <th>Ismétlődés</th>
+                <th>Műveletek</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of filtered; track entry.id) {
+                <tr>
+                  <td>
+                    <strong>{{ entry.title }}</strong>
+                    <small><a [routerLink]="['/garage', entry.vehicleId]">{{ vehicleName(entry.vehicleId) }}</a></small>
+                  </td>
+                  <td>
+                    @switch (status(entry)) {
+                      @case ('overdue') { <span class="badge badge-danger">Lejárt</span> }
+                      @case ('soon') { <span class="badge badge-warning">Hamarosan</span> }
+                      @default { <span class="badge badge-success">Rendben</span> }
+                    }
+                    <small>{{ remaining(entry) }}</small>
+                  </td>
+                  <td class="nowrap">
+                    @if (entry.dueDate) {
+                      <span>{{ entry.dueDate | date:'yyyy. MM. dd.' }}</span>
+                    }
+                    @if (entry.dueOdometerKm !== null) {
+                      <small>{{ distance(entry.dueOdometerKm) }}</small>
+                    }
+                  </td>
+                  <td class="muted">{{ repeat(entry) }}</td>
+                  <td>
+                    <div class="action-row">
+                      <button type="button" class="text-button" (click)="complete(entry)" [disabled]="completingId !== null"
+                        [attr.aria-label]="entry.title + ' elvégezve'">{{ completingId === entry.id ? 'Mentés…' : 'Elvégezve' }}</button>
+                      <button type="button" class="text-button" (click)="dialog.openEdit(entry)"
+                        [attr.aria-label]="entry.title + ' szerkesztése'">Szerkesztés</button>
+                      <button type="button" class="text-button danger-text" (click)="dialog.openDelete(entry)"
+                        [attr.aria-label]="entry.title + ' törlése'">Törlés</button>
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (entries.length) {
+        <div class="empty-state">
+          <h2>Nincs találat</h2>
+          <p>A kiválasztott szűrőknek egy emlékeztető sem felel meg.</p>
+          <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Még nincs emlékeztető</h2>
+          <p>{{ vehicles.length ? 'Vedd fel az első emlékeztetőt az Új emlékeztető gombbal.' : 'Először adj hozzá egy járművet a garázsodhoz.' }}</p>
+          @if (!vehicles.length) {
+            <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+          }
+        </div>
+      }
+    </section>
+  }
+</app-shell>
+
+<!-- Felugró ablak: új emlékeztető / szerkesztés / törlés -->
+<app-reminder-dialog [vehicles]="vehicles" [distanceUnit]="distanceUnit"
+  (saved)="onSaved($event)" (deleted)="onDeleted($event)" />
