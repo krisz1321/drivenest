@@ -89,6 +89,15 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         if (id.HasValue) vehicles = vehicles.Where(v => v.Id != id.Value);
         if (await vehicles.AnyAsync(v => v.LicensePlate == plate, cancellationToken))
             ModelState.AddModelError(nameof(request.LicensePlate), "You already have a vehicle with this license plate.");
+
+        // Szerkesztéskor az aktuális óraállás nem lehet kisebb a bejegyzésekben szereplő legnagyobbnál.
+        if (id.HasValue)
+        {
+            var maxKm = await _db.MaxOdometerKm(id.Value, cancellationToken);
+            if (request.CurrentKm < maxKm)
+                ModelState.AddModelError(nameof(request.CurrentKm),
+                    $"Az aktuális óraállás nem lehet kisebb, mint a legnagyobb bejegyzett óraállás ({maxKm} km).");
+        }
     }
 
     private async Task<ActionResult?> Save(CancellationToken cancellationToken)
