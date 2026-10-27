@@ -40,6 +40,29 @@
     </section>
   }
 
+  <!-- Közelgő teendők (lejárt és hamarosan esedékes emlékeztetők) -->
+  <section id="reminders" class="panel">
+    <div class="panel-heading">
+      <h2>Közelgő teendők</h2>
+      <a class="text-button" routerLink="/reminders">Összes emlékeztető →</a>
+    </div>
+    @if (loading) {
+      <p class="form-help" role="status">Betöltés…</p>
+    } @else if (!loadError) {
+      @for (item of upcomingReminders; track item.entry.id) {
+        <div class="reminder-row">
+          <div>
+            <strong>{{ item.entry.title }}</strong>
+            <small>{{ plate(item.entry.vehicleId) }}</small>
+          </div>
+          <span class="badge" [class.badge-danger]="item.status === 'overdue'" [class.badge-warning]="item.status === 'soon'">{{ remaining(item.entry) }}</span>
+        </div>
+      } @empty {
+        <p class="empty-state">Nincs közelgő teendő.</p>
+      }
+    }
+  </section>
+
   <div class="content-grid">
     <!-- Legutóbbi események -->
     <section id="events" class="panel">

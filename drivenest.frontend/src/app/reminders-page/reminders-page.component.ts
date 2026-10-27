@@ -7,7 +7,7 @@ import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
-import { Reminder, ReminderService, ReminderStatus, WARNING_DAYS, WARNING_KM, daysUntil, reminderStatus } from '../services/reminder.service';
+import { Reminder, ReminderService, ReminderStatus, WARNING_DAYS, WARNING_KM, reminderStatus, remainingText } from '../services/reminder.service';
 import { distanceLabel, toDistance } from '../shared/units';
 import { ReminderDialogComponent } from './reminder-dialog.component';
 
@@ -156,19 +156,9 @@ export class RemindersPageComponent implements OnInit {
     this.statusFilter = '';
   }
 
-  // Pl. "12 nap múlva · 800 km múlva" vagy "Lejárt 3 napja"
   remaining(entry: Reminder) {
-    const parts: string[] = [];
-    if (entry.dueDate) {
-      const days = daysUntil(entry.dueDate);
-      parts.push(days < 0 ? `Lejárt ${-days} napja` : days === 0 ? 'Ma esedékes' : `${days} nap múlva`);
-    }
-    if (entry.dueOdometerKm !== null) {
-      const car = this.vehicles.find(v => v.id === entry.vehicleId);
-      const left = entry.dueOdometerKm - (car?.currentKm ?? 0);
-      parts.push(left <= 0 ? `Túllépve: ${this.distance(-left)}` : `${this.distance(left)} múlva`);
-    }
-    return parts.join(' · ');
+    const car = this.vehicles.find(v => v.id === entry.vehicleId);
+    return remainingText(entry, car?.currentKm ?? 0, this.distanceUnit);
   }
 
   // Pl. "12 havonta · 10 000 km-enként"

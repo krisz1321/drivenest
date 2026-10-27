@@ -1,6 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { API_BASE_URL } from './auth.service';
+import { DistanceUnit, distanceLabel, toDistance } from '../shared/units';
 
 export interface ReminderRequest {
   title: string;
@@ -35,6 +36,21 @@ export function reminderStatus(reminder: Reminder, currentKm: number): ReminderS
   if ((days !== null && days < 0) || (km !== null && km <= 0)) return 'overdue';
   if ((days !== null && days <= WARNING_DAYS) || (km !== null && km <= WARNING_KM)) return 'soon';
   return 'ok';
+}
+
+// Pl. "12 nap múlva · 800 km múlva" vagy "Lejárt 3 napja" (a km a választott mértékegységben)
+export function remainingText(reminder: Reminder, currentKm: number, unit: DistanceUnit) {
+  const distance = (km: number) => `${toDistance(km, unit).toLocaleString('hu-HU')} ${distanceLabel(unit)}`;
+  const parts: string[] = [];
+  if (reminder.dueDate) {
+    const days = daysUntil(reminder.dueDate);
+    parts.push(days < 0 ? `Lejárt ${-days} napja` : days === 0 ? 'Ma esedékes' : `${days} nap múlva`);
+  }
+  if (reminder.dueOdometerKm !== null) {
+    const left = reminder.dueOdometerKm - currentKm;
+    parts.push(left <= 0 ? `Túllépve: ${distance(-left)}` : `${distance(left)} múlva`);
+  }
+  return parts.join(' · ');
 }
 
 @Injectable({ providedIn: 'root' })

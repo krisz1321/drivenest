@@ -8,6 +8,7 @@ import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { Refueling, RefuelingService } from '../services/refueling.service';
 import { ServiceRecord, ServiceRecordService } from '../services/service-record.service';
 import { Expense, ExpenseService } from '../services/expense.service';
+import { Reminder, ReminderService, reminderStatus, remainingText } from '../services/reminder.service';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { currencyLabel, distanceLabel, toDistance } from '../shared/units';
 
@@ -34,6 +35,7 @@ export class DashboardComponent implements OnInit {
   private readonly refuelingApi = inject(RefuelingService);
   private readonly serviceApi = inject(ServiceRecordService);
   private readonly expenseApi = inject(ExpenseService);
+  private readonly reminderApi = inject(ReminderService);
   private readonly destroyRef = inject(DestroyRef);
 
   // Az aktuális hónap neve (pl. "október") és kulcsa (pl. "2026-10") a szűréshez
@@ -44,6 +46,7 @@ export class DashboardComponent implements OnInit {
   refuelings: Refueling[] = [];
   services: ServiceRecord[] = [];
   expenses: Expense[] = [];
+  reminders: Reminder[] = [];
 
   loading = false;
   loadError = '';
@@ -57,7 +60,7 @@ export class DashboardComponent implements OnInit {
     this.loading = true;
     this.loadError = '';
 
-    // Először a járművek és a profil (pénznem), utána járművenként a tankolások, szervizek és kiadások.
+    // Először a járművek és a profil (pénznem), utána járművenként a tankolások, szervizek, kiadások és emlékeztetők.
     forkJoin({
       vehicles: this.vehicleApi.list(),
       profile: this.profile.load()
@@ -65,12 +68,13 @@ export class DashboardComponent implements OnInit {
       switchMap(result => {
         this.vehicles = result.vehicles;
         if (!this.vehicles.length) {
-          return of({ refuelings: [] as Refueling[], services: [] as ServiceRecord[], expenses: [] as Expense[] });
+          return of({ refuelings: [] as Refueling[], services: [] as ServiceRecord[], expenses: [] as Expense[], reminders: [] as Reminder[] });
         }
         return forkJoin({
           refuelings: forkJoin(this.vehicles.map(car => this.refuelingApi.list(car.id))).pipe(map(groups => groups.flat())),
           services: forkJoin(this.vehicles.map(car => this.serviceApi.list(car.id))).pipe(map(groups => groups.flat())),
-          expenses: forkJoin(this.vehicles.map(car => this.expenseApi.list(car.id))).pipe(map(groups => groups.flat()))
+          expenses: forkJoin(this.vehicles.map(car => this.expenseApi.list(car.id))).pipe(map(groups => groups.flat())),
+          reminders: forkJoin(this.vehicles.map(car => this.reminderApi.list(car.id))).pipe(map(groups => groups.flat()))
         });
       }),
       takeUntilDestroyed(this.destroyRef),
@@ -80,6 +84,7 @@ export class DashboardComponent implements OnInit {
         this.refuelings = data.refuelings;
         this.services = data.services;
         this.expenses = data.expenses;
+        this.reminders = data.reminders;
       },
       error: () => this.loadError = 'Az adatokat nem sikerült betölteni. Próbáld újra.'
     });
@@ -147,6 +152,25 @@ export class DashboardComponent implements OnInit {
       }))
     ];
     return events.sort((a, b) => b.date.localeCompare(a.date)).slice(0, 8);
+  }
+
+  // A lejárt és a hamarosan esedékes emlékeztetők, elöl a lejártak, azon belül dátum szerint (max. 5)
+  get upcomingReminders() {
+    return this.reminders
+      .map(entry => ({ entry, status: reminderStatus(entry, this.currentKm(entry.vehicleId)) }))
+      .filter(r => r.status !== 'ok')
+      .sort((a, b) => (a.status === 'overdue' ? 0 : 1) - (b.status === 'overdue' ? 0 : 1)
+        || (a.entry.dueDate ?? '9999').localeCompare(b.entry.dueDate ?? '9999')
+        || (a.entry.dueOdometerKm ?? 0) - (b.entry.dueOdometerKm ?? 0))
+      .slice(0, 5);
+  }
+
+  remaining(entry: Reminder) {
+    return remainingText(entry, this.currentKm(entry.vehicleId), this.profile.preferences().distanceUnit);
+  }
+
+  private currentKm(vehicleId: number) {
+    return this.vehicles.find(v => v.id === vehicleId)?.currentKm ?? 0;
   }
 
   plate(vehicleId: number) {

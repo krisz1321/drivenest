@@ -31,6 +31,22 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
 .data-table a { color: var(--color-text); font-weight: 600; }
 .nowrap { white-space: nowrap; }
 
+// Közelgő teendők: soronként a teendő és jobbra a hátralévő idő
+#reminders { margin-bottom: 24px; }
+#reminders .panel-heading { margin-bottom: 8px; }
+.reminder-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--color-border);
+}
+.reminder-row:last-child { border-bottom: 0; }
+.reminder-row strong, .reminder-row small { display: block; }
+.reminder-row small { color: var(--color-muted); margin-top: 4px; }
+.reminder-row .badge { flex-shrink: 0; }
+
 // A "Hová ment a pénz?" sávjainak kitöltése (a .bar-track a styles.scss-ben van)
 .bar-fill { height: 100%; border-radius: inherit; background: var(--color-primary); }
 
@@ -40,6 +56,7 @@ section[id] { scroll-margin-top: 20px; }
 @media (max-width: 900px) {
   .stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
   .content-grid { grid-template-columns: 1fr; gap: 16px; }
+  #reminders { margin-bottom: 16px; }
 }
 
 @media (max-width: 600px) {
