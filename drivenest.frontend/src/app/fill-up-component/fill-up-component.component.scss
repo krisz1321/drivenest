@@ -4,6 +4,8 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
 .page-heading p { margin-bottom: 0; font-size: 13px; }
 .page-heading .button { flex-shrink: 0; }
 .nowrap { white-space: nowrap; }
+.stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 18px; margin-bottom: 24px; }
+.stat-card .card-label { font-weight: 600; }
 .data-table td { vertical-align: top; }
 .data-table a { color: var(--color-text); font-weight: 600; }
 .data-table td:nth-child(2) { min-width: 170px; }

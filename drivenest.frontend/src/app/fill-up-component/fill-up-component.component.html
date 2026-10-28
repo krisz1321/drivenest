@@ -6,6 +6,21 @@
   } @else if (loadError) {
     <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div>
   } @else {
+    @if (vehicles.length) {
+      <section class="stat-grid" aria-label="Fogyasztás járművenként">
+        @for (car of vehicles; track car.id) {
+          <article class="panel stat-card">
+            <div class="card-label">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</div>
+            @if (consumption[car.id]; as stats) {
+              <strong>{{ consumptionValue(stats.averageLitersPer100Km) }} <small>{{ consumptionUnit }} átlag</small></strong>
+              <p>{{ stats.segments.length ? 'Utolsó: ' + consumptionValue(stats.lastLitersPer100Km) + ' ' + consumptionUnit + ' · ' + stats.segments.length + ' szakasz' : 'Még nincs elég adat: két tele tankolás kell.' }}</p>
+            } @else {
+              <strong>—</strong><p>Fogyasztás betöltése…</p>
+            }
+          </article>
+        }
+      </section>
+    }
     <section class="panel" aria-label="Tankolási előzmények">
       <div class="panel-heading"><h2>{{ entries.length }} tankolás</h2><button type="button" class="text-button" (click)="load()" [disabled]="saving">Frissítés ↻</button></div>
       @if (entries.length) {

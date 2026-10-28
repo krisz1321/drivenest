@@ -9,6 +9,8 @@ import { RouterLink } from '@angular/router';
 import { finalize, forkJoin, of, switchMap, map } from 'rxjs';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { Refueling, RefuelingService } from '../services/refueling.service';
+import { Consumption, StatsService } from '../services/stats.service';
+import { consumptionLabel, toConsumption } from '../shared/units';
 
 const integer = (control: AbstractControl) => control.value === null || Number.isInteger(control.value) ? null : { integer: true };
 const precision = (digits: number) => (control: AbstractControl) => control.value === null
@@ -38,8 +40,10 @@ export class FillUpComponentComponent implements OnInit {
   get unitPrice() { return this.unitPriceControl.value ?? 0; }
   @ViewChild('refuelingDialog') dialog!: ElementRef<HTMLDialogElement>;
   private readonly api = inject(RefuelingService);
+  private readonly statsApi = inject(StatsService);
   private readonly destroyRef = inject(DestroyRef);
   entries: Refueling[] = [];
+  consumption: Record<number, Consumption> = {};
   loading = false;
   saving = false;
   loadError = '';
@@ -88,6 +92,10 @@ export class FillUpComponentComponent implements OnInit {
     const month = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' }).slice(0, 7);
     return this.entries.filter(e => e.date.startsWith(month)).reduce((total, e) => total + e.totalAmount, 0);
   }
+  get consumptionUnit() { return consumptionLabel(this.profile.preferences().consumptionUnit); }
+  consumptionValue(litersPer100Km: number | null) {
+    return litersPer100Km === null ? '—' : this.number(toConsumption(litersPer100Km, this.profile.preferences().consumptionUnit));
+  }
   number(value: number, digits = 2) { return value.toLocaleString('hu-HU', { maximumFractionDigits: digits }); }
   invalid(field: keyof typeof this.form.controls) { const control = this.form.controls[field]; return control.touched && control.invalid; }
   ngOnInit() { this.load(); }
@@ -100,8 +108,16 @@ export class FillUpComponentComponent implements OnInit {
         this.vehicles = result.vehicles;
         return this.vehicles.length ? forkJoin(this.vehicles.map(car => this.api.list(car.id))).pipe(map(groups => groups.flat())) : of([] as Refueling[]);
       }), takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)
-    ).subscribe({ next: entries => this.entries = this.sorted(entries),
+    ).subscribe({ next: entries => { this.entries = this.sorted(entries); this.loadConsumption(); },
       error: () => this.loadError = 'A tankolásokat nem sikerült betölteni. Próbáld újra.' });
+  }
+  // A fogyasztás hibája nem állítja meg az oldalt, csak az adott jármű kártyája marad üres.
+  private loadConsumption(vehicleIds = this.vehicles.map(v => v.id)) {
+    for (const id of vehicleIds) {
+      this.statsApi.consumption(id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: result => this.consumption = { ...this.consumption, [id]: result }, error: () => {}
+      });
+    }
   }
 
   open(mode: 'create' | 'edit' | 'delete', entry: Refueling | null = null) {
@@ -134,12 +150,14 @@ export class FillUpComponentComponent implements OnInit {
         this.message = 'A tankolást mentettük.';
         this.dialog.nativeElement.close();
         this.refreshVehicles();
+        this.loadConsumption([entry.vehicleId]);
       }, error: (error: HttpErrorResponse) => this.showError(error)
     });
   }
   remove() {
     if (this.saving || !this.target) return;
     const id = this.target.id;
+    const vehicleId = this.target.vehicleId;
     this.saving = true;
     this.errors = [];
     this.api.delete(this.target.vehicleId, id).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.saving = false)).subscribe({
@@ -148,6 +166,7 @@ export class FillUpComponentComponent implements OnInit {
         this.message = 'A tankolást töröltük.';
         this.dialog.nativeElement.close();
         this.refreshVehicles();
+        this.loadConsumption([vehicleId]);
       }, error: (error: HttpErrorResponse) => this.showError(error)
     });
   }
