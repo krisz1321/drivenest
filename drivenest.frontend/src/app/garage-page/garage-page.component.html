@@ -3,7 +3,7 @@
     <a class="back-to-garage" routerLink="/garage"><span aria-hidden="true">←</span> Vissza a garázshoz</a>
   @if (selectedVehicle; as car) {
     <section class="panel vehicle-detail-page"><div class="panel-heading"><div><h2 id="car-details-title">{{ name(car) }}</h2><p class="form-help">{{ car.licensePlate }} · {{ details(car) }}</p></div></div>
-    <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>N/A</strong></span></div>
+    <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>{{ averageConsumption(car) }}</strong></span></div>
     <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
     <!-- Gyors rögzítés: a gombok a lenti listák felugró ablakait nyitják meg -->
     <div class="car-quick-actions">
@@ -45,7 +45,7 @@
           <span class="vehicle-name">{{ name(vehicle) }}</span>
           <span class="vehicle-details">{{ details(vehicle) }}</span>
           <span class="vehicle-stat"><span>Kilométeróra</span><strong>{{ mileage(vehicle) }}</strong></span>
-          <span class="vehicle-stat"><span>Átlagfogyasztás</span><strong>N/A</strong></span>
+          <span class="vehicle-stat"><span>Átlagfogyasztás</span><strong>{{ averageConsumption(vehicle) }}</strong></span>
           <span class="open-label">Megnyitás <span aria-hidden="true">↗</span></span>
         </span>
       </button>
