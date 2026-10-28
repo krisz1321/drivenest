@@ -96,6 +96,8 @@ export class FillUpComponentComponent implements OnInit {
   consumptionValue(litersPer100Km: number | null) {
     return litersPer100Km === null ? '—' : this.number(toConsumption(litersPer100Km, this.profile.preferences().consumptionUnit));
   }
+  // Az a szakasz, amelyet ez a tele tankolás zár le (a többi sornál nincs érték).
+  segment(entry: Refueling) { return this.consumption[entry.vehicleId]?.segments.find(s => s.endRefuelingId === entry.id); }
   number(value: number, digits = 2) { return value.toLocaleString('hu-HU', { maximumFractionDigits: digits }); }
   invalid(field: keyof typeof this.form.controls) { const control = this.form.controls[field]; return control.touched && control.invalid; }
   ngOnInit() { this.load(); }
