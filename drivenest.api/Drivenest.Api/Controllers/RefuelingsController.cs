@@ -37,8 +37,8 @@ public class RefuelingsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
         return await _db.Refuelings.AsNoTracking().Where(r => r.VehicleId == vehicleId)
-            .OrderByDescending(r => r.Date).ThenByDescending(r => r.OdometerKm).ThenByDescending(r => r.Id)
-            .Select(r => new RefuelingDto(r.Id, r.VehicleId, r.Date, r.OdometerKm,
+            .OrderByDescending(r => r.Date).ThenByDescending(r => r.Time).ThenByDescending(r => r.OdometerKm).ThenByDescending(r => r.Id)
+            .Select(r => new RefuelingDto(r.Id, r.VehicleId, r.Date, r.Time, r.OdometerKm,
                 r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc)))
             .ToListAsync(cancellationToken);
     }
@@ -121,12 +121,14 @@ public class RefuelingsController : ControllerBase
     private static void Apply(RefuelingRequest request, Refueling entry)
     {
         entry.Date = request.Date;
+        // Csak óra és perc, a másodperceket nem tároljuk.
+        entry.Time = request.Time is { } time ? new TimeOnly(time.Hour, time.Minute) : null;
         entry.OdometerKm = request.OdometerKm;
         entry.Liters = request.Liters;
         entry.TotalAmount = request.TotalAmount;
         entry.IsFullTank = request.IsFullTank;
     }
 
-    private static RefuelingDto ToDto(Refueling r) => new(r.Id, r.VehicleId, r.Date,
+    private static RefuelingDto ToDto(Refueling r) => new(r.Id, r.VehicleId, r.Date, r.Time,
         r.OdometerKm, r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc));
 }

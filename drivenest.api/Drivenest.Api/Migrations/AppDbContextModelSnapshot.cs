@@ -365,6 +365,9 @@ namespace Drivenest.Api.Migrations
                     b.Property<int>("OdometerKm")
                         .HasColumnType("int");
 
+                    b.Property<TimeOnly?>("Time")
+                        .HasColumnType("time(0)");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(12,2)");
 

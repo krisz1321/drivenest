@@ -8,6 +8,8 @@ namespace Drivenest.Api.Data.Entities
 
         public DateOnly Date { get; set; }
 
+        public TimeOnly? Time { get; set; }
+
         public int OdometerKm { get; set; }
 
         public decimal Liters { get; set; }

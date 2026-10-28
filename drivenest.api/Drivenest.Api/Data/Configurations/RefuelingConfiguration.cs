@@ -19,6 +19,9 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(r => r.Date)
                 .HasColumnType("date");
 
+            builder.Property(r => r.Time)
+                .HasColumnType("time(0)");
+
             builder.Property(r => r.Liters)
                 .HasColumnType("decimal(9,3)");
 
