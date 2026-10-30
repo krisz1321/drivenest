@@ -7,7 +7,7 @@ import { RefuelingRequest, RefuelingService } from './refueling.service';
 describe('RefuelingService', () => {
   let api: RefuelingService;
   let http: HttpTestingController;
-  const body: RefuelingRequest = { date: '2026-10-15', odometerKm: 100, liters: 12.345, totalAmount: 1234.50, isFullTank: false };
+  const body: RefuelingRequest = { date: '2026-10-15', time: '07:45:00', odometerKm: 100, liters: 12.345, totalAmount: 1234.50, isFullTank: false };
   beforeEach(() => {
     TestBed.configureTestingModule({ providers: [provideHttpClient(), provideHttpClientTesting(), { provide: API_BASE_URL, useValue: '/api' }] });
     api = TestBed.inject(RefuelingService);

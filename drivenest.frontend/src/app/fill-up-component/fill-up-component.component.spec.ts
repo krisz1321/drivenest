@@ -13,7 +13,7 @@ describe('FillUpComponentComponent', () => {
     { id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'ABC-123', currentKm: 42000 },
     { id: 8, make: 'BMW', model: '320d', licensePlate: 'DEF-456', currentKm: 65000 }
   ];
-  const entry = { id: 1, vehicleId: 4, date: '2026-09-23', odometerKm: 42000, liters: 40, totalAmount: 24000, isFullTank: true, createdAt: '2026-09-23T12:00:00Z' };
+  const entry = { id: 1, vehicleId: 4, date: '2026-09-23', time: '08:15:00', odometerKm: 42000, liters: 40, totalAmount: 24000, isFullTank: true, createdAt: '2026-09-23T12:00:00Z' };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -56,11 +56,11 @@ describe('FillUpComponentComponent', () => {
     component.open('create');
     fixture.detectChanges();
     expect(component.dialog.nativeElement.open).toBeTrue();
-    component.form.setValue({ vehicleId: 8, date: '2026-10-01', odometerKm: 66000, liters: 50, totalAmount: 30000, isFullTank: false });
+    component.form.setValue({ vehicleId: 8, date: '2026-10-01', time: '14:30', odometerKm: 66000, liters: 50, totalAmount: 30000, isFullTank: false });
     expect(component.unitPrice).toBe(600);
     component.save();
     const request = http.expectOne(req => req.method === 'POST' && req.url.endsWith('/vehicles/8/refuelings'));
-    expect(request.request.body).toEqual({ date: '2026-10-01', odometerKm: 66000, liters: 50, totalAmount: 30000, isFullTank: false });
+    expect(request.request.body).toEqual({ date: '2026-10-01', time: '14:30:00', odometerKm: 66000, liters: 50, totalAmount: 30000, isFullTank: false });
     request.flush({ ...entry, ...request.request.body, id: 3, vehicleId: 8 });
     expect(component.dialog.nativeElement.open).toBeFalse();
     expect(component.entries[0].id).toBe(3);

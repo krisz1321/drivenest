@@ -8,15 +8,17 @@ import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
 import { finalize, forkJoin, of, switchMap, map } from 'rxjs';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
-import { Refueling, RefuelingService } from '../services/refueling.service';
+import { Refueling, RefuelingService, currentTime, shortTime, toApiTime, today } from '../services/refueling.service';
 import { Consumption, StatsService } from '../services/stats.service';
 import { consumptionLabel, toConsumption } from '../shared/units';
 
 const integer = (control: AbstractControl) => control.value === null || Number.isInteger(control.value) ? null : { integer: true };
 const precision = (digits: number) => (control: AbstractControl) => control.value === null
   || (Number.isFinite(control.value) && Number(control.value.toFixed(digits)) === control.value) ? null : { precision: true };
+// Az üres dátum nem hiba: mentéskor a mai nap kerül bele.
 const validDate = (control: AbstractControl) => {
   const value: string = control.value;
+  if (!value) return null;
   const date = new Date(`${value}T00:00:00Z`);
   return /^\d{4}-\d{2}-\d{2}$/.test(value) && value > '0001-01-01' && Number.isFinite(date.getTime())
     && date.toISOString().slice(0, 10) === value ? null : { date: true };
@@ -33,7 +35,7 @@ export class FillUpComponentComponent implements OnInit {
   get currency() { return this.profile.preferences().currency; }
   vehicleName(id: number) { const car = this.vehicles.find(v => v.id === id); return car ? `${car.make} ${car.model} · ${car.licensePlate}` : '—'; }
   get selectedVehicle() { return this.vehicles.find(v => v.id === this.form.controls.vehicleId.value); }
-  createdAt(value: string) { return new Date(value).toLocaleString('hu-HU', { timeZone: 'Europe/Budapest' }); }
+  readonly shortTime = shortTime;
   readonly unitPriceControl = new FormControl<number | null>(0, [Validators.required, Validators.min(0),
     control => control.value === null || Number.isFinite(control.value) ? null : { finite: true }]);
   private priceSource: 'total' | 'unit' = 'total';
@@ -53,7 +55,8 @@ export class FillUpComponentComponent implements OnInit {
   target: Refueling | null = null;
   readonly form = inject(FormBuilder).nonNullable.group({
     vehicleId: [0, [Validators.required, Validators.min(1)]],
-    date: ['', [Validators.required, validDate]],
+    date: ['', validDate],
+    time: [''],
     odometerKm: [0, [Validators.required, Validators.min(0), Validators.max(2147483647), integer]],
     liters: [0, [Validators.required, Validators.min(0.001), Validators.max(999999.999), precision(3)]],
     totalAmount: [0, [Validators.required, Validators.min(0), Validators.max(9999999999.99), precision(2)]],
@@ -129,9 +132,9 @@ export class FillUpComponentComponent implements OnInit {
     this.errors = [];
     this.priceSource = 'total';
     this.unitPriceControl.reset(0, { emitEvent: false });
-    this.form.reset({ vehicleId: this.vehicles[0]?.id ?? 0, date: new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' }),
-      odometerKm: this.vehicles[0]?.currentKm ?? 0, liters: 0, totalAmount: 0, isFullTank: true }, { emitEvent: false });
-    if (entry) this.form.patchValue(entry, { emitEvent: false });
+    this.form.reset({ vehicleId: this.vehicles[0]?.id ?? 0, date: today(),
+      time: currentTime(), odometerKm: this.vehicles[0]?.currentKm ?? 0, liters: 0, totalAmount: 0, isFullTank: true }, { emitEvent: false });
+    if (entry) this.form.patchValue({ ...entry, time: shortTime(entry.time) }, { emitEvent: false });
     this.calculatePrice();
     this.dialog.nativeElement.showModal();
   }
@@ -142,7 +145,10 @@ export class FillUpComponentComponent implements OnInit {
     this.errors = [];
     if (this.form.invalid || this.unitPriceControl.invalid) { this.form.markAllAsTouched(); this.unitPriceControl.markAsTouched(); return; }
     if (!this.selectedVehicle) return;
-    const { vehicleId, ...body } = this.form.getRawValue();
+    const { vehicleId, date, time, ...rest } = this.form.getRawValue();
+    // Üres mezőnél az aktuális dátum/idő; szerkesztéskor az üres idő a korábbi értéket tartja meg.
+    const body = { ...rest, date: date || today(),
+      time: time ? toApiTime(time) : this.mode === 'edit' ? this.target?.time ?? null : toApiTime(currentTime()) };
     this.saving = true;
     const request = this.mode === 'edit' && this.target
       ? this.api.update(this.target.vehicleId, this.target.id, body) : this.api.create(vehicleId, body);
@@ -179,7 +185,8 @@ export class FillUpComponentComponent implements OnInit {
     });
   }
   private sorted(entries: Refueling[]) {
-    return [...entries].sort((a, b) => b.date.localeCompare(a.date) || b.odometerKm - a.odometerKm || b.id - a.id);
+    return [...entries].sort((a, b) => b.date.localeCompare(a.date) || (b.time ?? '').localeCompare(a.time ?? '')
+      || b.odometerKm - a.odometerKm || b.id - a.id);
   }
   private showError(error: HttpErrorResponse) {
     const details = error.error?.errors;

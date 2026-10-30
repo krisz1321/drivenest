@@ -10,6 +10,7 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
 .data-table td { vertical-align: top; }
 .data-table a { color: var(--color-text); font-weight: 600; }
 .data-table td:nth-child(2) { min-width: 170px; }
+.form-grid { align-items: start; }
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .modal { width: min(600px, calc(100% - 32px)); border-radius: 18px; }
 .full-tank { padding: 12px; border-radius: 8px; background: var(--color-primary-soft); }
