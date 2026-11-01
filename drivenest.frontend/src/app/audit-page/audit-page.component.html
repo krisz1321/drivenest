@@ -1,0 +1,103 @@
+<app-shell active="audit" section="Változásnapló">
+  <header class="page-heading">
+    <h1>Változásnapló</h1>
+    <p class="muted">Mikor vettél fel vagy módosítottál járművet, tankolást, szervizt vagy kiadást.</p>
+  </header>
+
+  @if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else {
+    <section class="panel" aria-label="Változások listája">
+      <div class="panel-heading">
+        <h2>{{ entries.length }} bejegyzés</h2>
+        <button type="button" class="text-button" (click)="load()">Frissítés ↻</button>
+      </div>
+
+      <!-- Szűrők -->
+      <div class="filters">
+        <div class="form-field">
+          <label for="filter-car">Jármű</label>
+          <select id="filter-car" class="form-input" [ngModel]="vehicleFilter" (ngModelChange)="selectVehicle($event)">
+            <option [ngValue]="0">Összes jármű</option>
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <fieldset class="type-filter">
+          <legend>Megjelenített bejegyzések</legend>
+          @for (type of types; track type.value) {
+            <label class="checkbox-field">
+              <input type="checkbox" [checked]="isSelected(type.value)" (change)="toggleType(type.value)"> {{ type.label }}
+            </label>
+          }
+        </fieldset>
+        @if (hasFilter) {
+          <button type="button" class="text-button" (click)="clearFilters()">Szűrők törlése</button>
+        }
+      </div>
+
+      @if (!selectedTypes.length) {
+        <div class="empty-state">
+          <h2>Nincs kiválasztott típus</h2>
+          <p>Jelölj be legalább egy bejegyzéstípust.</p>
+        </div>
+      } @else if (loading && !entries.length) {
+        <div class="empty-state" role="status">Változásnapló betöltése…</div>
+      } @else if (entries.length) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Típus</th>
+                <th>Bejegyzés</th>
+                <th>Jármű</th>
+                <th>Létrehozva</th>
+                <th>Utoljára módosítva</th>
+                <th>Állapot</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of entries; track entry.type + entry.id) {
+                <tr>
+                  <td><span class="badge">{{ typeLabel(entry.type) }}</span></td>
+                  <td>
+                    <strong>{{ title(entry) }}</strong>
+                    @if (entry.date) {
+                      <small>{{ entry.date | date:'yyyy. MM. dd.' }} · {{ number(entry.amount ?? 0) }} {{ unit }}</small>
+                    }
+                  </td>
+                  <td><a [routerLink]="['/garage', entry.vehicleId]">{{ entry.vehicleName }} · {{ entry.licensePlate }}</a></td>
+                  <td class="nowrap">{{ entry.createdAt | date:'yyyy. MM. dd. HH:mm' }}</td>
+                  <td class="nowrap">{{ entry.updatedAt ? (entry.updatedAt | date:'yyyy. MM. dd. HH:mm') : '—' }}</td>
+                  <td>
+                    @if (entry.updatedAt) {
+                      <span class="badge badge-warning">Módosítva</span>
+                    } @else {
+                      <span class="badge">Eredeti</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (hasFilter) {
+        <div class="empty-state">
+          <h2>Nincs találat</h2>
+          <p>A kiválasztott szűrőknek egy bejegyzés sem felel meg.</p>
+          <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Még nincs bejegyzés</h2>
+          <p>Először adj hozzá egy járművet a garázsodhoz.</p>
+          <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+        </div>
+      }
+    </section>
+  }
+</app-shell>

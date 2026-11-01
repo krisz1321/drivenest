@@ -1,0 +1,37 @@
+:host { display: block; }
+
+.page-heading { margin-bottom: 28px; }
+.page-heading p { margin-bottom: 0; font-size: 13px; }
+
+h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
+
+// Szűrők a táblázat felett
+.filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+}
+.filters .form-field { min-width: 200px; margin: 0; }
+.filters .text-button { margin-bottom: 10px; }
+
+.type-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0 0 10px;
+  border: 0;
+}
+.type-filter legend { margin-bottom: 8px; padding: 0; font-size: 13px; font-weight: 600; }
+.type-filter .checkbox-field { font-size: 13px; }
+
+.nowrap { white-space: nowrap; }
+.data-table td { vertical-align: top; }
+.data-table a { color: var(--color-text); font-weight: 600; }
+.data-table td:nth-child(2), .data-table td:nth-child(3) { min-width: 170px; }
+
+@media (max-width: 600px) {
+  .filters .form-field { min-width: 0; flex: 1 1 100%; }
+}

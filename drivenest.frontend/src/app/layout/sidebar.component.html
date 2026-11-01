@@ -10,6 +10,7 @@
       <a class="nav-item" [class.active]="active === 'reminders'" routerLink="/reminders" [attr.aria-current]="active === 'reminders' ? 'page' : null" aria-label="Emlékeztetők"><span aria-hidden="true">◷</span><span class="nav-text">Emlékeztetők</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="events" aria-label="Események"><span aria-hidden="true">≡</span><span class="nav-text">Események</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="costs" aria-label="Költségáttekintés"><span aria-hidden="true">▥</span><span class="nav-text">Költségáttekintés</span></a>
+      <a class="nav-item" [class.active]="active === 'audit'" routerLink="/audit" [attr.aria-current]="active === 'audit' ? 'page' : null" aria-label="Változásnapló"><span aria-hidden="true">↺</span><span class="nav-text">Változásnapló</span></a>
       <a class="nav-item" [class.active]="active === 'settings'" routerLink="/settings" [attr.aria-current]="active === 'settings' ? 'page' : null" aria-label="Beállítások"><span aria-hidden="true">⚙</span><span class="nav-text">Beállítások</span></a>
     </nav>
     <div class="profile"><span class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</span><div><strong>{{ displayName }}</strong><small>Saját garázs</small></div></div>
