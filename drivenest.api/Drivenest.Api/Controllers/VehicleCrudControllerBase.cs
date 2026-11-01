@@ -14,8 +14,13 @@ namespace Drivenest.Api.Controllers;
 public abstract class VehicleCrudControllerBase : ControllerBase
 {
     private readonly AppDbContext _db;
+    private readonly TimeProvider _clock;
 
-    protected VehicleCrudControllerBase(AppDbContext db) => _db = db;
+    protected VehicleCrudControllerBase(AppDbContext db, TimeProvider clock)
+    {
+        _db = db;
+        _clock = clock;
+    }
 
     private IQueryable<Vehicle> OwnedVehicles => _db.Vehicles.Where(v => v.UserId == User.GetUserId());
 
@@ -41,7 +46,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         await ValidateReferences(request, null, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-        var vehicle = new Vehicle { UserId = User.GetUserId() };
+        var vehicle = new Vehicle { UserId = User.GetUserId(), CreatedAt = _clock.GetUtcNow().UtcDateTime };
         Apply(request, vehicle);
         _db.Vehicles.Add(vehicle);
         var error = await Save(cancellationToken);
@@ -58,6 +63,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         Apply(request, vehicle);
+        // Csak a tényleges változás számít módosításnak.
+        if (_db.ChangeTracker.HasChanges()) vehicle.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
         var error = await Save(cancellationToken);
         return error is not null ? error : Ok(ToDto(vehicle));
     }

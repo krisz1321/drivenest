@@ -110,6 +110,8 @@ public class ServiceRecordsController : ControllerBase
 
         var oldKm = record.OdometerKm;
         Apply(request, record);
+        // Csak a tényleges változás számít módosításnak.
+        if (_db.ChangeTracker.HasChanges()) record.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);

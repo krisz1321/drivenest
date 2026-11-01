@@ -104,6 +104,8 @@ public class ExpensesController : ControllerBase
 
         var oldKm = entry.OdometerKm;
         Apply(request, entry);
+        // Csak a tényleges változás számít módosításnak.
+        if (_db.ChangeTracker.HasChanges()) entry.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);

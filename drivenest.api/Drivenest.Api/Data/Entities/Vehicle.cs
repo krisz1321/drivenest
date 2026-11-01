@@ -22,6 +22,10 @@ namespace Drivenest.Api.Data.Entities
 
         public int CurrentKm { get; set; }
 
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
         public ApplicationUser User { get; set; } = null!;
 
         public FuelType FuelType { get; set; } = null!;

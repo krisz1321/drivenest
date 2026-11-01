@@ -8,5 +8,5 @@ namespace Drivenest.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
 public class OwnVehiclesController : VehicleCrudControllerBase
 {
-    public OwnVehiclesController(AppDbContext db) : base(db) { }
+    public OwnVehiclesController(AppDbContext db, TimeProvider clock) : base(db, clock) { }
 }

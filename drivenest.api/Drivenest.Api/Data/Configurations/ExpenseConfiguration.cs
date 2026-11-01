@@ -37,6 +37,9 @@ namespace Drivenest.Api.Data.Configurations
                 .ValueGeneratedOnAdd()
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
 
+            builder.Property(e => e.UpdatedAt)
+                .HasColumnType("datetime2(3)");
+
             builder.HasOne(e => e.Vehicle)
                 .WithMany()
                 .HasForeignKey(e => e.VehicleId)

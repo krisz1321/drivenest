@@ -161,6 +161,9 @@ namespace Drivenest.Api.Migrations
                     b.Property<int>("OdometerKm")
                         .HasColumnType("int");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
@@ -370,6 +373,9 @@ namespace Drivenest.Api.Migrations
 
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
 
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
@@ -1079,6 +1085,9 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
@@ -1131,6 +1140,11 @@ namespace Drivenest.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2(3)")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
                     b.Property<int>("CurrentKm")
                         .HasColumnType("int");
 
@@ -1154,6 +1168,9 @@ namespace Drivenest.Api.Migrations
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
