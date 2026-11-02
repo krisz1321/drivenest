@@ -29,6 +29,8 @@ namespace Drivenest.Api.Data
 
         public DbSet<Reminder> Reminders => Set<Reminder>();
 
+        public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             base.OnModelCreating(builder);

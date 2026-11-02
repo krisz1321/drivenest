@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Dtos.Audit;
 using Drivenest.Api.Dtos.Vehicles;
 using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -23,6 +24,12 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     }
 
     private IQueryable<Vehicle> OwnedVehicles => _db.Vehicles.Where(v => v.UserId == User.GetUserId());
+
+    // Üzemanyagnevek a változásnaplóhoz
+    private Task<Dictionary<int, string>> FuelTypeNames(CancellationToken cancellationToken)
+    {
+        return _db.FuelTypes.AsNoTracking().ToDictionaryAsync(f => f.Id, f => f.Name, cancellationToken);
+    }
 
     [HttpGet]
     public async Task<ActionResult<List<VehicleDto>>> GetAll(CancellationToken cancellationToken)
@@ -62,9 +69,17 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         await ValidateReferences(request, id, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+        var fuelTypes = await FuelTypeNames(cancellationToken);
+        var before = vehicle.AuditFields(fuelTypes);
         Apply(request, vehicle);
+        var changes = before.AuditChanges(vehicle.AuditFields(fuelTypes));
         // Csak a tényleges változás számít módosításnak.
-        if (_db.ChangeTracker.HasChanges()) vehicle.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
+        if (changes.Count > 0)
+        {
+            var now = _clock.GetUtcNow().UtcDateTime;
+            vehicle.UpdatedAt = now;
+            _db.AuditLogs.Add(vehicle.ToAuditLog(AuditActions.Updated, User.GetUserId(), now, changes));
+        }
         var error = await Save(cancellationToken);
         return error is not null ? error : Ok(ToDto(vehicle));
     }
@@ -81,6 +96,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
             || await _db.Reminders.AnyAsync(r => r.VehicleId == id, cancellationToken))
             return Problem(statusCode: 409, title: "Remove the vehicle's linked records before deleting it.");
 
+        var fuelTypes = await FuelTypeNames(cancellationToken);
+        _db.AuditLogs.Add(vehicle.ToAuditLog(AuditActions.Deleted, User.GetUserId(), _clock.GetUtcNow().UtcDateTime, vehicle.AuditFields(fuelTypes).AuditChanges([])));
         _db.Vehicles.Remove(vehicle);
         var error = await Save(cancellationToken);
         return error is not null ? error : NoContent();

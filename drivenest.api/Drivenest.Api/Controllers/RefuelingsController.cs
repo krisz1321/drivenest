@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Dtos.Audit;
 using Drivenest.Api.Dtos.Refuelings;
 using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -76,12 +77,19 @@ public class RefuelingsController : ControllerBase
     public async Task<ActionResult<RefuelingDto>> Update(int vehicleId, int id, RefuelingRequest request, CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
-        var entry = await _db.Refuelings.SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
+        var entry = await _db.Refuelings.Include(r => r.Vehicle).SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
         var oldKm = entry.OdometerKm;
+        var before = entry.AuditFields();
         Apply(request, entry);
+        var changes = before.AuditChanges(entry.AuditFields());
         // Csak a tényleges változás számít módosításnak.
-        if (_db.ChangeTracker.HasChanges()) entry.UpdatedAt = _clock.GetUtcNow().UtcDateTime;
+        if (changes.Count > 0)
+        {
+            var now = _clock.GetUtcNow().UtcDateTime;
+            entry.UpdatedAt = now;
+            _db.AuditLogs.Add(entry.ToAuditLog(AuditActions.Updated, User.GetUserId(), now, changes));
+        }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
@@ -94,8 +102,9 @@ public class RefuelingsController : ControllerBase
     public async Task<IActionResult> Delete(int vehicleId, int id, CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
-        var entry = await _db.Refuelings.SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
+        var entry = await _db.Refuelings.Include(r => r.Vehicle).SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
+        _db.AuditLogs.Add(entry.ToAuditLog(AuditActions.Deleted, User.GetUserId(), _clock.GetUtcNow().UtcDateTime, entry.AuditFields().AuditChanges([])));
         _db.Refuelings.Remove(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;

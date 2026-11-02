@@ -10,6 +10,12 @@ public static class AuditEntryTypes
     public static readonly string[] All = [Vehicle, Refueling, Service, Expense];
 }
 
+public static class AuditActions
+{
+    public const string Updated = "updated";
+    public const string Deleted = "deleted";
+}
+
 // A Date, Summary, Amount és Liters csak ott van kitöltve, ahol a típusnak van ilyen adata.
 // UpdatedAt = null, ha a bejegyzést létrehozása óta nem módosították.
 public record AuditEntryDto(string Type, int Id, int VehicleId, string LicensePlate, string VehicleName,
