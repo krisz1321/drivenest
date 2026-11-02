@@ -6,6 +6,15 @@ namespace Drivenest.Api.Extensions
 {
     public static class AuditLogExtensions
     {
+        // Az ennél több nappal az eredeti dátum után történt létrehozás, módosítás és törlés számít változásnak.
+        public const int LateDays = 7;
+
+        // Hány nappal a dátum után történt a rögzítés.
+        public static int DaysLate(DateOnly date, DateTime recordedAt)
+        {
+            return DateOnly.FromDateTime(recordedAt).DayNumber - date.DayNumber;
+        }
+
         // A naplózott mezők értéke szövegként, hogy a szerkesztés előtti és utáni állapot összehasonlítható legyen.
         public static Dictionary<string, string?> AuditFields(this Vehicle v, IReadOnlyDictionary<int, string> fuelTypes) => new()
         {

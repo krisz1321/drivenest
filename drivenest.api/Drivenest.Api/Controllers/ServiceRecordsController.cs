@@ -65,6 +65,28 @@ public class ServiceRecordsController : ControllerBase
         return records.Select(ToDto).ToList();
     }
 
+    // A szervizkönyv PDF adatai: a jármű és a szervizei időrendben, a rögzítés idejével.
+    [HttpGet("book")]
+    [ProducesResponseType(typeof(ServiceBookDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ServiceBookDto>> GetBook(int vehicleId, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        var vehicle = await _db.Vehicles.AsNoTracking().Include(v => v.FuelType)
+            .SingleOrDefaultAsync(v => v.Id == vehicleId && v.UserId == userId, cancellationToken);
+        if (vehicle is null) return NotFound();
+
+        var records = await WithItems().AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId)
+            .OrderBy(s => s.Date).ThenBy(s => s.OdometerKm).ThenBy(s => s.Id)
+            .ToListAsync(cancellationToken);
+        var deletedCount = await _db.AuditLogs.CountAsync(a => a.VehicleId == vehicleId
+            && a.EntityType == AuditEntryTypes.Service && a.Action == AuditActions.Deleted, cancellationToken);
+
+        var vehicleDto = new ServiceBookVehicleDto(vehicle.LicensePlate, vehicle.Vin, vehicle.Make, vehicle.Model,
+            vehicle.Year, vehicle.FuelType.Name, vehicle.CurrentKm);
+        return new ServiceBookDto(vehicleDto, _clock.GetUtcNow().UtcDateTime, deletedCount, records.Select(ToBookEntry).ToList());
+    }
+
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ServiceRecordDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<ServiceRecordDto>> GetById(int vehicleId, int id, CancellationToken cancellationToken)
@@ -210,7 +232,19 @@ public class ServiceRecordsController : ControllerBase
         }
     }
 
+    private static List<ServiceRecordItemDto> ToItemDtos(ServiceRecord s)
+    {
+        return s.Items.OrderBy(i => i.Id).Select(i => new ServiceRecordItemDto(i.CategoryId, i.Category.Name, i.Amount)).ToList();
+    }
+
     private static ServiceRecordDto ToDto(ServiceRecord s) => new(s.Id, s.VehicleId, s.Date, s.OdometerKm,
-        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc),
-        s.Items.OrderBy(i => i.Id).Select(i => new ServiceRecordItemDto(i.CategoryId, i.Category.Name, i.Amount)).ToList());
+        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), ToItemDtos(s));
+
+    private static ServiceBookEntryDto ToBookEntry(ServiceRecord s)
+    {
+        var daysLate = AuditLogExtensions.DaysLate(s.Date, s.CreatedAt);
+        DateTime? updatedAt = s.UpdatedAt is { } value ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : null;
+        return new ServiceBookEntryDto(s.Date, s.OdometerKm, s.Items.Sum(i => i.Amount), s.Provider, s.Description,
+            DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), updatedAt, daysLate, daysLate > AuditLogExtensions.LateDays, ToItemDtos(s));
+    }
 }

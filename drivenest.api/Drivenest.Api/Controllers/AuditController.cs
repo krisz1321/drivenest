@@ -17,9 +17,6 @@ namespace Drivenest.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status404NotFound)]
 public class AuditController : ControllerBase
 {
-    // Az ennél több nappal az eredeti dátum után történt létrehozás, módosítás és törlés számít változásnak.
-    private const int LateDays = 7;
-
     private readonly AppDbContext _db;
 
     public AuditController(AppDbContext db)
@@ -69,7 +66,7 @@ public class AuditController : ControllerBase
         if (selectedActions.Contains(AuditActions.Added))
         {
             var entries = await LoadEntries(vehicles, selectedTypes, cancellationToken);
-            changes.AddRange(entries.Where(e => DaysLate(e) > LateDays).Select(ToAddedDto));
+            changes.AddRange(entries.Where(e => DaysLate(e) > AuditLogExtensions.LateDays).Select(ToAddedDto));
         }
 
         return changes.OrderByDescending(c => c.ChangedAt).ThenByDescending(c => c.EntityId).ToList();
@@ -140,7 +137,7 @@ public class AuditController : ControllerBase
     // Hány nappal a saját dátuma után rögzítették (a járműnek nincs dátuma).
     private static int DaysLate(AuditEntryDto e)
     {
-        return e.Date is { } date ? DateOnly.FromDateTime(e.CreatedAt).DayNumber - date.DayNumber : 0;
+        return e.Date is { } date ? AuditLogExtensions.DaysLate(date, e.CreatedAt) : 0;
     }
 
     // Ha a dátumot is átírták, a régi és az új közül a korábbi számít, így az átírás nem rejtheti el magát.
@@ -156,7 +153,7 @@ public class AuditController : ControllerBase
 
     private static bool IsLate(AuditLog a)
     {
-        return OriginalDate(a) is not { } date || DateOnly.FromDateTime(a.CreatedAt).DayNumber - date.DayNumber > LateDays;
+        return OriginalDate(a) is not { } date || AuditLogExtensions.DaysLate(date, a.CreatedAt) > AuditLogExtensions.LateDays;
     }
 
     private static string VehicleName(Vehicle v) => $"{v.Make} {v.Model}";
