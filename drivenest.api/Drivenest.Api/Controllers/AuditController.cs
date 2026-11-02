@@ -1,3 +1,4 @@
+using System.Globalization;
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Dtos.Audit;
@@ -16,7 +17,7 @@ namespace Drivenest.Api.Controllers;
 [ProducesResponseType(StatusCodes.Status404NotFound)]
 public class AuditController : ControllerBase
 {
-    // Ennél több nappal a saját dátuma után rögzített bejegyzés számít utólag hozzáadottnak.
+    // Az ennél több nappal az eredeti dátum után történt létrehozás, módosítás és törlés számít változásnak.
     private const int LateDays = 7;
 
     private readonly AppDbContext _db;
@@ -39,7 +40,12 @@ public class AuditController : ControllerBase
         if (vehicleId.HasValue && !await vehicles.AnyAsync(cancellationToken)) return NotFound();
 
         var entries = await LoadEntries(vehicles, selected, cancellationToken);
-        return entries.OrderByDescending(e => e.UpdatedAt ?? e.CreatedAt).ThenByDescending(e => e.Id).ToList();
+
+        // A 7 napon belüli törlés nem a Változások között látszik, a sor viszont már csak a naplóban van meg.
+        var deletions = await LoadLogs(vehicleId, selected, [AuditActions.Deleted], cancellationToken);
+        entries.AddRange(deletions.Where(a => !IsLate(a)).Select(ToDeletedDto));
+
+        return entries.OrderByDescending(e => e.DeletedAt ?? e.UpdatedAt ?? e.CreatedAt).ThenByDescending(e => e.Id).ToList();
     }
 
     // Módosítások, törlések és az utólag rögzített bejegyzések, a legfrissebbel kezdve.
@@ -56,13 +62,8 @@ public class AuditController : ControllerBase
         var vehicles = OwnedVehicles(vehicleId);
         if (vehicleId.HasValue && !await vehicles.AnyAsync(cancellationToken)) return NotFound();
 
-        var userId = User.GetUserId();
-        var query = _db.AuditLogs.AsNoTracking().Include(a => a.Changes)
-            .Where(a => a.UserId == userId && selectedTypes.Contains(a.EntityType) && selectedActions.Contains(a.Action));
-        if (vehicleId.HasValue) query = query.Where(a => a.VehicleId == vehicleId.Value);
-
-        var logs = await query.ToListAsync(cancellationToken);
-        var changes = logs.Select(ToDto).ToList();
+        var logs = await LoadLogs(vehicleId, selectedTypes, selectedActions, cancellationToken);
+        var changes = logs.Where(IsLate).Select(ToDto).ToList();
 
         // A létrehozás nincs a naplóban, a késői rögzítést a dátumokból számoljuk.
         if (selectedActions.Contains(AuditActions.Added))
@@ -87,6 +88,15 @@ public class AuditController : ControllerBase
         var userId = User.GetUserId();
         var vehicles = _db.Vehicles.AsNoTracking().Where(v => v.UserId == userId);
         return vehicleId.HasValue ? vehicles.Where(v => v.Id == vehicleId.Value) : vehicles;
+    }
+
+    private Task<List<AuditLog>> LoadLogs(int? vehicleId, string[] types, string[] actions, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        var query = _db.AuditLogs.AsNoTracking().Include(a => a.Changes)
+            .Where(a => a.UserId == userId && types.Contains(a.EntityType) && actions.Contains(a.Action));
+        if (vehicleId.HasValue) query = query.Where(a => a.VehicleId == vehicleId.Value);
+        return query.ToListAsync(cancellationToken);
     }
 
     private async Task<List<AuditEntryDto>> LoadEntries(IQueryable<Vehicle> vehicles, string[] types, CancellationToken cancellationToken)
@@ -133,6 +143,22 @@ public class AuditController : ControllerBase
         return e.Date is { } date ? DateOnly.FromDateTime(e.CreatedAt).DayNumber - date.DayNumber : 0;
     }
 
+    // Ha a dátumot is átírták, a régi és az új közül a korábbi számít, így az átírás nem rejtheti el magát.
+    // A járműnek nincs dátuma, ott a létrehozás napja számít.
+    private static DateOnly? OriginalDate(AuditLog a)
+    {
+        var oldValue = a.Changes.FirstOrDefault(c => c.Field == "date")?.OldValue;
+        var oldDate = oldValue is null ? (DateOnly?)null : DateOnly.ParseExact(oldValue, "yyyy-MM-dd", CultureInfo.InvariantCulture);
+        if (oldDate < a.Date) return oldDate;
+        if (a.Date is not null) return a.Date;
+        return a.EntityCreatedAt is { } created ? DateOnly.FromDateTime(created) : null;
+    }
+
+    private static bool IsLate(AuditLog a)
+    {
+        return OriginalDate(a) is not { } date || DateOnly.FromDateTime(a.CreatedAt).DayNumber - date.DayNumber > LateDays;
+    }
+
     private static string VehicleName(Vehicle v) => $"{v.Make} {v.Model}";
 
     private static DateTime Utc(DateTime value) => DateTime.SpecifyKind(value, DateTimeKind.Utc);
@@ -150,6 +176,9 @@ public class AuditController : ControllerBase
 
     private static AuditEntryDto ToDto(Expense e) => new(AuditEntryTypes.Expense, e.Id, e.VehicleId, e.Vehicle.LicensePlate, VehicleName(e.Vehicle),
         e.Date, e.Category.Name, e.Amount, null, Utc(e.CreatedAt), Utc(e.UpdatedAt));
+
+    private static AuditEntryDto ToDeletedDto(AuditLog a) => new(a.EntityType, a.EntityId, a.VehicleId, a.LicensePlate, a.VehicleName,
+        a.Date, a.Summary, a.Amount, a.Liters, Utc(a.EntityCreatedAt ?? a.CreatedAt), null, Utc(a.CreatedAt));
 
     private static AuditChangeDto ToDto(AuditLog a) => new(a.Action, a.EntityType, a.EntityId, a.VehicleId, a.LicensePlate, a.VehicleName,
         a.Date, a.Summary, a.Amount, a.Liters, Utc(a.CreatedAt), null,

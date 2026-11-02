@@ -21,8 +21,9 @@ public static class AuditActions
 
 // A Date, Summary, Amount és Liters csak ott van kitöltve, ahol a típusnak van ilyen adata.
 // UpdatedAt = null, ha a bejegyzést létrehozása óta nem módosították.
+// DeletedAt csak a 7 napon belül törölt bejegyzésnél van kitöltve, ezek már csak a naplóban vannak meg.
 public record AuditEntryDto(string Type, int Id, int VehicleId, string LicensePlate, string VehicleName,
-    DateOnly? Date, string? Summary, decimal? Amount, decimal? Liters, DateTime CreatedAt, DateTime? UpdatedAt);
+    DateOnly? Date, string? Summary, decimal? Amount, decimal? Liters, DateTime CreatedAt, DateTime? UpdatedAt, DateTime? DeletedAt = null);
 
 public record AuditChangeFieldDto(string Field, string? OldValue, string? NewValue);
 

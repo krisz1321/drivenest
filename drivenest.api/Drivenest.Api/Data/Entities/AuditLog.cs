@@ -22,6 +22,9 @@ namespace Drivenest.Api.Data.Entities
 
         public DateOnly? Date { get; set; }
 
+        // A bejegyzés létrehozásának ideje: a járműnek nincs dátuma, ehhez mérjük a 7 napot.
+        public DateTime? EntityCreatedAt { get; set; }
+
         public string? Summary { get; set; }
 
         public decimal? Amount { get; set; }

@@ -30,6 +30,9 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(a => a.Date)
                 .HasColumnType("date");
 
+            builder.Property(a => a.EntityCreatedAt)
+                .HasColumnType("datetime2(3)");
+
             builder.Property(a => a.Amount)
                 .HasColumnType("decimal(14,2)");
 

@@ -152,6 +152,9 @@ namespace Drivenest.Api.Migrations
                     b.Property<DateOnly?>("Date")
                         .HasColumnType("date");
 
+                    b.Property<DateTime?>("EntityCreatedAt")
+                        .HasColumnType("datetime2(3)");
+
                     b.Property<int>("EntityId")
                         .HasColumnType("int");
 

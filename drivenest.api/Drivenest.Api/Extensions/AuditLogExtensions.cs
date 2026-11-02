@@ -70,12 +70,12 @@ namespace Drivenest.Api.Extensions
 
         public static AuditLog ToAuditLog(this Vehicle v, string action, int userId, DateTime at, List<AuditLogChange> changes)
         {
-            return NewLog(action, AuditEntryTypes.Vehicle, v.Id, v, userId, at, changes);
+            return NewLog(action, AuditEntryTypes.Vehicle, v.Id, v.CreatedAt, v, userId, at, changes);
         }
 
         public static AuditLog ToAuditLog(this Refueling r, string action, int userId, DateTime at, List<AuditLogChange> changes)
         {
-            var log = NewLog(action, AuditEntryTypes.Refueling, r.Id, r.Vehicle, userId, at, changes);
+            var log = NewLog(action, AuditEntryTypes.Refueling, r.Id, r.CreatedAt, r.Vehicle, userId, at, changes);
             log.Date = r.Date;
             log.Amount = r.TotalAmount;
             log.Liters = r.Liters;
@@ -85,7 +85,7 @@ namespace Drivenest.Api.Extensions
         public static AuditLog ToAuditLog(this ServiceRecord s, IReadOnlyDictionary<int, string> categories,
             string action, int userId, DateTime at, List<AuditLogChange> changes)
         {
-            var log = NewLog(action, AuditEntryTypes.Service, s.Id, s.Vehicle, userId, at, changes);
+            var log = NewLog(action, AuditEntryTypes.Service, s.Id, s.CreatedAt, s.Vehicle, userId, at, changes);
             log.Date = s.Date;
             log.Summary = string.Join(", ", s.Items.Select(i => categories.GetValueOrDefault(i.CategoryId)));
             log.Amount = s.Items.Sum(i => i.Amount);
@@ -95,14 +95,14 @@ namespace Drivenest.Api.Extensions
         public static AuditLog ToAuditLog(this Expense e, IReadOnlyDictionary<int, string> categories,
             string action, int userId, DateTime at, List<AuditLogChange> changes)
         {
-            var log = NewLog(action, AuditEntryTypes.Expense, e.Id, e.Vehicle, userId, at, changes);
+            var log = NewLog(action, AuditEntryTypes.Expense, e.Id, e.CreatedAt, e.Vehicle, userId, at, changes);
             log.Date = e.Date;
             log.Summary = categories.GetValueOrDefault(e.CategoryId);
             log.Amount = e.Amount;
             return log;
         }
 
-        private static AuditLog NewLog(string action, string type, int id, Vehicle vehicle, int userId, DateTime at, List<AuditLogChange> changes)
+        private static AuditLog NewLog(string action, string type, int id, DateTime entityCreatedAt, Vehicle vehicle, int userId, DateTime at, List<AuditLogChange> changes)
         {
             return new AuditLog
             {
@@ -113,6 +113,7 @@ namespace Drivenest.Api.Extensions
                 VehicleId = vehicle.Id,
                 LicensePlate = vehicle.LicensePlate,
                 VehicleName = $"{vehicle.Make} {vehicle.Model}",
+                EntityCreatedAt = entityCreatedAt,
                 CreatedAt = at,
                 Changes = changes
             };
