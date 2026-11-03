@@ -5,7 +5,7 @@ import { AbstractControl, FormBuilder, FormControl, ReactiveFormsModule, Validat
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
-import { FuelType, Vehicle, VehicleRequest, VehicleService } from '../services/vehicle.service';
+import { FuelType, Vehicle, VehicleBrand, VehicleModel, VehicleRequest, VehicleService } from '../services/vehicle.service';
 import { ProfileService } from '../services/profile.service';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { Consumption, StatsService } from '../services/stats.service';
@@ -35,6 +35,8 @@ export class GaragePageComponent implements OnInit {
   vehicles: Vehicle[] = [];
   consumption: Record<number, Consumption> = {};
   fuelTypes: FuelType[] = [];
+  brands: VehicleBrand[] = [];
+  models: VehicleModel[] = [];
   loading = true;
   saving = false;
   loadErrors: string[] = [];
@@ -43,8 +45,11 @@ export class GaragePageComponent implements OnInit {
   mode: 'create' | 'edit' | 'delete' = 'create';
   target: Vehicle | null = null;
   readonly form = inject(FormBuilder).nonNullable.group({
-    make: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(50)]],
-    model: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(50)]],
+    source: ['catalog' as 'catalog' | 'custom'],
+    brandId: [0],
+    vehicleModelID: new FormControl<number | null>(null),
+    customMake: ['', [Validators.maxLength(50)]],
+    customModel: ['', [Validators.maxLength(50)]],
     licensePlate: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(20)]],
     fuelTypeId: [0, [Validators.required, Validators.min(1), integer]],
     vin: ['', [Validators.pattern(/^[A-Za-z0-9]{17}$/)]],
@@ -80,6 +85,8 @@ export class GaragePageComponent implements OnInit {
     forkJoin({
       vehicles: this.api.list().pipe(catchError(() => { this.loadErrors.push('A járművek betöltése nem sikerült. Próbáld újra.'); return of(null); })),
       fuelTypes: this.api.fuelTypes().pipe(catchError(() => { this.loadErrors.push('Az üzemanyagtípusok nem érhetők el. A jármű mentéséhez próbáld újra a betöltést.'); return of(null); })),
+      brands: this.api.brands().pipe(catchError(() => { this.loadErrors.push('A járműmárkák nem érhetők el.'); return of(null); })),
+      models: this.api.models().pipe(catchError(() => { this.loadErrors.push('A járműmodellek nem érhetők el.'); return of(null); })),
       user: this.profile.load().pipe(catchError(() => { this.loadErrors.push('A profil betöltése nem sikerült.'); return of(null); }))
     }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)).subscribe(result => {
       if (result.vehicles !== null) {
@@ -87,6 +94,8 @@ export class GaragePageComponent implements OnInit {
         this.loadConsumption();
       }
       if (result.fuelTypes !== null) this.fuelTypes = result.fuelTypes;
+      if (result.brands !== null) this.brands = result.brands;
+      if (result.models !== null) this.models = result.models;
     });
   }
 
@@ -119,9 +128,23 @@ export class GaragePageComponent implements OnInit {
     this.mode = mode;
     this.target = vehicle;
     this.modalErrors = [];
-    this.form.reset({ make: '', model: '', licensePlate: '', fuelTypeId: this.fuelTypes[0]?.id ?? 0,
+    this.form.reset({ source: 'catalog', brandId: 0, vehicleModelID: null, customMake: '', customModel: '',
+      licensePlate: '', fuelTypeId: this.fuelTypes[0]?.id ?? 0,
       vin: '', year: null, initialKm: 0, currentKm: 0 });
-    if (vehicle) this.form.patchValue({ ...vehicle, vin: vehicle.vin ?? '' });
+    if (vehicle) {
+      const selectedModel = this.models.find(model =>
+        model.modelName === vehicle.model
+        && this.brands.find(brand => brand.id === model.vehicleBrandId)?.brandName === vehicle.make);
+      this.form.patchValue({
+        source: selectedModel ? 'catalog' : 'custom',
+        brandId: selectedModel?.vehicleBrandId ?? 0,
+        vehicleModelID: selectedModel?.id ?? null,
+        customMake: selectedModel ? '' : vehicle.make,
+        customModel: selectedModel ? '' : vehicle.model,
+        fuelTypeId: vehicle.fuelTypeId, licensePlate: vehicle.licensePlate, vin: vehicle.vin ?? '',
+        year: vehicle.year, initialKm: vehicle.initialKm, currentKm: vehicle.currentKm
+      });
+    }
     this.dialog.nativeElement.showModal();
   }
 
@@ -133,8 +156,18 @@ export class GaragePageComponent implements OnInit {
     this.modalErrors = [];
     if (this.form.invalid || !this.fuelTypes.length) { this.form.markAllAsTouched(); return; }
     const value = this.form.getRawValue();
-    const request: VehicleRequest = { ...value, make: value.make.trim(), model: value.model.trim(),
-      licensePlate: value.licensePlate.trim().toUpperCase(), vin: value.vin ? value.vin.toUpperCase() : null };
+    const catalog = value.source === 'catalog';
+    if ((catalog && !value.vehicleModelID) ||
+      (!catalog && (!value.customMake.trim() || !value.customModel.trim()))) {
+      this.modalErrors = [catalog ? 'Válassz márkát és modellt a katalógusból.' : 'Add meg az egyedi márkát és modellt.'];
+      return;
+    }
+    const request: VehicleRequest = { vehicleModelID: catalog ? value.vehicleModelID : null,
+      customMake: catalog ? null : value.customMake.trim(), customModel: catalog ? null : value.customModel.trim(),
+      fuelTypeId: value.fuelTypeId,
+      licensePlate: value.licensePlate.trim().toUpperCase(),
+      vin: value.vin ? value.vin.toUpperCase() : null,
+      year: value.year, initialKm: value.initialKm, currentKm: value.currentKm };
     this.saving = true;
     const action = this.mode === 'edit' && this.target ? this.api.update(this.target.id, request) : this.api.create(request);
     action.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.saving = false)).subscribe({
@@ -145,6 +178,11 @@ export class GaragePageComponent implements OnInit {
       },
       error: (error: HttpErrorResponse) => this.modalErrors = this.errors(error)
     });
+  }
+
+  modelsForBrand() {
+    const brandId = this.form.controls.brandId.value;
+    return this.models.filter(model => model.vehicleBrandId === brandId);
   }
 
   remove() {
