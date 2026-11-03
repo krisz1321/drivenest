@@ -1,6 +1,6 @@
 namespace Drivenest.Api.Dtos.Vehicles;
 
-/// <summary>Vehicle returned by the API. Custom values are used when VehicleModelID is null.</summary>
+/// <summary>Vehicle returned by the API.</summary>
 public record VehicleDto(int Id, int FuelTypeId, string LicensePlate, string? Vin,
-    int? VehicleModelID, string? CustomMake, string? CustomModel,
+    string Make, string Model,
     short? Year, int InitialKm, int CurrentKm);

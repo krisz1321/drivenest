@@ -39,7 +39,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     {
         return await OwnedVehicles.AsNoTracking().OrderBy(v => v.Id)
             .Select(v => new VehicleDto(v.Id, v.FuelTypeId, v.LicensePlate, v.Vin,
-                v.VehicleModelID, v.CustomMake, v.CustomModel,
+                v.VehicleModel == null ? v.CustomMake : v.VehicleModel.VehicleBrand.BrandName,
+                v.VehicleModel == null ? v.CustomModel : v.VehicleModel.ModelName,
                 v.Year, v.InitialKm, v.CurrentKm))
             .ToListAsync(cancellationToken);
     }
@@ -50,7 +51,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     public async Task<ActionResult<VehicleDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var vehicle = await OwnedVehicles.AsNoTracking().SingleOrDefaultAsync(v => v.Id == id, cancellationToken);
-        return vehicle is null ? NotFound() : Ok(ToDto(vehicle));
+        return vehicle is null ? NotFound() : Ok(await ToDto(vehicle.Id, cancellationToken));
     }
 
     [HttpPost]
@@ -67,7 +68,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         _db.Vehicles.Add(vehicle);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        return CreatedAtAction(nameof(GetById), new { id = vehicle.Id }, ToDto(vehicle));
+        return CreatedAtAction(nameof(GetById), new { id = vehicle.Id }, await ToDto(vehicle.Id, cancellationToken));
     }
 
     [HttpPut("{id:int}")]
@@ -93,7 +94,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
             _db.AuditLogs.Add(vehicle.ToAuditLog(AuditActions.Updated, User.GetUserId(), now, changes));
         }
         var error = await Save(cancellationToken);
-        return error is not null ? error : Ok(ToDto(vehicle));
+        return error is not null ? error : Ok(await ToDto(vehicle.Id, cancellationToken));
     }
 
     [HttpDelete("{id:int}")]
@@ -176,7 +177,12 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         vehicle.CurrentKm = request.CurrentKm;
     }
 
-    private static VehicleDto ToDto(Vehicle v) => new(v.Id, v.FuelTypeId, v.LicensePlate,
-        v.Vin, v.VehicleModelID, v.CustomMake, v.CustomModel,
-        v.Year, v.InitialKm, v.CurrentKm);
+    private Task<VehicleDto?> ToDto(int id, CancellationToken cancellationToken) =>
+        OwnedVehicles.AsNoTracking()
+            .Where(v => v.Id == id)
+            .Select(v => new VehicleDto(v.Id, v.FuelTypeId, v.LicensePlate, v.Vin,
+                v.VehicleModel == null ? v.CustomMake : v.VehicleModel.VehicleBrand.BrandName,
+                v.VehicleModel == null ? v.CustomModel : v.VehicleModel.ModelName,
+                v.Year, v.InitialKm, v.CurrentKm))
+            .SingleOrDefaultAsync(cancellationToken);
 }

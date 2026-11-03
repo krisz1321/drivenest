@@ -18,6 +18,8 @@ namespace Drivenest.Api.Data
             var userManager = services.GetRequiredService<UserManager<ApplicationUser>>();
             var db = services.GetRequiredService<AppDbContext>();
 
+            await SeedVehicleCatalogAsync(db);
+
             if (await userManager.FindByNameAsync(AdminUserName) == null)
             {
                 await CreateAdminUserAsync(userManager);
@@ -25,6 +27,33 @@ namespace Drivenest.Api.Data
 
             await SeedFirstDemoUserAsync(userManager, db);
             await SeedSecondDemoUserAsync(userManager, db);
+        }
+
+        private static async Task SeedVehicleCatalogAsync(AppDbContext db)
+        {
+            if (await db.VehicleBrands.AnyAsync())
+                return;
+
+            var brands = new[]
+            {
+                new VehicleBrand { BrandName = "Audi" },
+                new VehicleBrand { BrandName = "BMW" },
+                new VehicleBrand { BrandName = "Ford" },
+                new VehicleBrand { BrandName = "Opel" },
+                new VehicleBrand { BrandName = "Suzuki" },
+                new VehicleBrand { BrandName = "Toyota" }
+            };
+            db.VehicleBrands.AddRange(brands);
+            await db.SaveChangesAsync();
+
+            db.VehicleModels.AddRange(
+                new VehicleModel { ModelName = "A3", VehicleBrandId = brands.Single(b => b.BrandName == "Audi").Id },
+                new VehicleModel { ModelName = "320", VehicleBrandId = brands.Single(b => b.BrandName == "BMW").Id },
+                new VehicleModel { ModelName = "Focus", VehicleBrandId = brands.Single(b => b.BrandName == "Ford").Id },
+                new VehicleModel { ModelName = "Astra", VehicleBrandId = brands.Single(b => b.BrandName == "Opel").Id },
+                new VehicleModel { ModelName = "Swift", VehicleBrandId = brands.Single(b => b.BrandName == "Suzuki").Id },
+                new VehicleModel { ModelName = "Corolla", VehicleBrandId = brands.Single(b => b.BrandName == "Toyota").Id });
+            await db.SaveChangesAsync();
         }
 
         private static async Task SeedFirstDemoUserAsync(UserManager<ApplicationUser> userManager, AppDbContext db)
