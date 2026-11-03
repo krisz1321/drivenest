@@ -158,7 +158,7 @@ export class ServiceBookPdfService {
     doc.setFontSize(8);
     doc.text('Dátum / óraállás', MARGIN + COLUMN.date.x, y + 4.7);
     doc.text('Elvégzett munka', MARGIN + COLUMN.work.x, y + 4.7);
-    doc.text('Szerviz', MARGIN + COLUMN.provider.x, y + 4.7);
+    doc.text('Helyszín', MARGIN + COLUMN.provider.x, y + 4.7);
     doc.text('Összeg', MARGIN + COLUMN.total.x, y + 4.7, { align: 'right' });
     doc.text('Rögzítve', MARGIN + COLUMN.recorded.x, y + 4.7);
   }
