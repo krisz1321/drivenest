@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Dtos.Audit;
 using Drivenest.Api.Dtos.ServiceRecords;
 using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -39,6 +40,12 @@ public class ServiceRecordsController : ControllerBase
         return _db.ServiceCategories.Where(c => c.UserId == null || c.UserId == userId);
     }
 
+    // Típusnevek a változásnaplóhoz
+    private Task<Dictionary<int, string>> CategoryNames(CancellationToken cancellationToken)
+    {
+        return VisibleCategories().AsNoTracking().ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
+    }
+
     // A szervizek a tételeikkel és a tételek típusával együtt
     private IQueryable<ServiceRecord> WithItems()
     {
@@ -56,6 +63,28 @@ public class ServiceRecordsController : ControllerBase
             .OrderByDescending(s => s.Date).ThenByDescending(s => s.OdometerKm).ThenByDescending(s => s.Id)
             .ToListAsync(cancellationToken);
         return records.Select(ToDto).ToList();
+    }
+
+    // A szervizkönyv PDF adatai: a jármű és a szervizei időrendben, a rögzítés idejével.
+    [HttpGet("book")]
+    [ProducesResponseType(typeof(ServiceBookDto), StatusCodes.Status200OK)]
+    public async Task<ActionResult<ServiceBookDto>> GetBook(int vehicleId, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        var vehicle = await _db.Vehicles.AsNoTracking().Include(v => v.FuelType)
+            .SingleOrDefaultAsync(v => v.Id == vehicleId && v.UserId == userId, cancellationToken);
+        if (vehicle is null) return NotFound();
+
+        var records = await WithItems().AsNoTracking()
+            .Where(s => s.VehicleId == vehicleId)
+            .OrderBy(s => s.Date).ThenBy(s => s.OdometerKm).ThenBy(s => s.Id)
+            .ToListAsync(cancellationToken);
+        var deletedCount = await _db.AuditLogs.CountAsync(a => a.VehicleId == vehicleId
+            && a.EntityType == AuditEntryTypes.Service && a.Action == AuditActions.Deleted, cancellationToken);
+
+        var vehicleDto = new ServiceBookVehicleDto(vehicle.LicensePlate, vehicle.Vin, vehicle.Make, vehicle.Model,
+            vehicle.Year, vehicle.FuelType.Name, vehicle.CurrentKm);
+        return new ServiceBookDto(vehicleDto, _clock.GetUtcNow().UtcDateTime, deletedCount, records.Select(ToBookEntry).ToList());
     }
 
     [HttpGet("{id:int}")]
@@ -101,15 +130,25 @@ public class ServiceRecordsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        var record = await _db.ServiceRecords.Include(s => s.Items)
+        var record = await _db.ServiceRecords.Include(s => s.Vehicle).Include(s => s.Items)
             .SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
         if (record is null) return NotFound();
 
         await ValidateCategories(request, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+        var categories = await CategoryNames(cancellationToken);
         var oldKm = record.OdometerKm;
+        var before = record.AuditFields(categories);
         Apply(request, record);
+        var changes = before.AuditChanges(record.AuditFields(categories));
+        // Csak a tényleges változás számít módosításnak.
+        if (changes.Count > 0)
+        {
+            var now = _clock.GetUtcNow().UtcDateTime;
+            record.UpdatedAt = now;
+            _db.AuditLogs.Add(record.ToAuditLog(categories, AuditActions.Updated, User.GetUserId(), now, changes));
+        }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
@@ -125,8 +164,12 @@ public class ServiceRecordsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        var record = await _db.ServiceRecords.SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
+        var record = await _db.ServiceRecords.Include(s => s.Vehicle).Include(s => s.Items)
+            .SingleOrDefaultAsync(s => s.Id == id && s.VehicleId == vehicleId, cancellationToken);
         if (record is null) return NotFound();
+
+        var categories = await CategoryNames(cancellationToken);
+        _db.AuditLogs.Add(record.ToAuditLog(categories, AuditActions.Deleted, User.GetUserId(), _clock.GetUtcNow().UtcDateTime, record.AuditFields(categories).AuditChanges([])));
 
         // A tételeket az adatbázis törli (cascade).
         _db.ServiceRecords.Remove(record);
@@ -189,7 +232,19 @@ public class ServiceRecordsController : ControllerBase
         }
     }
 
+    private static List<ServiceRecordItemDto> ToItemDtos(ServiceRecord s)
+    {
+        return s.Items.OrderBy(i => i.Id).Select(i => new ServiceRecordItemDto(i.CategoryId, i.Category.Name, i.Amount)).ToList();
+    }
+
     private static ServiceRecordDto ToDto(ServiceRecord s) => new(s.Id, s.VehicleId, s.Date, s.OdometerKm,
-        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc),
-        s.Items.OrderBy(i => i.Id).Select(i => new ServiceRecordItemDto(i.CategoryId, i.Category.Name, i.Amount)).ToList());
+        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), ToItemDtos(s));
+
+    private static ServiceBookEntryDto ToBookEntry(ServiceRecord s)
+    {
+        var daysLate = AuditLogExtensions.DaysLate(s.Date, s.CreatedAt);
+        DateTime? updatedAt = s.UpdatedAt is { } value ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : null;
+        return new ServiceBookEntryDto(s.Date, s.OdometerKm, s.Items.Sum(i => i.Amount), s.Provider, s.Description,
+            DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), updatedAt, daysLate, daysLate > AuditLogExtensions.LateDays, ToItemDtos(s));
+    }
 }

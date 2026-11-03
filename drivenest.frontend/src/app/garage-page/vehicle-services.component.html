@@ -1,4 +1,5 @@
 @if (message) { <p class="alert-success" role="status">{{ message }}</p> }
+@if (pdfError) { <div class="alert-error" role="alert"><p>{{ pdfError }}</p></div> }
 @if (loading) { <p class="form-help" role="status">Szervizek betöltése…</p> }
 @if (loadError) { <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div> }
 <details class="service-history">

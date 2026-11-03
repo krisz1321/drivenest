@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Dtos.Audit;
 using Drivenest.Api.Dtos.Refuelings;
 using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -37,8 +38,8 @@ public class RefuelingsController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
         return await _db.Refuelings.AsNoTracking().Where(r => r.VehicleId == vehicleId)
-            .OrderByDescending(r => r.Date).ThenByDescending(r => r.OdometerKm).ThenByDescending(r => r.Id)
-            .Select(r => new RefuelingDto(r.Id, r.VehicleId, r.Date, r.OdometerKm,
+            .OrderByDescending(r => r.Date).ThenByDescending(r => r.Time).ThenByDescending(r => r.OdometerKm).ThenByDescending(r => r.Id)
+            .Select(r => new RefuelingDto(r.Id, r.VehicleId, r.Date, r.Time, r.OdometerKm,
                 r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc)))
             .ToListAsync(cancellationToken);
     }
@@ -76,10 +77,19 @@ public class RefuelingsController : ControllerBase
     public async Task<ActionResult<RefuelingDto>> Update(int vehicleId, int id, RefuelingRequest request, CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
-        var entry = await _db.Refuelings.SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
+        var entry = await _db.Refuelings.Include(r => r.Vehicle).SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
         var oldKm = entry.OdometerKm;
+        var before = entry.AuditFields();
         Apply(request, entry);
+        var changes = before.AuditChanges(entry.AuditFields());
+        // Csak a tényleges változás számít módosításnak.
+        if (changes.Count > 0)
+        {
+            var now = _clock.GetUtcNow().UtcDateTime;
+            entry.UpdatedAt = now;
+            _db.AuditLogs.Add(entry.ToAuditLog(AuditActions.Updated, User.GetUserId(), now, changes));
+        }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
@@ -92,8 +102,9 @@ public class RefuelingsController : ControllerBase
     public async Task<IActionResult> Delete(int vehicleId, int id, CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
-        var entry = await _db.Refuelings.SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
+        var entry = await _db.Refuelings.Include(r => r.Vehicle).SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
+        _db.AuditLogs.Add(entry.ToAuditLog(AuditActions.Deleted, User.GetUserId(), _clock.GetUtcNow().UtcDateTime, entry.AuditFields().AuditChanges([])));
         _db.Refuelings.Remove(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
@@ -121,12 +132,14 @@ public class RefuelingsController : ControllerBase
     private static void Apply(RefuelingRequest request, Refueling entry)
     {
         entry.Date = request.Date;
+        // Csak óra és perc, a másodperceket nem tároljuk.
+        entry.Time = request.Time is { } time ? new TimeOnly(time.Hour, time.Minute) : null;
         entry.OdometerKm = request.OdometerKm;
         entry.Liters = request.Liters;
         entry.TotalAmount = request.TotalAmount;
         entry.IsFullTank = request.IsFullTank;
     }
 
-    private static RefuelingDto ToDto(Refueling r) => new(r.Id, r.VehicleId, r.Date,
+    private static RefuelingDto ToDto(Refueling r) => new(r.Id, r.VehicleId, r.Date, r.Time,
         r.OdometerKm, r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc));
 }

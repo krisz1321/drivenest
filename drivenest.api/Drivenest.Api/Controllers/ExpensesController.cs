@@ -1,5 +1,6 @@
 using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
+using Drivenest.Api.Dtos.Audit;
 using Drivenest.Api.Dtos.Expenses;
 using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
@@ -36,6 +37,12 @@ public class ExpensesController : ControllerBase
     {
         var userId = User.GetUserId();
         return _db.ExpenseCategories.Where(c => c.UserId == null || c.UserId == userId);
+    }
+
+    // Kategórianevek a változásnaplóhoz
+    private Task<Dictionary<int, string>> CategoryNames(CancellationToken cancellationToken)
+    {
+        return VisibleCategories().AsNoTracking().ToDictionaryAsync(c => c.Id, c => c.Name, cancellationToken);
     }
 
     [HttpGet]
@@ -96,14 +103,24 @@ public class ExpensesController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        var entry = await _db.Expenses.SingleOrDefaultAsync(e => e.Id == id && e.VehicleId == vehicleId, cancellationToken);
+        var entry = await _db.Expenses.Include(e => e.Vehicle).SingleOrDefaultAsync(e => e.Id == id && e.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
 
         await ValidateCategory(request, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
+        var categories = await CategoryNames(cancellationToken);
         var oldKm = entry.OdometerKm;
+        var before = entry.AuditFields(categories);
         Apply(request, entry);
+        var changes = before.AuditChanges(entry.AuditFields(categories));
+        // Csak a tényleges változás számít módosításnak.
+        if (changes.Count > 0)
+        {
+            var now = _clock.GetUtcNow().UtcDateTime;
+            entry.UpdatedAt = now;
+            _db.AuditLogs.Add(entry.ToAuditLog(categories, AuditActions.Updated, User.GetUserId(), now, changes));
+        }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
@@ -119,9 +136,11 @@ public class ExpensesController : ControllerBase
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
-        var entry = await _db.Expenses.SingleOrDefaultAsync(e => e.Id == id && e.VehicleId == vehicleId, cancellationToken);
+        var entry = await _db.Expenses.Include(e => e.Vehicle).SingleOrDefaultAsync(e => e.Id == id && e.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
 
+        var categories = await CategoryNames(cancellationToken);
+        _db.AuditLogs.Add(entry.ToAuditLog(categories, AuditActions.Deleted, User.GetUserId(), _clock.GetUtcNow().UtcDateTime, entry.AuditFields(categories).AuditChanges([])));
         _db.Expenses.Remove(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;

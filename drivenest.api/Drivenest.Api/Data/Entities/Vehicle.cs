@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations.Schema;
+
 namespace Drivenest.Api.Data.Entities
 {
     public class Vehicle
@@ -23,10 +25,20 @@ namespace Drivenest.Api.Data.Entities
 
         public int CurrentKm { get; set; }
 
+        public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
+
         public ApplicationUser User { get; set; } = null!;
 
         public FuelType FuelType { get; set; } = null!;
 
         public VehicleModel? VehicleModel { get; set; }
+
+        [NotMapped]
+        public string Make => VehicleModel?.VehicleBrand?.BrandName ?? CustomMake;
+
+        [NotMapped]
+        public string Model => VehicleModel?.ModelName ?? CustomModel;
     }
 }

@@ -6,6 +6,8 @@ public class RefuelingRequest : IValidatableObject
 {
     public DateOnly Date { get; set; }
 
+    public TimeOnly? Time { get; set; }
+
     [Range(0, int.MaxValue)]
     public int OdometerKm { get; set; }
 

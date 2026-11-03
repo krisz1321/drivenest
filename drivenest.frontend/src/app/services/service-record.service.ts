@@ -40,6 +40,38 @@ export interface ServiceCategory {
   isCustom: boolean;
 }
 
+// A szervizkönyv PDF adatai
+export interface ServiceBookVehicle {
+  licensePlate: string;
+  vin: string | null;
+  make: string;
+  model: string;
+  year: number | null;
+  fuelType: string;
+  currentKm: number;
+}
+
+// daysLate = hány nappal a szerviz dátuma után rögzítették
+export interface ServiceBookEntry {
+  date: string;
+  odometerKm: number;
+  total: number;
+  provider: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string | null;
+  daysLate: number;
+  isLate: boolean;
+  items: ServiceRecordItem[];
+}
+
+export interface ServiceBook {
+  vehicle: ServiceBookVehicle;
+  generatedAt: string;
+  deletedCount: number;
+  entries: ServiceBookEntry[];
+}
+
 @Injectable({ providedIn: 'root' })
 export class ServiceRecordService {
   private readonly http = inject(HttpClient);
@@ -51,6 +83,10 @@ export class ServiceRecordService {
 
   list(vehicleId: number) {
     return this.http.get<ServiceRecord[]>(this.url(vehicleId));
+  }
+
+  book(vehicleId: number) {
+    return this.http.get<ServiceBook>(`${this.url(vehicleId)}/book`);
   }
 
   create(vehicleId: number, body: ServiceRecordRequest) {

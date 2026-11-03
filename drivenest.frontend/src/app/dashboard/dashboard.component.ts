@@ -10,7 +10,8 @@ import { ServiceRecord, ServiceRecordService } from '../services/service-record.
 import { Expense, ExpenseService } from '../services/expense.service';
 import { Reminder, ReminderService, reminderStatus, remainingText } from '../services/reminder.service';
 import { AppShellComponent } from '../layout/app-shell.component';
-import { currencyLabel, distanceLabel, toDistance } from '../shared/units';
+import { Consumption, StatsService } from '../services/stats.service';
+import { consumptionLabel, currencyLabel, distanceLabel, toConsumption, toDistance } from '../shared/units';
 
 // Egy sor a "Legutóbbi események" táblázatban (tankolás, szerviz vagy kiadás)
 interface DashboardEvent {
@@ -36,6 +37,7 @@ export class DashboardComponent implements OnInit {
   private readonly serviceApi = inject(ServiceRecordService);
   private readonly expenseApi = inject(ExpenseService);
   private readonly reminderApi = inject(ReminderService);
+  private readonly statsApi = inject(StatsService);
   private readonly destroyRef = inject(DestroyRef);
 
   // Az aktuális hónap neve (pl. "október") és kulcsa (pl. "2026-10") a szűréshez
@@ -47,6 +49,7 @@ export class DashboardComponent implements OnInit {
   services: ServiceRecord[] = [];
   expenses: Expense[] = [];
   reminders: Reminder[] = [];
+  consumption: Consumption[] = [];
 
   loading = false;
   loadError = '';
@@ -68,9 +71,10 @@ export class DashboardComponent implements OnInit {
       switchMap(result => {
         this.vehicles = result.vehicles;
         if (!this.vehicles.length) {
-          return of({ refuelings: [] as Refueling[], services: [] as ServiceRecord[], expenses: [] as Expense[], reminders: [] as Reminder[] });
+          return of({ refuelings: [] as Refueling[], services: [] as ServiceRecord[], expenses: [] as Expense[], reminders: [] as Reminder[], consumption: [] as Consumption[] });
         }
         return forkJoin({
+          consumption: forkJoin(this.vehicles.map(car => this.statsApi.consumption(car.id))),
           refuelings: forkJoin(this.vehicles.map(car => this.refuelingApi.list(car.id))).pipe(map(groups => groups.flat())),
           services: forkJoin(this.vehicles.map(car => this.serviceApi.list(car.id))).pipe(map(groups => groups.flat())),
           expenses: forkJoin(this.vehicles.map(car => this.expenseApi.list(car.id))).pipe(map(groups => groups.flat())),
@@ -85,6 +89,7 @@ export class DashboardComponent implements OnInit {
         this.services = data.services;
         this.expenses = data.expenses;
         this.reminders = data.reminders;
+        this.consumption = data.consumption;
       },
       error: () => this.loadError = 'Az adatokat nem sikerült betölteni. Próbáld újra.'
     });
@@ -128,6 +133,20 @@ export class DashboardComponent implements OnInit {
 
   get distanceUnit() {
     return distanceLabel(this.profile.preferences().distanceUnit);
+  }
+
+  // A legutóbb lezárt fogyasztási szakasz az összes jármű közül
+  get lastConsumption() {
+    const segments = this.consumption.flatMap((c, i) => c.segments.map(s => ({ ...s, vehicleId: this.vehicles[i].id, average: c.averageLitersPer100Km })));
+    return segments.sort((a, b) => b.endDate.localeCompare(a.endDate))[0] ?? null;
+  }
+
+  consumptionValue(litersPer100Km: number | null) {
+    return litersPer100Km === null ? '—' : this.number(toConsumption(litersPer100Km, this.profile.preferences().consumptionUnit), 2);
+  }
+
+  get consumptionUnit() {
+    return consumptionLabel(this.profile.preferences().consumptionUnit);
   }
 
   // A sáv szélessége: a kategória hány százaléka a havi összegnek

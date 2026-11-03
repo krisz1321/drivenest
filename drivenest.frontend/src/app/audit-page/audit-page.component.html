@@ -1,0 +1,203 @@
+<app-shell active="audit" section="Változásnapló">
+  <header class="page-heading">
+    <h1>Változásnapló</h1>
+    <p class="muted">Mit módosítottál, töröltél vagy adtál hozzá utólag a járműveidnél és a bejegyzéseidnél.</p>
+  </header>
+
+  <div class="tabs" role="tablist" aria-label="Változásnapló nézetei">
+    <button type="button" class="tab" role="tab" [class.active]="tab === 'changes'" [attr.aria-selected]="tab === 'changes'" (click)="tab = 'changes'">Változások</button>
+    <button type="button" class="tab" role="tab" [class.active]="tab === 'entries'" [attr.aria-selected]="tab === 'entries'" (click)="tab = 'entries'">Összes bejegyzés</button>
+  </div>
+
+  @if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else {
+    <section class="panel" [attr.aria-label]="tab === 'changes' ? 'Változások listája' : 'Bejegyzések listája'">
+      <div class="panel-heading">
+        <h2>{{ tab === 'changes' ? changes.length + ' változás' : entries.length + ' bejegyzés' }}</h2>
+        <button type="button" class="text-button" (click)="load()">Frissítés ↻</button>
+      </div>
+
+      <!-- Szűrők -->
+      <div class="filters">
+        <div class="form-field">
+          <label for="filter-car">Jármű</label>
+          <select id="filter-car" class="form-input" [ngModel]="vehicleFilter" (ngModelChange)="selectVehicle($event)">
+            <option [ngValue]="0">Összes jármű</option>
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <fieldset class="check-filter type-filter">
+          <legend>Megjelenített bejegyzések</legend>
+          @for (type of types; track type.value) {
+            <label class="checkbox-field">
+              <input type="checkbox" [checked]="selectedTypes.includes(type.value)" (change)="toggleType(type.value)"> {{ type.label }}
+            </label>
+          }
+        </fieldset>
+        @if (tab === 'changes') {
+          <fieldset class="check-filter action-filter">
+            <legend>Műveletek</legend>
+            @for (action of actions; track action.value) {
+              <label class="checkbox-field">
+                <input type="checkbox" [checked]="selectedActions.includes(action.value)" (change)="toggleAction(action.value)"> {{ action.label }}
+              </label>
+            }
+          </fieldset>
+        }
+        @if (hasFilter) {
+          <button type="button" class="text-button" (click)="clearFilters()">Szűrők törlése</button>
+        }
+      </div>
+
+      @if (tab === 'changes') {
+        <p class="muted tab-hint">Csak az látszik itt, ami több mint egy héttel a bejegyzés dátuma után történt. A korábbiak az Összes bejegyzés fülön vannak.</p>
+      }
+
+      @if (!selectedTypes.length) {
+        <div class="empty-state">
+          <h2>Nincs kiválasztott típus</h2>
+          <p>Jelölj be legalább egy bejegyzéstípust.</p>
+        </div>
+      } @else if (tab === 'changes') {
+        @if (!selectedActions.length) {
+          <div class="empty-state">
+            <h2>Nincs kiválasztott művelet</h2>
+            <p>Jelölj be legalább egy műveletet.</p>
+          </div>
+        } @else if (loading && !changes.length) {
+          <div class="empty-state" role="status">Változásnapló betöltése…</div>
+        } @else if (changes.length) {
+          <div class="table-scroll">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Időpont</th>
+                  <th>Művelet</th>
+                  <th>Típus</th>
+                  <th>Bejegyzés</th>
+                  <th>Jármű</th>
+                  <th>Mi változott</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (change of changes; track change.action + change.type + change.entityId + change.changedAt) {
+                  <tr>
+                    <td class="nowrap">{{ change.changedAt | date:'yyyy. MM. dd. HH:mm' }}</td>
+                    <td><span class="badge" [ngClass]="actionInfo(change.action).badge">{{ actionInfo(change.action).label }}</span></td>
+                    <td><span class="badge">{{ typeLabel(change.type) }}</span></td>
+                    <td class="wide">
+                      <strong>{{ title(change) }}</strong>
+                      @if (change.date) {
+                        <small>{{ change.date | date:'yyyy. MM. dd.' }} · {{ number(change.amount ?? 0) }} {{ unit }}</small>
+                      }
+                    </td>
+                    <td class="wide">
+                      @if (hasVehicle(change.vehicleId)) {
+                        <a [routerLink]="['/garage', change.vehicleId]">{{ change.vehicleName }} · {{ change.licensePlate }}</a>
+                      } @else {
+                        {{ change.vehicleName }} · {{ change.licensePlate }}
+                      }
+                    </td>
+                    <td class="change-cell">
+                      @if (change.action === 'added') {
+                        {{ change.daysLate }} nappal a dátuma után rögzítve
+                      } @else {
+                        <ul class="change-list">
+                          @for (field of change.changes; track field.field) {
+                            <li><span class="field-label">{{ fieldLabel(field.field) }}:</span> {{ changeText(change, field) }}</li>
+                          }
+                        </ul>
+                      }
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else if (hasFilter) {
+          <div class="empty-state">
+            <h2>Nincs találat</h2>
+            <p>A kiválasztott szűrőknek egy változás sem felel meg.</p>
+            <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+          </div>
+        } @else {
+          <div class="empty-state">
+            <h2>Még nincs változás</h2>
+            <p>Ha módosítasz vagy törölsz egy bejegyzést, itt fog megjelenni.</p>
+          </div>
+        }
+      } @else if (loading && !entries.length) {
+        <div class="empty-state" role="status">Változásnapló betöltése…</div>
+      } @else if (entries.length) {
+        <div class="table-scroll">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Típus</th>
+                <th>Bejegyzés</th>
+                <th>Jármű</th>
+                <th>Létrehozva</th>
+                <th>Utoljára módosítva</th>
+                <th>Állapot</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (entry of entries; track entry.type + entry.id + entry.deletedAt) {
+                <tr>
+                  <td><span class="badge">{{ typeLabel(entry.type) }}</span></td>
+                  <td class="wide">
+                    <strong>{{ title(entry) }}</strong>
+                    @if (entry.date) {
+                      <small>{{ entry.date | date:'yyyy. MM. dd.' }} · {{ number(entry.amount ?? 0) }} {{ unit }}</small>
+                    }
+                  </td>
+                  <td class="wide">
+                    @if (hasVehicle(entry.vehicleId)) {
+                      <a [routerLink]="['/garage', entry.vehicleId]">{{ entry.vehicleName }} · {{ entry.licensePlate }}</a>
+                    } @else {
+                      {{ entry.vehicleName }} · {{ entry.licensePlate }}
+                    }
+                  </td>
+                  <td class="nowrap">
+                    {{ entry.createdAt | date:'yyyy. MM. dd. HH:mm' }}
+                    @if (lateDays(entry) > 0) {
+                      <small>{{ lateDays(entry) }} nappal a dátuma után</small>
+                    }
+                  </td>
+                  <td class="nowrap">{{ (entry.deletedAt ?? entry.updatedAt) ? ((entry.deletedAt ?? entry.updatedAt) | date:'yyyy. MM. dd. HH:mm') : '—' }}</td>
+                  <td>
+                    @if (entry.deletedAt) {
+                      <span class="badge badge-danger">Törölve</span>
+                    } @else if (entry.updatedAt) {
+                      <span class="badge badge-warning">Módosítva</span>
+                    } @else {
+                      <span class="badge">Eredeti</span>
+                    }
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else if (hasFilter) {
+        <div class="empty-state">
+          <h2>Nincs találat</h2>
+          <p>A kiválasztott szűrőknek egy bejegyzés sem felel meg.</p>
+          <button type="button" class="button button-secondary button-compact" (click)="clearFilters()">Szűrők törlése</button>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <h2>Még nincs bejegyzés</h2>
+          <p>Először adj hozzá egy járművet a garázsodhoz.</p>
+          <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+        </div>
+      }
+    </section>
+  }
+</app-shell>

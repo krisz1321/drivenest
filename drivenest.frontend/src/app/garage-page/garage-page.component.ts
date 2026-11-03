@@ -8,7 +8,8 @@ import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { FuelType, Vehicle, VehicleRequest, VehicleService } from '../services/vehicle.service';
 import { ProfileService } from '../services/profile.service';
 import { AppShellComponent } from '../layout/app-shell.component';
-import { distanceLabel, toDistance } from '../shared/units';
+import { Consumption, StatsService } from '../services/stats.service';
+import { consumptionLabel, distanceLabel, toConsumption, toDistance } from '../shared/units';
 import { VehicleRefuelingsComponent } from '../dashboard/vehicle-refuelings.component';
 import { VehicleServicesComponent } from './vehicle-services.component';
 
@@ -28,9 +29,11 @@ const integer = (control: AbstractControl): ValidationErrors | null =>
 export class GaragePageComponent implements OnInit {
   private readonly api = inject(VehicleService);
   private readonly profile = inject(ProfileService);
+  private readonly statsApi = inject(StatsService);
   private readonly destroyRef = inject(DestroyRef);
   @ViewChild('vehicleDialog') dialog!: ElementRef<HTMLDialogElement>;
   vehicles: Vehicle[] = [];
+  consumption: Record<number, Consumption> = {};
   fuelTypes: FuelType[] = [];
   loading = true;
   saving = false;
@@ -81,6 +84,7 @@ export class GaragePageComponent implements OnInit {
     }).pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)).subscribe(result => {
       if (result.vehicles !== null) {
         this.vehicles = result.vehicles;
+        this.loadConsumption();
       }
       if (result.fuelTypes !== null) this.fuelTypes = result.fuelTypes;
     });
@@ -90,9 +94,24 @@ export class GaragePageComponent implements OnInit {
   // Tankolás/szerviz mentése után a szerver frissíti az óraállást, ezért újratöltjük a járműveket.
   refreshVehicles() {
     this.api.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
-      next: vehicles => this.vehicles = vehicles,
+      next: vehicles => { this.vehicles = vehicles; this.loadConsumption(); },
       error: () => {} // ha nem sikerül, marad a régi lista
     });
+  }
+
+  // Ha egy jármű fogyasztása nem töltődik be, annál N/A marad.
+  private loadConsumption() {
+    for (const vehicle of this.vehicles) {
+      this.statsApi.consumption(vehicle.id).pipe(takeUntilDestroyed(this.destroyRef)).subscribe({
+        next: result => this.consumption = { ...this.consumption, [vehicle.id]: result }, error: () => {}
+      });
+    }
+  }
+
+  averageConsumption(vehicle: Vehicle) {
+    const value = this.consumption[vehicle.id]?.averageLitersPer100Km ?? null;
+    const unit = this.profile.preferences().consumptionUnit;
+    return value === null ? 'N/A' : `${toConsumption(value, unit).toLocaleString('hu-HU')} ${consumptionLabel(unit)}`;
   }
 
   open(mode: 'create' | 'edit' | 'delete', vehicle: Vehicle | null = null) {

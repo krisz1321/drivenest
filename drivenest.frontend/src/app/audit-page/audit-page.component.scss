@@ -1,0 +1,63 @@
+:host { display: block; }
+
+.page-heading { margin-bottom: 20px; }
+.page-heading p { margin-bottom: 0; font-size: 13px; }
+
+h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+.tab {
+  padding: 10px 14px;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+.tab.active { border-bottom-color: var(--color-primary); color: var(--color-text); }
+
+// Szűrők a táblázat felett
+.filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 12px 24px;
+  margin-bottom: 16px;
+}
+.filters .form-field { min-width: 200px; margin: 0; }
+.filters .text-button { margin-bottom: 10px; }
+
+.check-filter {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  margin: 0;
+  padding: 0 0 10px;
+  border: 0;
+}
+.check-filter legend { margin-bottom: 8px; padding: 0; font-size: 13px; font-weight: 600; }
+.check-filter .checkbox-field { font-size: 13px; }
+
+.tab-hint { margin: 0 0 12px; font-size: 12px; }
+
+.nowrap { white-space: nowrap; }
+.wide { min-width: 170px; }
+.data-table td { vertical-align: top; }
+.data-table a { color: var(--color-text); font-weight: 600; }
+
+.change-cell { min-width: 260px; }
+.change-list { margin: 0; padding: 0; list-style: none; }
+.change-list li + li { margin-top: 4px; }
+.field-label { color: var(--color-muted); }
+
+@media (max-width: 600px) {
+  .filters .form-field { min-width: 0; flex: 1 1 100%; }
+}

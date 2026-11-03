@@ -1,8 +1,9 @@
 import { Component, DestroyRef, EventEmitter, Input, OnInit, Output, ViewChild, inject } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize, forkJoin } from 'rxjs';
+import { finalize, forkJoin, switchMap } from 'rxjs';
 import { Vehicle } from '../services/vehicle.service';
 import { ServiceCategory, ServiceRecord, ServiceRecordService } from '../services/service-record.service';
+import { ServiceBookPdfService } from '../services/service-book-pdf.service';
 import { ServiceDialogComponent } from '../service-page/service-dialog.component';
 import { Currency, currencyLabel } from '../shared/units';
 
@@ -19,12 +20,15 @@ export class VehicleServicesComponent implements OnInit {
   @Output() changed = new EventEmitter<void>();
   @ViewChild(ServiceDialogComponent) dialog!: ServiceDialogComponent;
   private readonly api = inject(ServiceRecordService);
+  private readonly pdf = inject(ServiceBookPdfService);
   private readonly destroyRef = inject(DestroyRef);
   entries: ServiceRecord[] = [];
   categories: ServiceCategory[] = [];
   loading = false;
   loadError = '';
   message = '';
+  pdfLoading = false;
+  pdfError = '';
 
   get unit() { return currencyLabel(this.currency); }
   get monthlyTotal() {
@@ -53,6 +57,20 @@ export class VehicleServicesComponent implements OnInit {
   openCreate() {
     if (this.loading || !this.categories.length) return;
     this.dialog.openCreate(this.vehicle.id);
+  }
+
+  // A jármű oldalán a Szervizkönyv PDF gombja hívja.
+  downloadBook() {
+    if (this.loading || this.pdfLoading) return;
+    if (!this.entries.length) {
+      this.pdfError = 'Ehhez az autóhoz még nincs szerviz, ezért nem készíthető szervizkönyv.';
+      return;
+    }
+    this.pdfLoading = true;
+    this.pdfError = '';
+    this.api.book(this.vehicle.id)
+      .pipe(switchMap(book => this.pdf.generate(book, this.unit)), takeUntilDestroyed(this.destroyRef), finalize(() => this.pdfLoading = false))
+      .subscribe({ error: () => this.pdfError = 'A szervizkönyvet nem sikerült elkészíteni. Próbáld újra.' });
   }
 
   onSaved(result: { entry: ServiceRecord; edited: boolean }) {

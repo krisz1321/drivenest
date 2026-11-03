@@ -33,6 +33,16 @@
         <p>{{ number(distance) }} {{ distanceUnit }} megtett táv alapján</p>
       </article>
       <article class="panel stat-card">
+        <div class="card-label">Utolsó fogyasztás</div>
+        @if (lastConsumption; as last) {
+          <strong>{{ consumptionValue(last.litersPer100Km) }} <small>{{ consumptionUnit }}</small></strong>
+          <p>{{ plate(last.vehicleId) }} · átlag {{ consumptionValue(last.average) }} {{ consumptionUnit }}</p>
+        } @else {
+          <strong>—</strong>
+          <p>Két tele tankolás kell hozzá</p>
+        }
+      </article>
+      <article class="panel stat-card">
         <div class="card-label">Járművek</div>
         <strong>{{ vehicles.length }} <small>db</small></strong>
         <p>A garázsodban</p>

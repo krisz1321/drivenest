@@ -16,6 +16,8 @@ namespace Drivenest.Api.Data.Entities
 
         public DateTime CreatedAt { get; set; }
 
+        public DateTime? UpdatedAt { get; set; }
+
         public Vehicle Vehicle { get; set; } = null!;
 
         // Egy szervizhez több tétel tartozhat (pl. Olajcsere + Olajszűrő + Szervíz költség),

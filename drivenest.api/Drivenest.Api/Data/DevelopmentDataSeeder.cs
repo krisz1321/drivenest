@@ -122,7 +122,9 @@ namespace Drivenest.Api.Data
                 CustomModel = "Swift",
                 Year = 2018,
                 InitialKm = 42000,
-                CurrentKm = 47770
+                CurrentKm = 47770,
+                CreatedAt = new DateTime(2026, 1, 1, 18, 0, 0, DateTimeKind.Utc),
+                UpdatedAt = new DateTime(2026, 6, 10, 18, 0, 0, DateTimeKind.Utc)
             };
 
             var octavia = new Vehicle
@@ -134,7 +136,8 @@ namespace Drivenest.Api.Data
                 CustomModel = "Octavia",
                 Year = 2015,
                 InitialKm = 118000,
-                CurrentKm = 124230
+                CurrentKm = 124230,
+                CreatedAt = new DateTime(2026, 1, 1, 18, 0, 0, DateTimeKind.Utc)
             };
 
             db.Vehicles.AddRange(swift, octavia);
@@ -150,7 +153,7 @@ namespace Drivenest.Api.Data
                 Refueling(swift, 4, 25, 42940, 34.1m, 20300),
                 Refueling(swift, 5, 16, 43540, 35.0m, 20900),
                 Refueling(swift, 6, 6, 44120, 33.6m, 20100),
-                Refueling(swift, 6, 27, 44760, 36.2m, 21700),
+                Refueling(swift, 6, 27, 44760, 36.2m, 21700, editedDaysLater: 2),
                 Refueling(swift, 7, 18, 45300, 28.0m, 16800, isFullTank: false),
                 Refueling(swift, 8, 8, 46010, 36.5m, 21900),
                 Refueling(swift, 8, 29, 46590, 33.9m, 20300),
@@ -185,13 +188,13 @@ namespace Drivenest.Api.Data
             db.ServiceRecords.AddRange(
                 ServiceRecord(swift, 5, 25, 43700, "Autó-Szerviz Kft.", "Motorolaj 5W-30",
                     [Item(oilChangeId, 11000), Item(oilFilterId, 3500), Item(laborId, 8000)]),
-                // Három nappal később rögzítette, hogy az Audit módban látszódjon a különbség.
+                // Három nappal később rögzítette, hogy a változásnaplóban látszódjon a különbség.
                 ServiceRecord(swift, 8, 20, 46450, "Műszaki Vizsgaállomás", "Műszaki vizsga, sikeres",
                     [Item(inspectionId, 22000)], recordedDaysLater: 3),
                 ServiceRecord(octavia, 6, 2, 120100, "Autó-Szerviz Kft.", "Olaj-, olajszűrő és levegőszűrő csere",
                     [Item(oilChangeId, 13000), Item(oilFilterId, 4000), Item(airFilterId, 4000), Item(laborId, 9500)]),
                 ServiceRecord(octavia, 9, 5, 123200, "Fék Centrum", "Első fékbetét és tárcsa csere",
-                    [Item(brakePadId, 16000), Item(brakeDiscId, 22000), Item(laborId, 24000)]));
+                    [Item(brakePadId, 16000), Item(brakeDiscId, 22000), Item(laborId, 24000)], editedDaysLater: 4));
 
             await db.SaveChangesAsync();
         }
@@ -208,7 +211,7 @@ namespace Drivenest.Api.Data
                 Expense(swift, insuranceId, 4, 1, 42300, 62000, null, "Éves kötelező biztosítás"),
                 Expense(swift, vignetteId, 1, 5, 42050, 24000, "Online (nemzetiutdij.hu)", "Éves országos matrica"),
                 Expense(swift, washId, 7, 12, 45200, 3500, "Shell autómosó", null),
-                Expense(swift, parkingId, 8, 20, 46100, 1800, "Budapest, Belváros", "Mozi előtt 3 óra"),
+                Expense(swift, parkingId, 8, 20, 46100, 1800, "Budapest, Belváros", "Mozi előtt 3 óra", editedDaysLater: 1),
                 Expense(octavia, insuranceId, 3, 20, 119000, 78000, null, "Éves kötelező biztosítás"),
                 Expense(octavia, vignetteId, 1, 5, 118150, 24000, "Online (nemzetiutdij.hu)", "Éves országos matrica"),
                 Expense(octavia, tollId, 7, 3, 121800, 4900, "Hegyeshalom", "Osztrák 10 napos matrica"));
@@ -276,7 +279,8 @@ namespace Drivenest.Api.Data
                 CustomModel = "Astra F 1.7 TD",
                 Year = 1992,
                 InitialKm = 405000,
-                CurrentKm = 409200
+                CurrentKm = 409200,
+                CreatedAt = new DateTime(2026, 1, 1, 18, 0, 0, DateTimeKind.Utc)
             };
 
             db.Refuelings.AddRange(
@@ -339,7 +343,7 @@ namespace Drivenest.Api.Data
         }
 
         private static ServiceRecord ServiceRecord(Vehicle vehicle, int month, int day, int odometerKm,
-            string provider, string? description, List<ServiceRecordItem> items, int recordedDaysLater = 0)
+            string provider, string? description, List<ServiceRecordItem> items, int recordedDaysLater = 0, int? editedDaysLater = null)
         {
             var date = new DateOnly(2026, month, day);
 
@@ -351,8 +355,15 @@ namespace Drivenest.Api.Data
                 Provider = provider,
                 Description = description,
                 Items = items,
-                CreatedAt = date.AddDays(recordedDaysLater).ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc)
+                CreatedAt = date.AddDays(recordedDaysLater).ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc),
+                UpdatedAt = EditedAt(date, editedDaysLater)
             };
+        }
+
+        // Az utolsó szerkesztés ideje a bejegyzés dátumához képest (null, ha nem szerkesztette).
+        private static DateTime? EditedAt(DateOnly date, int? editedDaysLater)
+        {
+            return editedDaysLater is int days ? date.AddDays(days).ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc) : null;
         }
 
         private static ServiceRecordItem Item(int categoryId, decimal amount)
@@ -361,7 +372,7 @@ namespace Drivenest.Api.Data
         }
 
         private static Expense Expense(Vehicle vehicle, int categoryId, int month, int day,
-            int odometerKm, decimal amount, string? location, string? description)
+            int odometerKm, decimal amount, string? location, string? description, int? editedDaysLater = null)
         {
             var date = new DateOnly(2026, month, day);
 
@@ -374,13 +385,14 @@ namespace Drivenest.Api.Data
                 Amount = amount,
                 Location = location,
                 Description = description,
-                CreatedAt = date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc)
+                CreatedAt = date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc),
+                UpdatedAt = EditedAt(date, editedDaysLater)
             };
         }
 
         // A rögzítés ideje a tankolás napján 18:00 (UTC), mintha aznap este vitte volna fel.
         private static Refueling Refueling(Vehicle vehicle, int month, int day, int odometerKm,
-            decimal liters, decimal totalAmount, bool isFullTank = true)
+            decimal liters, decimal totalAmount, bool isFullTank = true, int? editedDaysLater = null)
         {
             var date = new DateOnly(2026, month, day);
 
@@ -392,7 +404,8 @@ namespace Drivenest.Api.Data
                 Liters = liters,
                 TotalAmount = totalAmount,
                 IsFullTank = isFullTank,
-                CreatedAt = date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc)
+                CreatedAt = date.ToDateTime(new TimeOnly(18, 0), DateTimeKind.Utc),
+                UpdatedAt = EditedAt(date, editedDaysLater)
             };
         }
     }

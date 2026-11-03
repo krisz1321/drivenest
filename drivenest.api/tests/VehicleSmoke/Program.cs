@@ -18,7 +18,7 @@ await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>(
 db.FuelTypes.Add(new FuelType { Id = 1, Name = "Petrol" });
 db.Vehicles.Add(new Vehicle { Id = 100, UserId = 2, FuelTypeId = 1, LicensePlate = "OTHER" });
 await db.SaveChangesAsync();
-var controller = new OwnVehiclesController(db)
+var controller = new OwnVehiclesController(db, TimeProvider.System)
 {
     ControllerContext = new ControllerContext
     {

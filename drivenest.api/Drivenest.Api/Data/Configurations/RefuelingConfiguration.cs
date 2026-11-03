@@ -19,6 +19,9 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(r => r.Date)
                 .HasColumnType("date");
 
+            builder.Property(r => r.Time)
+                .HasColumnType("time(0)");
+
             builder.Property(r => r.Liters)
                 .HasColumnType("decimal(9,3)");
 
@@ -36,6 +39,9 @@ namespace Drivenest.Api.Data.Configurations
                 .HasDefaultValueSql("SYSUTCDATETIME()")
                 .ValueGeneratedOnAdd()
                 .Metadata.SetAfterSaveBehavior(PropertySaveBehavior.Ignore);
+
+            builder.Property(r => r.UpdatedAt)
+                .HasColumnType("datetime2(3)");
 
             builder.HasOne(r => r.Vehicle)
                 .WithMany()

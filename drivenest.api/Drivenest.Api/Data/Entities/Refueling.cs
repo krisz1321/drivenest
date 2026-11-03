@@ -8,6 +8,8 @@ namespace Drivenest.Api.Data.Entities
 
         public DateOnly Date { get; set; }
 
+        public TimeOnly? Time { get; set; }
+
         public int OdometerKm { get; set; }
 
         public decimal Liters { get; set; }
@@ -17,6 +19,8 @@ namespace Drivenest.Api.Data.Entities
         public bool IsFullTank { get; set; } = true;
 
         public DateTime CreatedAt { get; set; }
+
+        public DateTime? UpdatedAt { get; set; }
 
         public Vehicle Vehicle { get; set; } = null!;
     }

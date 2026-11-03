@@ -128,6 +128,102 @@ namespace Drivenest.Api.Migrations
                         });
                 });
 
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.AuditLog", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("Amount")
+                        .HasColumnType("decimal(14,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2(3)")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateOnly?>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("EntityCreatedAt")
+                        .HasColumnType("datetime2(3)");
+
+                    b.Property<int>("EntityId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("EntityType")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("LicensePlate")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<decimal?>("Liters")
+                        .HasColumnType("decimal(9,3)");
+
+                    b.Property<string>("Summary")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("VehicleId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("VehicleName")
+                        .IsRequired()
+                        .HasMaxLength(101)
+                        .HasColumnType("nvarchar(101)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId", "CreatedAt")
+                        .IsDescending(false, true);
+
+                    b.ToTable("AuditLogs", (string)null);
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.AuditLogChange", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AuditLogId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Field")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("NewValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<string>("OldValue")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuditLogId");
+
+                    b.ToTable("AuditLogChanges", (string)null);
+                });
+
             modelBuilder.Entity("Drivenest.Api.Data.Entities.Expense", b =>
                 {
                     b.Property<int>("Id")
@@ -160,6 +256,9 @@ namespace Drivenest.Api.Migrations
 
                     b.Property<int>("OdometerKm")
                         .HasColumnType("int");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
 
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
@@ -365,8 +464,14 @@ namespace Drivenest.Api.Migrations
                     b.Property<int>("OdometerKm")
                         .HasColumnType("int");
 
+                    b.Property<TimeOnly?>("Time")
+                        .HasColumnType("time(0)");
+
                     b.Property<decimal>("TotalAmount")
                         .HasColumnType("decimal(12,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
 
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
@@ -1076,6 +1181,9 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
+
                     b.Property<int>("VehicleId")
                         .HasColumnType("int");
 
@@ -1128,6 +1236,11 @@ namespace Drivenest.Api.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2(3)")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
                     b.Property<int>("CurrentKm")
                         .HasColumnType("int");
 
@@ -1150,6 +1263,13 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<DateTime>("CreatedAt")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2(3)")
+                        .HasDefaultValueSql("SYSUTCDATETIME()");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("datetime2(3)");
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
@@ -1377,6 +1497,26 @@ namespace Drivenest.Api.Migrations
                     b.ToTable("AspNetUserTokens", (string)null);
                 });
 
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.AuditLog", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.ApplicationUser", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.AuditLogChange", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.AuditLog", null)
+                        .WithMany("Changes")
+                        .HasForeignKey("AuditLogId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("Drivenest.Api.Data.Entities.Expense", b =>
                 {
                     b.HasOne("Drivenest.Api.Data.Entities.ExpenseCategory", "Category")
@@ -1554,6 +1694,11 @@ namespace Drivenest.Api.Migrations
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.AuditLog", b =>
+                {
+                    b.Navigation("Changes");
                 });
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecord", b =>
