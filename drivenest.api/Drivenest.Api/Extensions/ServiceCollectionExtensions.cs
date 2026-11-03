@@ -1,4 +1,5 @@
 using System.Text;
+using System.Reflection;
 using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Middleware;
 using Drivenest.Api.Options;
@@ -106,6 +107,9 @@ namespace Drivenest.Api.Extensions
                         Array.Empty<string>()
                     }
                 });
+
+                var xmlFile = $"{Assembly.GetExecutingAssembly().GetName().Name}.xml";
+                options.IncludeXmlComments(Path.Combine(AppContext.BaseDirectory, xmlFile));
             });
 
             return services;

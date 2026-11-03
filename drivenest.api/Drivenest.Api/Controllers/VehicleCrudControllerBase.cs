@@ -11,6 +11,8 @@ namespace Drivenest.Api.Controllers;
 
 [ApiController]
 [Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status404NotFound)]
 public abstract class VehicleCrudControllerBase : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -20,6 +22,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     private IQueryable<Vehicle> OwnedVehicles => _db.Vehicles.Where(v => v.UserId == User.GetUserId());
 
     [HttpGet]
+    [ProducesResponseType(typeof(List<VehicleDto>), StatusCodes.Status200OK)]
     public async Task<ActionResult<List<VehicleDto>>> GetAll(CancellationToken cancellationToken)
     {
         return await OwnedVehicles.AsNoTracking().OrderBy(v => v.Id)
@@ -30,6 +33,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     }
 
     [HttpGet("{id:int}")]
+    [ProducesResponseType(typeof(VehicleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<ActionResult<VehicleDto>> GetById(int id, CancellationToken cancellationToken)
     {
         var vehicle = await OwnedVehicles.AsNoTracking().SingleOrDefaultAsync(v => v.Id == id, cancellationToken);
@@ -37,6 +42,9 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     }
 
     [HttpPost]
+    [ProducesResponseType(typeof(VehicleDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<VehicleDto>> Create(VehicleRequest request, CancellationToken cancellationToken)
     {
         await ValidateReferences(request, null, cancellationToken);
@@ -51,6 +59,9 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     }
 
     [HttpPut("{id:int}")]
+    [ProducesResponseType(typeof(VehicleDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<ActionResult<VehicleDto>> Update(int id, VehicleRequest request, CancellationToken cancellationToken)
     {
         var vehicle = await OwnedVehicles.SingleOrDefaultAsync(v => v.Id == id, cancellationToken);
@@ -64,6 +75,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     }
 
     [HttpDelete("{id:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Delete(int id, CancellationToken cancellationToken)
     {
         var vehicle = await OwnedVehicles.SingleOrDefaultAsync(v => v.Id == id, cancellationToken);
