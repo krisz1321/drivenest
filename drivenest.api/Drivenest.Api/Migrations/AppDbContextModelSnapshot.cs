@@ -1131,6 +1131,14 @@ namespace Drivenest.Api.Migrations
                     b.Property<int>("CurrentKm")
                         .HasColumnType("int");
 
+                    b.Property<string>("CustomMake")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<string>("CustomModel")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
                     b.Property<int>("FuelTypeId")
                         .HasColumnType("int");
 
@@ -1142,17 +1150,10 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<string>("Make")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
-                    b.Property<string>("Model")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("VehicleModelID")
                         .HasColumnType("int");
 
                     b.Property<string>("Vin")
@@ -1164,6 +1165,8 @@ namespace Drivenest.Api.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FuelTypeId");
+
+                    b.HasIndex("VehicleModelID");
 
                     b.HasIndex("UserId", "LicensePlate")
                         .IsUnique();
@@ -1178,6 +1181,51 @@ namespace Drivenest.Api.Migrations
 
                             t.HasCheckConstraint("CK_Vehicles_Year", "[Year] IS NULL OR [Year] BETWEEN 1886 AND 2100");
                         });
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.VehicleBrand", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("BrandName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BrandName")
+                        .IsUnique();
+
+                    b.ToTable("VehicleBrands", (string)null);
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.VehicleModel", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ModelName")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("VehicleBrandId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("VehicleBrandId", "ModelName")
+                        .IsUnique();
+
+                    b.ToTable("VehicleModels", (string)null);
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole<int>", b =>
@@ -1434,9 +1482,27 @@ namespace Drivenest.Api.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("Drivenest.Api.Data.Entities.VehicleModel", "VehicleModel")
+                        .WithMany("Vehicles")
+                        .HasForeignKey("VehicleModelID")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("FuelType");
 
                     b.Navigation("User");
+
+                    b.Navigation("VehicleModel");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.VehicleModel", b =>
+                {
+                    b.HasOne("Drivenest.Api.Data.Entities.VehicleBrand", "VehicleBrand")
+                        .WithMany("Models")
+                        .HasForeignKey("VehicleBrandId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("VehicleBrand");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRoleClaim<int>", b =>
@@ -1493,6 +1559,16 @@ namespace Drivenest.Api.Migrations
             modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecord", b =>
                 {
                     b.Navigation("Items");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.VehicleBrand", b =>
+                {
+                    b.Navigation("Models");
+                });
+
+            modelBuilder.Entity("Drivenest.Api.Data.Entities.VehicleModel", b =>
+                {
+                    b.Navigation("Vehicles");
                 });
 #pragma warning restore 612, 618
         }

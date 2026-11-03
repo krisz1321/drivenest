@@ -23,13 +23,13 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(v => v.Vin)
                 .HasColumnType("varchar(17)");
 
-            builder.Property(v => v.Make)
+            builder.Property(v => v.CustomMake)
                 .HasMaxLength(50)
-                .IsRequired();
+                .IsRequired(false);
 
-            builder.Property(v => v.Model)
+            builder.Property(v => v.CustomModel)
                 .HasMaxLength(50)
-                .IsRequired();
+                .IsRequired(false);
 
             builder.HasIndex(v => new { v.UserId, v.LicensePlate })
                 .IsUnique();
@@ -42,6 +42,11 @@ namespace Drivenest.Api.Data.Configurations
             builder.HasOne(v => v.FuelType)
                 .WithMany()
                 .HasForeignKey(v => v.FuelTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.HasOne(v => v.VehicleModel)
+                .WithMany(m => m.Vehicles)
+                .HasForeignKey(v => v.VehicleModelID)
                 .OnDelete(DeleteBehavior.Restrict);
         }
     }

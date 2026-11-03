@@ -118,8 +118,8 @@ namespace Drivenest.Api.Data
                 UserId = user.Id,
                 FuelTypeId = petrolId,
                 LicensePlate = "ABC-123",
-                Make = "Suzuki",
-                Model = "Swift",
+                CustomMake = "Suzuki",
+                CustomModel = "Swift",
                 Year = 2018,
                 InitialKm = 42000,
                 CurrentKm = 47770
@@ -130,8 +130,8 @@ namespace Drivenest.Api.Data
                 UserId = user.Id,
                 FuelTypeId = dieselId,
                 LicensePlate = "DEF-456",
-                Make = "Škoda",
-                Model = "Octavia",
+                CustomMake = "Škoda",
+                CustomModel = "Octavia",
                 Year = 2015,
                 InitialKm = 118000,
                 CurrentKm = 124230
@@ -272,8 +272,8 @@ namespace Drivenest.Api.Data
                 UserId = user.Id,
                 FuelTypeId = dieselId,
                 LicensePlate = "GHI-789",
-                Make = "Opel",
-                Model = "Astra F 1.7 TD",
+                CustomMake = "Opel",
+                CustomModel = "Astra F 1.7 TD",
                 Year = 1992,
                 InitialKm = 405000,
                 CurrentKm = 409200

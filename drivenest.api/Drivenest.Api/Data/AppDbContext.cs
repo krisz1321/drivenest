@@ -19,6 +19,10 @@ namespace Drivenest.Api.Data
 
         public DbSet<Vehicle> Vehicles => Set<Vehicle>();
 
+        public DbSet<VehicleBrand> VehicleBrands => Set<VehicleBrand>();
+
+        public DbSet<VehicleModel> VehicleModels => Set<VehicleModel>();
+
         public DbSet<Refueling> Refuelings => Set<Refueling>();
 
         public DbSet<ServiceRecord> ServiceRecords => Set<ServiceRecord>();

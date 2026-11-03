@@ -12,9 +12,10 @@ namespace Drivenest.Api.Data.Entities
 
         public string? Vin { get; set; }
 
-        public string Make { get; set; } = string.Empty;
+        public int? VehicleModelID { get; set; }
 
-        public string Model { get; set; } = string.Empty;
+        public string CustomMake { get; set; } = string.Empty;
+        public string CustomModel { get; set; } = string.Empty;
 
         public short? Year { get; set; }
 
@@ -25,5 +26,7 @@ namespace Drivenest.Api.Data.Entities
         public ApplicationUser User { get; set; } = null!;
 
         public FuelType FuelType { get; set; } = null!;
+
+        public VehicleModel? VehicleModel { get; set; }
     }
 }

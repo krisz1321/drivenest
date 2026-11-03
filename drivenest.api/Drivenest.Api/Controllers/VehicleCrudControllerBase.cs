@@ -24,7 +24,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     {
         return await OwnedVehicles.AsNoTracking().OrderBy(v => v.Id)
             .Select(v => new VehicleDto(v.Id, v.FuelTypeId, v.LicensePlate, v.Vin,
-                v.Make, v.Model, v.Year, v.InitialKm, v.CurrentKm))
+                v.VehicleModelID, v.CustomMake, v.CustomModel,
+                v.Year, v.InitialKm, v.CurrentKm))
             .ToListAsync(cancellationToken);
     }
 
@@ -84,6 +85,10 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         if (!await _db.FuelTypes.AnyAsync(f => f.Id == request.FuelTypeId, cancellationToken))
             ModelState.AddModelError(nameof(request.FuelTypeId), "The fuel type does not exist.");
 
+        if (request.VehicleModelID is not null
+            && !await _db.VehicleModels.AnyAsync(m => m.Id == request.VehicleModelID, cancellationToken))
+            ModelState.AddModelError(nameof(request.VehicleModelID), "The vehicle model does not exist.");
+
         var plate = request.LicensePlate.Trim().ToUpperInvariant();
         var vehicles = OwnedVehicles;
         if (id.HasValue) vehicles = vehicles.Where(v => v.Id != id.Value);
@@ -126,13 +131,15 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         vehicle.FuelTypeId = request.FuelTypeId;
         vehicle.LicensePlate = request.LicensePlate.Trim().ToUpperInvariant();
         vehicle.Vin = request.Vin?.Trim().ToUpperInvariant();
-        vehicle.Make = request.Make.Trim();
-        vehicle.Model = request.Model.Trim();
+        vehicle.VehicleModelID = request.VehicleModelID;
+        vehicle.CustomMake = request.VehicleModelID is null ? request.CustomMake!.Trim() : string.Empty;
+        vehicle.CustomModel = request.VehicleModelID is null ? request.CustomModel!.Trim() : string.Empty;
         vehicle.Year = request.Year;
         vehicle.InitialKm = request.InitialKm;
         vehicle.CurrentKm = request.CurrentKm;
     }
 
     private static VehicleDto ToDto(Vehicle v) => new(v.Id, v.FuelTypeId, v.LicensePlate,
-        v.Vin, v.Make, v.Model, v.Year, v.InitialKm, v.CurrentKm);
+        v.Vin, v.VehicleModelID, v.CustomMake, v.CustomModel,
+        v.Year, v.InitialKm, v.CurrentKm);
 }
