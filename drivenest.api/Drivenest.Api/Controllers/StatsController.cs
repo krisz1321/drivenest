@@ -1,4 +1,5 @@
 using Drivenest.Api.Data;
+using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Dtos.Stats;
 using Drivenest.Api.Extensions;
 using Drivenest.Api.Services;
@@ -58,11 +59,39 @@ public class StatsController : ControllerBase
             return ValidationProblem(ModelState);
         }
 
+        var (refuelings, services, expenses) = await LoadEntries(vehicleId, cancellationToken);
+        return StatsSummaryCalculator.Calculate(vehicle, refuelings, services, expenses, from, end);
+    }
+
+    // Havi bontás a diagramokhoz, az üres hónapok is benne vannak.
+    [HttpGet("monthly")]
+    [ProducesResponseType(typeof(List<MonthlyStatsDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<List<MonthlyStatsDto>>> GetMonthly(int vehicleId, [FromQuery] DateOnly? from,
+        [FromQuery] DateOnly? to, CancellationToken cancellationToken)
+    {
+        var userId = User.GetUserId();
+        var vehicle = await _db.Vehicles.AsNoTracking()
+            .SingleOrDefaultAsync(v => v.Id == vehicleId && v.UserId == userId, cancellationToken);
+        if (vehicle is null) return NotFound();
+
+        var end = to ?? DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
+        if (from > end)
+        {
+            ModelState.AddModelError(nameof(from), "The start date must not be after the end date.");
+            return ValidationProblem(ModelState);
+        }
+
+        var (refuelings, services, expenses) = await LoadEntries(vehicleId, cancellationToken);
+        return StatsMonthlyCalculator.Calculate(vehicle, refuelings, services, expenses, from, end);
+    }
+
+    private async Task<(List<Refueling>, List<ServiceRecord>, List<Expense>)> LoadEntries(int vehicleId, CancellationToken cancellationToken)
+    {
         var refuelings = await _db.Refuelings.AsNoTracking().Where(r => r.VehicleId == vehicleId).ToListAsync(cancellationToken);
         var services = await _db.ServiceRecords.AsNoTracking().Include(s => s.Items)
             .Where(s => s.VehicleId == vehicleId).ToListAsync(cancellationToken);
         var expenses = await _db.Expenses.AsNoTracking().Where(e => e.VehicleId == vehicleId).ToListAsync(cancellationToken);
-
-        return StatsSummaryCalculator.Calculate(vehicle, refuelings, services, expenses, from, end);
+        return (refuelings, services, expenses);
     }
 }
