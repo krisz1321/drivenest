@@ -32,6 +32,12 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
 }
 .chart-box { position: relative; }
 .donut { height: 220px; }
+.trend { height: 260px; }
+.chart-panel { margin-bottom: 24px; }
+
+.legend { display: flex; align-items: center; flex-wrap: wrap; gap: 16px; font-size: 12px; }
+.legend-line { display: inline-block; width: 18px; border-top: 2px solid #d9943b; margin-right: 6px; vertical-align: middle; }
+.legend-line.dashed { border-top: 2px dashed #738491; }
 .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: -1px; }
 
 .panel-row {

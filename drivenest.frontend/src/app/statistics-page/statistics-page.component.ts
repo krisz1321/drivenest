@@ -6,13 +6,15 @@ import { Subscription, finalize, forkJoin } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
-import { StatsService, StatsSummary } from '../services/stats.service';
+import { ConsumptionSegment, StatsService, StatsSummary } from '../services/stats.service';
 import {
   KM_PER_MILE, LITERS_PER_GALLON, consumptionLabel, currencyLabel, distanceLabel, toConsumption, toDistance, toVolume, volumeLabel
 } from '../shared/units';
-import { ArcElement, Chart, DoughnutController, Tooltip } from 'chart.js';
+import {
+  ArcElement, CategoryScale, Chart, DoughnutController, LineController, LineElement, LinearScale, PointElement, Tooltip
+} from 'chart.js';
 
-Chart.register(DoughnutController, ArcElement, Tooltip);
+Chart.register(DoughnutController, ArcElement, LineController, LineElement, PointElement, CategoryScale, LinearScale, Tooltip);
 
 @Component({
   selector: 'app-statistics-page',
@@ -30,6 +32,7 @@ export class StatisticsPageComponent implements OnInit {
   vehicles: Vehicle[] = [];
   vehicleId = 0;
   summary: StatsSummary | null = null;
+  segments: ConsumptionSegment[] = [];
 
   readonly periods = [
     { value: 'month', label: 'Ez a hónap' },
@@ -44,6 +47,7 @@ export class StatisticsPageComponent implements OnInit {
   loadError = '';
   private summarySub?: Subscription;
   private costChart?: Chart<'doughnut'>;
+  private trendChart?: Chart<'line'>;
 
   // A canvas csak akkor létezik, ha van adat, ezért itt hozzuk létre / dobjuk el a diagramot.
   @ViewChild('costChart') set costCanvas(canvas: ElementRef<HTMLCanvasElement> | undefined) {
@@ -51,9 +55,18 @@ export class StatisticsPageComponent implements OnInit {
     this.costChart = canvas ? this.createCostChart(canvas.nativeElement) : undefined;
   }
 
+  @ViewChild('trendChart') set trendCanvas(canvas: ElementRef<HTMLCanvasElement> | undefined) {
+    this.trendChart?.destroy();
+    this.trendChart = canvas ? this.createTrendChart(canvas.nativeElement) : undefined;
+  }
+
   ngOnInit() {
+    Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     this.load();
-    this.destroyRef.onDestroy(() => this.costChart?.destroy());
+    this.destroyRef.onDestroy(() => {
+      this.costChart?.destroy();
+      this.trendChart?.destroy();
+    });
   }
 
   load() {
@@ -81,16 +94,25 @@ export class StatisticsPageComponent implements OnInit {
   loadSummary() {
     this.summarySub?.unsubscribe();
     this.summary = null;
+    this.segments = [];
     if (!this.vehicleId) return;
 
     this.loadingSummary = true;
     this.loadError = '';
     const range = this.range();
-    this.summarySub = this.statsApi.summary(this.vehicleId, range.from, range.to).pipe(
+    this.summarySub = forkJoin({
+      summary: this.statsApi.summary(this.vehicleId, range.from, range.to),
+      consumption: this.statsApi.consumption(this.vehicleId)
+    }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loadingSummary = false)
     ).subscribe({
-      next: summary => this.summary = summary,
+      next: result => {
+        this.summary = result.summary;
+        // Ugyanúgy, mint a backendnél: az időszakban lezárult szakaszok számítanak
+        this.segments = result.consumption.segments
+          .filter(s => (!range.from || s.endDate >= range.from) && s.endDate <= range.to);
+      },
       error: () => this.loadError = 'A statisztikát nem sikerült betölteni. Próbáld újra.'
     });
   }
@@ -164,6 +186,67 @@ export class StatisticsPageComponent implements OnInit {
   distancePerDay(kmPerDay: number | null) {
     if (kmPerDay === null) return null;
     return this.profile.preferences().distanceUnit === 'mi' ? kmPerDay / KM_PER_MILE : kmPerDay;
+  }
+
+  private createTrendChart(canvas: HTMLCanvasElement) {
+    const values = this.segments.map(s => this.consumption(s.litersPer100Km));
+    const average = this.consumption(this.summary?.averageLitersPer100Km ?? null);
+    const muted = '#738491';
+    const grid = '#e1e7ec';
+
+    return new Chart(canvas, {
+      type: 'line',
+      data: {
+        labels: this.segments.map(s => this.date(s.endDate)),
+        datasets: [
+          {
+            label: 'Fogyasztás',
+            data: values,
+            borderColor: '#d9943b',
+            backgroundColor: '#d9943b',
+            borderWidth: 2,
+            pointRadius: 4,
+            pointHoverRadius: 6,
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2
+          },
+          {
+            label: 'Átlag',
+            data: values.map(() => average),
+            borderColor: muted,
+            backgroundColor: muted,
+            borderWidth: 1.5,
+            borderDash: [6, 4],
+            pointRadius: 0,
+            pointHoverRadius: 0
+          }
+        ]
+      },
+      options: {
+        maintainAspectRatio: false,
+        interaction: { mode: 'index', intersect: false },
+        scales: {
+          x: { grid: { display: false }, border: { color: grid }, ticks: { color: muted, maxRotation: 0, autoSkip: true } },
+          y: { grid: { color: grid }, border: { display: false }, ticks: { color: muted, maxTicksLimit: 5 } }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: item => ` ${item.dataset.label}: ${this.number(item.parsed.y, 2)} ${this.consumptionUnit}`,
+              footer: items => {
+                const s = this.segments[items[0].dataIndex];
+                return `${this.number(this.distance(s.distanceKm))} ${this.distanceUnit}, ${this.number(this.volume(s.liters), 2)} ${this.volumeUnit}`;
+              }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // "2026-04-25" -> "2026. 04. 25."
+  private date(value: string) {
+    return value.split('-').join('. ') + '.';
   }
 
   volume(liters: number | null) {

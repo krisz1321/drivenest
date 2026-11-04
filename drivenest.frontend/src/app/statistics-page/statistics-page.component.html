@@ -102,6 +102,26 @@
       </section>
     </div>
 
+    <section class="panel chart-panel" aria-label="Fogyasztási trend">
+      <div class="panel-heading">
+        <h2>Fogyasztási trend</h2>
+        @if (segments.length) {
+          <div class="legend">
+            <span><i class="legend-line"></i>Fogyasztás</span>
+            <span><i class="legend-line dashed"></i>Átlag</span>
+            <span class="muted">{{ consumptionUnit }}</span>
+          </div>
+        }
+      </div>
+      @if (segments.length) {
+        <div class="chart-box trend">
+          <canvas #trendChart role="img" aria-label="Fogyasztás tele tanktól tele tankig, időrendben"></canvas>
+        </div>
+      } @else {
+        <p class="muted hint">Ebben az időszakban nincs lezárt fogyasztási szakasz (két tele tankolás között).</p>
+      }
+    </section>
+
     <section class="panel" aria-label="Költségmegoszlás">
       <div class="panel-heading">
         <h2>Költségmegoszlás</h2>
