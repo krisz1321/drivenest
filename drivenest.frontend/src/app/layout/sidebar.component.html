@@ -10,6 +10,7 @@
       <a class="nav-item" [class.active]="active === 'reminders'" routerLink="/reminders" [attr.aria-current]="active === 'reminders' ? 'page' : null" aria-label="Emlékeztetők"><span aria-hidden="true">◷</span><span class="nav-text">Emlékeztetők</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="events" aria-label="Események"><span aria-hidden="true">≡</span><span class="nav-text">Események</span></a>
       <a class="nav-item" routerLink="/dashboard" fragment="costs" aria-label="Költségáttekintés"><span aria-hidden="true">▥</span><span class="nav-text">Költségáttekintés</span></a>
+      <a class="nav-item" [class.active]="active === 'statistics'" routerLink="/statistics" [attr.aria-current]="active === 'statistics' ? 'page' : null" aria-label="Statisztikák"><span aria-hidden="true">◔</span><span class="nav-text">Statisztikák</span></a>
       <a class="nav-item" [class.active]="active === 'audit'" routerLink="/audit" [attr.aria-current]="active === 'audit' ? 'page' : null" aria-label="Változásnapló"><span aria-hidden="true">↺</span><span class="nav-text">Változásnapló</span></a>
       <a class="nav-item" [class.active]="active === 'settings'" routerLink="/settings" [attr.aria-current]="active === 'settings' ? 'page' : null" aria-label="Beállítások"><span aria-hidden="true">⚙</span><span class="nav-text">Beállítások</span></a>
     </nav>

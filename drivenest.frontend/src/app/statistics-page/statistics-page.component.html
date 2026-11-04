@@ -1,0 +1,77 @@
+<app-shell active="statistics" section="Statisztikák">
+  <header class="page-heading">
+    <div>
+      <h1>Statisztikák</h1>
+      <p class="muted">Költségek, megtett táv és napi átlagok járművenként.</p>
+    </div>
+    @if (vehicles.length) {
+      <div class="form-field">
+        <label for="stats-car">Jármű</label>
+        <select id="stats-car" class="form-input" [(ngModel)]="vehicleId" (ngModelChange)="loadSummary()">
+          @for (car of vehicles; track car.id) {
+            <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+          }
+        </select>
+      </div>
+    }
+  </header>
+
+  @if (loading || loadingSummary) {
+    <div class="panel empty-state" role="status">Statisztika betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert">
+      <p>{{ loadError }}</p>
+      <button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button>
+    </div>
+  } @else if (!vehicles.length) {
+    <div class="panel empty-state">
+      <h2>Még nincs jármű</h2>
+      <p>Először adj hozzá egy járművet a garázsodhoz.</p>
+      <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+    </div>
+  } @else if (summary) {
+    @let s = summary;
+    <section class="stat-grid" aria-label="Általános statisztika">
+      <article class="panel stat-card">
+        <div class="card-label">Összköltség<span class="stat-icon" aria-hidden="true">¤</span></div>
+        <strong>{{ number(s.totalCost) }} <small>{{ unit }}</small></strong>
+        <p>{{ s.days }} nap alatt</p>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Költség / nap<span class="stat-icon" aria-hidden="true">◷</span></div>
+        <strong>{{ number(s.costPerDay) }} <small>{{ unit }}</small></strong>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Költség / {{ distanceUnit }}<span class="stat-icon" aria-hidden="true">▥</span></div>
+        <strong>{{ number(costPerDistance(s.costPerKm), 2) }} <small>{{ unit }}</small></strong>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Megtett táv<span class="stat-icon" aria-hidden="true">▱</span></div>
+        <strong>{{ number(distance(s.distanceKm)) }} <small>{{ distanceUnit }}</small></strong>
+      </article>
+      <article class="panel stat-card">
+        <div class="card-label">Napi átlag<span class="stat-icon" aria-hidden="true">≡</span></div>
+        <strong>{{ number(distancePerDay(s.kmPerDay), 1) }} <small>{{ distanceUnit }}</small></strong>
+      </article>
+    </section>
+
+    <section class="panel" aria-label="Költségmegoszlás">
+      <div class="panel-heading">
+        <h2>Költségmegoszlás</h2>
+      </div>
+      @if (s.totalCost) {
+        @for (cost of costs; track cost.label) {
+          <div class="cost-row">
+            <div><span>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }} ({{ number(percent(cost.amount), 1) }}%)</strong></div>
+            <div class="bar-track" aria-hidden="true">
+              <div class="bar-fill" [style.width.%]="percent(cost.amount)"></div>
+            </div>
+          </div>
+        }
+        <div class="cost-total"><span>Összesen</span><strong>{{ number(s.totalCost) }} {{ unit }}</strong></div>
+      } @else {
+        <p class="empty-state">Ehhez a járműhöz még nincs kiadás.</p>
+      }
+    </section>
+  }
+</app-shell>
