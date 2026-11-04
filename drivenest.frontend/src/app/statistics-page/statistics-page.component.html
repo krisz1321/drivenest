@@ -122,6 +122,32 @@
       }
     </section>
 
+    <div class="panel-row">
+      <section class="panel" aria-label="Havi megtett táv">
+        <div class="panel-heading">
+          <h2>Havi megtett táv</h2>
+          <span class="muted">{{ distanceUnit }}</span>
+        </div>
+        <div class="chart-box monthly">
+          <canvas #distanceChart role="img" aria-label="Havi megtett táv oszlopdiagram"></canvas>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="Havi költség">
+        <div class="panel-heading">
+          <h2>Havi költség</h2>
+          <div class="legend">
+            @for (cost of costs; track cost.label) {
+              <span><i class="dot" [style.background]="cost.color"></i>{{ cost.label }}</span>
+            }
+          </div>
+        </div>
+        <div class="chart-box monthly">
+          <canvas #monthlyCostChart role="img" aria-label="Havi költség kategóriánként, oszlopdiagram"></canvas>
+        </div>
+      </section>
+    </div>
+
     <section class="panel" aria-label="Költségmegoszlás">
       <div class="panel-heading">
         <h2>Költségmegoszlás</h2>

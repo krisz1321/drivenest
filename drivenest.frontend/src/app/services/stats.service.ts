@@ -41,6 +41,14 @@ export interface StatsSummary {
   lastLitersPer100Km: number | null;
 }
 
+export interface MonthlyStats {
+  month: string;
+  distanceKm: number;
+  refuelingCost: number;
+  serviceCost: number;
+  expenseCost: number;
+}
+
 @Injectable({ providedIn: 'root' })
 export class StatsService {
   private readonly http = inject(HttpClient);
@@ -48,9 +56,17 @@ export class StatsService {
   consumption(vehicleId: number) { return this.http.get<Consumption>(`${this.base}/vehicles/${vehicleId}/stats/consumption`); }
 
   summary(vehicleId: number, from?: string, to?: string) {
+    return this.http.get<StatsSummary>(`${this.base}/vehicles/${vehicleId}/stats/summary`, { params: this.range(from, to) });
+  }
+
+  monthly(vehicleId: number, from?: string, to?: string) {
+    return this.http.get<MonthlyStats[]>(`${this.base}/vehicles/${vehicleId}/stats/monthly`, { params: this.range(from, to) });
+  }
+
+  private range(from?: string, to?: string) {
     let params = new HttpParams();
     if (from) params = params.set('from', from);
     if (to) params = params.set('to', to);
-    return this.http.get<StatsSummary>(`${this.base}/vehicles/${vehicleId}/stats/summary`, { params });
+    return params;
   }
 }
