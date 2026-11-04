@@ -28,6 +28,14 @@ export class StatisticsPageComponent implements OnInit {
   vehicleId = 0;
   summary: StatsSummary | null = null;
 
+  readonly periods = [
+    { value: 'month', label: 'Ez a hónap' },
+    { value: '30days', label: 'Elmúlt 30 nap' },
+    { value: 'year', label: 'Idei év' },
+    { value: 'all', label: 'Összes' }
+  ];
+  period = 'all';
+
   loading = false;
   loadingSummary = false;
   loadError = '';
@@ -65,13 +73,30 @@ export class StatisticsPageComponent implements OnInit {
     if (!this.vehicleId) return;
 
     this.loadingSummary = true;
-    this.summarySub = this.statsApi.summary(this.vehicleId).pipe(
+    this.loadError = '';
+    const range = this.range();
+    this.summarySub = this.statsApi.summary(this.vehicleId, range.from, range.to).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loadingSummary = false)
     ).subscribe({
       next: summary => this.summary = summary,
       error: () => this.loadError = 'A statisztikát nem sikerült betölteni. Próbáld újra.'
     });
+  }
+
+  // A kiválasztott időszak kezdete és vége (yyyy-MM-dd), magyar idő szerint
+  private range() {
+    const today = new Date().toLocaleDateString('sv-SE', { timeZone: 'Europe/Budapest' });
+    switch (this.period) {
+      case 'month': return { from: today.slice(0, 7) + '-01', to: today };
+      case 'year': return { from: today.slice(0, 4) + '-01-01', to: today };
+      case '30days': {
+        const start = new Date(today + 'T00:00:00Z');
+        start.setUTCDate(start.getUTCDate() - 29);
+        return { from: start.toISOString().slice(0, 10), to: today };
+      }
+      default: return { from: undefined, to: today };
+    }
   }
 
   // Költségmegoszlás sávokhoz

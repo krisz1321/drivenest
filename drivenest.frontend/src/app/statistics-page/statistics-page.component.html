@@ -5,13 +5,23 @@
       <p class="muted">Költségek, megtett táv, tankolás és fogyasztás járművenként.</p>
     </div>
     @if (vehicles.length) {
-      <div class="form-field">
-        <label for="stats-car">Jármű</label>
-        <select id="stats-car" class="form-input" [(ngModel)]="vehicleId" (ngModelChange)="loadSummary()">
-          @for (car of vehicles; track car.id) {
-            <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
-          }
-        </select>
+      <div class="filters">
+        <div class="form-field">
+          <label for="stats-car">Jármű</label>
+          <select id="stats-car" class="form-input" [(ngModel)]="vehicleId" (ngModelChange)="loadSummary()">
+            @for (car of vehicles; track car.id) {
+              <option [ngValue]="car.id">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-field">
+          <label for="stats-period">Időszak</label>
+          <select id="stats-period" class="form-input" [(ngModel)]="period" (ngModelChange)="loadSummary()">
+            @for (p of periods; track p.value) {
+              <option [ngValue]="p.value">{{ p.label }}</option>
+            }
+          </select>
+        </div>
       </div>
     }
   </header>
@@ -28,6 +38,11 @@
       <h2>Még nincs jármű</h2>
       <p>Először adj hozzá egy járművet a garázsodhoz.</p>
       <a class="button button-primary button-compact" routerLink="/garage">Garázs megnyitása</a>
+    </div>
+  } @else if (summary && !summary.refuelingCount && !summary.totalCost) {
+    <div class="panel empty-state">
+      <h2>Nincs adat</h2>
+      <p>Ebben az időszakban nincs bejegyzés ennél a járműnél.</p>
     </div>
   } @else if (summary) {
     @let s = summary;
@@ -91,19 +106,15 @@
       <div class="panel-heading">
         <h2>Költségmegoszlás</h2>
       </div>
-      @if (s.totalCost) {
-        @for (cost of costs; track cost.label) {
-          <div class="cost-row">
-            <div><span>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }} ({{ number(percent(cost.amount), 1) }}%)</strong></div>
-            <div class="bar-track" aria-hidden="true">
-              <div class="bar-fill" [style.width.%]="percent(cost.amount)"></div>
-            </div>
+      @for (cost of costs; track cost.label) {
+        <div class="cost-row">
+          <div><span>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }} ({{ number(percent(cost.amount), 1) }}%)</strong></div>
+          <div class="bar-track" aria-hidden="true">
+            <div class="bar-fill" [style.width.%]="percent(cost.amount)"></div>
           </div>
-        }
-        <div class="cost-total"><span>Összesen</span><strong>{{ number(s.totalCost) }} {{ unit }}</strong></div>
-      } @else {
-        <p class="empty-state">Ehhez a járműhöz még nincs kiadás.</p>
+        </div>
       }
+      <div class="cost-total"><span>Összesen</span><strong>{{ number(s.totalCost) }} {{ unit }}</strong></div>
     </section>
   }
 </app-shell>
