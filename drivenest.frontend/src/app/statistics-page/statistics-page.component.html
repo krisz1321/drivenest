@@ -122,6 +122,20 @@
       }
     </section>
 
+    <section class="panel chart-panel" aria-label="Futás">
+      <div class="panel-heading">
+        <h2>Futás</h2>
+        <span class="muted">óraállás, {{ distanceUnit }}</span>
+      </div>
+      @if (readings.length) {
+        <div class="chart-box trend">
+          <canvas #odometerChart role="img" aria-label="Kilométeróra-állás az idő függvényében"></canvas>
+        </div>
+      } @else {
+        <p class="muted hint">Ebben az időszakban nincs rögzített óraállás.</p>
+      }
+    </section>
+
     <div class="panel-row">
       <section class="panel" aria-label="Havi megtett táv">
         <div class="panel-heading">

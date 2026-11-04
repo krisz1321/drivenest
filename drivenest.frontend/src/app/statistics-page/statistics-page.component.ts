@@ -7,6 +7,9 @@ import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { ConsumptionSegment, MonthlyStats, StatsService, StatsSummary } from '../services/stats.service';
+import { RefuelingService } from '../services/refueling.service';
+import { ServiceRecordService } from '../services/service-record.service';
+import { ExpenseService } from '../services/expense.service';
 import {
   KM_PER_MILE, LITERS_PER_GALLON, consumptionLabel, currencyLabel, distanceLabel, toConsumption, toDistance, toVolume, volumeLabel
 } from '../shared/units';
@@ -22,6 +25,14 @@ Chart.register(DoughnutController, ArcElement, LineController, LineElement, Poin
 const COLORS = { refueling: '#d9943b', service: '#2a78d6', expense: '#1baf7a', distance: '#e87ba4' };
 const MUTED = '#738491';
 const GRID = '#e1e7ec';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// Egy óraállás a futás diagramhoz
+interface Reading {
+  date: string;
+  km: number;
+  type: string;
+}
 
 @Component({
   selector: 'app-statistics-page',
@@ -33,6 +44,9 @@ const GRID = '#e1e7ec';
 export class StatisticsPageComponent implements OnInit {
   private readonly vehicleApi = inject(VehicleService);
   private readonly statsApi = inject(StatsService);
+  private readonly refuelingApi = inject(RefuelingService);
+  private readonly serviceApi = inject(ServiceRecordService);
+  private readonly expenseApi = inject(ExpenseService);
   private readonly profile = inject(ProfileService);
   private readonly destroyRef = inject(DestroyRef);
 
@@ -41,6 +55,7 @@ export class StatisticsPageComponent implements OnInit {
   summary: StatsSummary | null = null;
   segments: ConsumptionSegment[] = [];
   months: MonthlyStats[] = [];
+  readings: Reading[] = [];
 
   readonly periods = [
     { value: 'month', label: 'Ez a hónap' },
@@ -58,6 +73,7 @@ export class StatisticsPageComponent implements OnInit {
   private trendChart?: Chart<'line'>;
   private distanceChart?: Chart<'bar'>;
   private monthlyCostChart?: Chart<'bar'>;
+  private odometerChart?: Chart<'line'>;
 
   // A canvas csak akkor létezik, ha van adat, ezért itt hozzuk létre / dobjuk el a diagramot.
   @ViewChild('costChart') set costCanvas(canvas: ElementRef<HTMLCanvasElement> | undefined) {
@@ -80,6 +96,11 @@ export class StatisticsPageComponent implements OnInit {
     this.monthlyCostChart = canvas ? this.createMonthlyCostChart(canvas.nativeElement) : undefined;
   }
 
+  @ViewChild('odometerChart') set odometerCanvas(canvas: ElementRef<HTMLCanvasElement> | undefined) {
+    this.odometerChart?.destroy();
+    this.odometerChart = canvas ? this.createOdometerChart(canvas.nativeElement) : undefined;
+  }
+
   ngOnInit() {
     Chart.defaults.font.family = getComputedStyle(document.body).fontFamily;
     Chart.defaults.locale = 'hu-HU';
@@ -89,6 +110,7 @@ export class StatisticsPageComponent implements OnInit {
       this.trendChart?.destroy();
       this.distanceChart?.destroy();
       this.monthlyCostChart?.destroy();
+      this.odometerChart?.destroy();
     });
   }
 
@@ -119,6 +141,7 @@ export class StatisticsPageComponent implements OnInit {
     this.summary = null;
     this.segments = [];
     this.months = [];
+    this.readings = [];
     if (!this.vehicleId) return;
 
     this.loadingSummary = true;
@@ -127,7 +150,10 @@ export class StatisticsPageComponent implements OnInit {
     this.summarySub = forkJoin({
       summary: this.statsApi.summary(this.vehicleId, range.from, range.to),
       consumption: this.statsApi.consumption(this.vehicleId),
-      months: this.statsApi.monthly(this.vehicleId, range.from, range.to)
+      months: this.statsApi.monthly(this.vehicleId, range.from, range.to),
+      refuelings: this.refuelingApi.list(this.vehicleId),
+      services: this.serviceApi.list(this.vehicleId),
+      expenses: this.expenseApi.list(this.vehicleId)
     }).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loadingSummary = false)
@@ -135,6 +161,14 @@ export class StatisticsPageComponent implements OnInit {
       next: result => {
         this.summary = result.summary;
         this.months = result.months;
+        // Az összes óraállás időrendben, csak a kiválasztott időszakból
+        this.readings = [
+          ...result.refuelings.map(r => ({ date: r.date, km: r.odometerKm, type: 'Tankolás' })),
+          ...result.services.map(s => ({ date: s.date, km: s.odometerKm, type: 'Szerviz' })),
+          ...result.expenses.map(e => ({ date: e.date, km: e.odometerKm, type: 'Egyéb kiadás' }))
+        ]
+          .filter(r => (!range.from || r.date >= range.from) && r.date <= range.to)
+          .sort((a, b) => a.date.localeCompare(b.date) || a.km - b.km);
         // Ugyanúgy, mint a backendnél: az időszakban lezárult szakaszok számítanak
         this.segments = result.consumption.segments
           .filter(s => (!range.from || s.endDate >= range.from) && s.endDate <= range.to);
@@ -321,6 +355,49 @@ export class StatisticsPageComponent implements OnInit {
                 const m = this.months[items[0].dataIndex];
                 return `Összesen: ${this.number(m.refuelingCost + m.serviceCost + m.expenseCost)} ${this.unit}`;
               }
+            }
+          }
+        }
+      }
+    });
+  }
+
+  // Óraállás az idő függvényében. Az x tengely napokban számol, így a tankolások közti idő arányos.
+  private createOdometerChart(canvas: HTMLCanvasElement) {
+    const day = (date: string) => Date.parse(date + 'T00:00:00Z') / DAY_MS;
+    const toDate = (value: number) => new Date(value * DAY_MS).toISOString().slice(0, 10);
+    const axes = this.axes(false);
+
+    return new Chart(canvas, {
+      type: 'line',
+      data: {
+        datasets: [{
+          label: 'Óraállás',
+          data: this.readings.map(r => ({ x: day(r.date), y: this.distance(r.km) })),
+          borderColor: COLORS.distance,
+          backgroundColor: COLORS.distance,
+          borderWidth: 2,
+          pointRadius: 4,
+          pointHoverRadius: 6,
+          pointBorderColor: '#ffffff',
+          pointBorderWidth: 2,
+          clip: false
+        }]
+      },
+      options: {
+        maintainAspectRatio: false,
+        layout: { padding: { left: 8, right: 8 } },
+        interaction: { mode: 'nearest', axis: 'x', intersect: false },
+        scales: {
+          x: { ...axes.x, type: 'linear', min: day(this.readings[0].date), max: day(this.readings[this.readings.length - 1].date), ticks: { ...axes.x.ticks, maxTicksLimit: canvas.parentElement!.clientWidth < 500 ? 3 : 6, includeBounds: false, callback: value => this.date(toDate(+value)) } },
+          y: { ...axes.y, ticks: { ...axes.y.ticks, callback: value => this.number(+value) } }
+        },
+        plugins: {
+          tooltip: {
+            callbacks: {
+              title: items => this.date(this.readings[items[0].dataIndex].date),
+              label: item => ` ${this.number(item.parsed.y)} ${this.distanceUnit}`,
+              footer: items => this.readings[items[0].dataIndex].type
             }
           }
         }
