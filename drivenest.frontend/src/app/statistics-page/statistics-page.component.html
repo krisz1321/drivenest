@@ -106,15 +106,22 @@
       <div class="panel-heading">
         <h2>Költségmegoszlás</h2>
       </div>
-      @for (cost of costs; track cost.label) {
-        <div class="cost-row">
-          <div><span>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }} ({{ number(percent(cost.amount), 1) }}%)</strong></div>
-          <div class="bar-track" aria-hidden="true">
-            <div class="bar-fill" [style.width.%]="percent(cost.amount)"></div>
-          </div>
+      <div class="cost-layout">
+        <div class="chart-box donut">
+          <canvas #costChart role="img" aria-label="Költségmegoszlás fánkdiagram"></canvas>
         </div>
-      }
-      <div class="cost-total"><span>Összesen</span><strong>{{ number(s.totalCost) }} {{ unit }}</strong></div>
+        <div>
+          @for (cost of costs; track cost.label) {
+            <div class="cost-row">
+              <div><span><i class="dot" [style.background]="cost.color"></i>{{ cost.label }}</span><strong>{{ number(cost.amount) }} {{ unit }} ({{ number(percent(cost.amount), 1) }}%)</strong></div>
+              <div class="bar-track" aria-hidden="true">
+                <div class="bar-fill" [style.width.%]="percent(cost.amount)" [style.background]="cost.color"></div>
+              </div>
+            </div>
+          }
+          <div class="cost-total"><span>Összesen</span><strong>{{ number(s.totalCost) }} {{ unit }}</strong></div>
+        </div>
+      </div>
     </section>
   }
 </app-shell>

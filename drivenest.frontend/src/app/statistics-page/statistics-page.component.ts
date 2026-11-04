@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject } from '@angular/core';
+import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
@@ -10,6 +10,9 @@ import { StatsService, StatsSummary } from '../services/stats.service';
 import {
   KM_PER_MILE, LITERS_PER_GALLON, consumptionLabel, currencyLabel, distanceLabel, toConsumption, toDistance, toVolume, volumeLabel
 } from '../shared/units';
+import { ArcElement, Chart, DoughnutController, Tooltip } from 'chart.js';
+
+Chart.register(DoughnutController, ArcElement, Tooltip);
 
 @Component({
   selector: 'app-statistics-page',
@@ -40,9 +43,17 @@ export class StatisticsPageComponent implements OnInit {
   loadingSummary = false;
   loadError = '';
   private summarySub?: Subscription;
+  private costChart?: Chart<'doughnut'>;
+
+  // A canvas csak akkor létezik, ha van adat, ezért itt hozzuk létre / dobjuk el a diagramot.
+  @ViewChild('costChart') set costCanvas(canvas: ElementRef<HTMLCanvasElement> | undefined) {
+    this.costChart?.destroy();
+    this.costChart = canvas ? this.createCostChart(canvas.nativeElement) : undefined;
+  }
 
   ngOnInit() {
     this.load();
+    this.destroyRef.onDestroy(() => this.costChart?.destroy());
   }
 
   load() {
@@ -99,14 +110,41 @@ export class StatisticsPageComponent implements OnInit {
     }
   }
 
-  // Költségmegoszlás sávokhoz
+  // Költségmegoszlás sávokhoz és a fánkdiagramhoz
   get costs() {
     if (!this.summary) return [];
     return [
-      { label: 'Tankolás', amount: this.summary.refuelingCost },
-      { label: 'Szerviz', amount: this.summary.serviceCost },
-      { label: 'Egyéb kiadás', amount: this.summary.expenseCost }
+      { label: 'Tankolás', amount: this.summary.refuelingCost, color: '#d9943b' },
+      { label: 'Szerviz', amount: this.summary.serviceCost, color: '#2a78d6' },
+      { label: 'Egyéb kiadás', amount: this.summary.expenseCost, color: '#1baf7a' }
     ];
+  }
+
+  private createCostChart(canvas: HTMLCanvasElement) {
+    const costs = this.costs;
+    return new Chart(canvas, {
+      type: 'doughnut',
+      data: {
+        labels: costs.map(c => c.label),
+        datasets: [{
+          data: costs.map(c => c.amount),
+          backgroundColor: costs.map(c => c.color),
+          borderColor: '#ffffff',
+          borderWidth: 2
+        }]
+      },
+      options: {
+        cutout: '65%',
+        maintainAspectRatio: false,
+        plugins: {
+          tooltip: {
+            callbacks: {
+              label: item => ` ${this.number(item.parsed)} ${this.unit} (${this.number(this.percent(item.parsed), 1)}%)`
+            }
+          }
+        }
+      }
+    });
   }
 
   percent(amount: number) {
