@@ -2,7 +2,7 @@
   <header class="page-heading">
     <div>
       <h1>Statisztikák</h1>
-      <p class="muted">Költségek, megtett táv és napi átlagok járművenként.</p>
+      <p class="muted">Költségek, megtett táv, tankolás és fogyasztás járművenként.</p>
     </div>
     @if (vehicles.length) {
       <div class="form-field">
@@ -54,6 +54,38 @@
         <strong>{{ number(distancePerDay(s.kmPerDay), 1) }} <small>{{ distanceUnit }}</small></strong>
       </article>
     </section>
+
+    <div class="panel-row">
+      <section class="panel" aria-label="Tankolás">
+        <div class="panel-heading">
+          <h2>Tankolás</h2>
+        </div>
+        <dl class="stat-list">
+          <div><dt>Tankolások száma</dt><dd>{{ s.refuelingCount }}</dd></div>
+          <div><dt>Összes mennyiség</dt><dd>{{ number(volume(s.totalLiters), 2) }} {{ volumeUnit }}</dd></div>
+          <div><dt>Tankolásra költve</dt><dd>{{ number(s.refuelingCost) }} {{ unit }}</dd></div>
+          <div><dt>Átlagos egységár</dt><dd>{{ number(pricePerVolume(s.averagePricePerLiter), 2) }} {{ unit }}/{{ volumeUnit }}</dd></div>
+          <div><dt>Átlag mennyiség / tankolás</dt><dd>{{ number(volume(s.averageLiters), 2) }} {{ volumeUnit }}</dd></div>
+          <div><dt>Átlag összeg / tankolás</dt><dd>{{ number(s.averageRefuelingCost) }} {{ unit }}</dd></div>
+        </dl>
+      </section>
+
+      <section class="panel" aria-label="Fogyasztás">
+        <div class="panel-heading">
+          <h2>Fogyasztás</h2>
+          <span class="muted">{{ consumptionUnit }}</span>
+        </div>
+        <dl class="stat-list">
+          <div><dt>Átlagos</dt><dd>{{ number(consumption(s.averageLitersPer100Km), 2) }}</dd></div>
+          <div><dt>Legjobb</dt><dd>{{ number(consumption(s.bestLitersPer100Km), 2) }}</dd></div>
+          <div><dt>Legrosszabb</dt><dd>{{ number(consumption(s.worstLitersPer100Km), 2) }}</dd></div>
+          <div><dt>Utolsó</dt><dd>{{ number(consumption(s.lastLitersPer100Km), 2) }}</dd></div>
+        </dl>
+        @if (s.averageLitersPer100Km === null) {
+          <p class="muted hint">A fogyasztáshoz legalább két tele tankolás kell.</p>
+        }
+      </section>
+    </div>
 
     <section class="panel" aria-label="Költségmegoszlás">
       <div class="panel-heading">

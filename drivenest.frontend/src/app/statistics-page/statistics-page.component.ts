@@ -7,7 +7,9 @@ import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { StatsService, StatsSummary } from '../services/stats.service';
-import { KM_PER_MILE, currencyLabel, distanceLabel, toDistance } from '../shared/units';
+import {
+  KM_PER_MILE, LITERS_PER_GALLON, consumptionLabel, currencyLabel, distanceLabel, toConsumption, toDistance, toVolume, volumeLabel
+} from '../shared/units';
 
 @Component({
   selector: 'app-statistics-page',
@@ -101,12 +103,34 @@ export class StatisticsPageComponent implements OnInit {
     return this.profile.preferences().distanceUnit === 'mi' ? kmPerDay / KM_PER_MILE : kmPerDay;
   }
 
+  volume(liters: number | null) {
+    return liters === null ? null : toVolume(liters, this.profile.preferences().volumeUnit);
+  }
+
+  pricePerVolume(pricePerLiter: number | null) {
+    if (pricePerLiter === null) return null;
+    return this.profile.preferences().volumeUnit === 'gal' ? pricePerLiter * LITERS_PER_GALLON : pricePerLiter;
+  }
+
+  // km/l-nél és mpg-nél a legjobb a legnagyobb szám, de a backend l/100 km-ben adja, így ez is jó marad.
+  consumption(litersPer100Km: number | null) {
+    return litersPer100Km === null ? null : toConsumption(litersPer100Km, this.profile.preferences().consumptionUnit);
+  }
+
   get unit() {
     return currencyLabel(this.profile.preferences().currency);
   }
 
   get distanceUnit() {
     return distanceLabel(this.profile.preferences().distanceUnit);
+  }
+
+  get volumeUnit() {
+    return volumeLabel(this.profile.preferences().volumeUnit);
+  }
+
+  get consumptionUnit() {
+    return consumptionLabel(this.profile.preferences().consumptionUnit);
   }
 
   number(value: number | null, digits = 0) {
