@@ -43,6 +43,9 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(r => r.UpdatedAt)
                 .HasColumnType("datetime2(3)");
 
+            builder.Property(r => r.ImportSource)
+                .HasMaxLength(20);
+
             builder.HasOne(r => r.Vehicle)
                 .WithMany()
                 .HasForeignKey(r => r.VehicleId)

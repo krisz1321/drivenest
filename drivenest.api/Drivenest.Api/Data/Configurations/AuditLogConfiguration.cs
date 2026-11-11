@@ -39,6 +39,9 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(a => a.Liters)
                 .HasColumnType("decimal(9,3)");
 
+            builder.Property(a => a.ImportSource)
+                .HasMaxLength(20);
+
             builder.Property(a => a.CreatedAt)
                 .HasColumnType("datetime2(3)")
                 .HasDefaultValueSql("SYSUTCDATETIME()")

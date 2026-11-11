@@ -88,6 +88,7 @@ namespace Drivenest.Api.Extensions
             log.Date = r.Date;
             log.Amount = r.TotalAmount;
             log.Liters = r.Liters;
+            log.ImportSource = r.ImportSource;
             return log;
         }
 
@@ -98,6 +99,7 @@ namespace Drivenest.Api.Extensions
             log.Date = s.Date;
             log.Summary = string.Join(", ", s.Items.Select(i => categories.GetValueOrDefault(i.CategoryId)));
             log.Amount = s.Items.Sum(i => i.Amount);
+            log.ImportSource = s.ImportSource;
             return log;
         }
 
@@ -108,6 +110,7 @@ namespace Drivenest.Api.Extensions
             log.Date = e.Date;
             log.Summary = categories.GetValueOrDefault(e.CategoryId);
             log.Amount = e.Amount;
+            log.ImportSource = e.ImportSource;
             return log;
         }
 

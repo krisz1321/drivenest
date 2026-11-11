@@ -31,6 +31,9 @@ namespace Drivenest.Api.Data.Entities
 
         public decimal? Liters { get; set; }
 
+        // A bejegyzés ImportSource értékének másolata.
+        public string? ImportSource { get; set; }
+
         public DateTime CreatedAt { get; set; }
 
         public ApplicationUser User { get; set; } = null!;

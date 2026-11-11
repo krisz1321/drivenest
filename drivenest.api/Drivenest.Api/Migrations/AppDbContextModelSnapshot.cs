@@ -163,6 +163,10 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<string>("ImportSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<string>("LicensePlate")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -249,6 +253,10 @@ namespace Drivenest.Api.Migrations
                     b.Property<string>("Description")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("ImportSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<string>("Location")
                         .HasMaxLength(200)
@@ -452,6 +460,10 @@ namespace Drivenest.Api.Migrations
 
                     b.Property<DateOnly>("Date")
                         .HasColumnType("date");
+
+                    b.Property<string>("ImportSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
 
                     b.Property<bool>("IsFullTank")
                         .ValueGeneratedOnAdd()
@@ -1174,6 +1186,10 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<string>("ImportSource")
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
                     b.Property<int>("OdometerKm")
                         .HasColumnType("int");
 
@@ -1263,13 +1279,9 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
-                    b.Property<DateTime>("CreatedAt")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("datetime2(3)")
-                        .HasDefaultValueSql("SYSUTCDATETIME()");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(3)");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
