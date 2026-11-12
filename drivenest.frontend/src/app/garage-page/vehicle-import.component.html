@@ -1,0 +1,28 @@
+<dialog #importDialog class="modal dashboard-theme" aria-labelledby="import-title" (cancel)="cancel($event)">
+  <div class="panel-heading">
+    <h2 id="import-title">Importálás Drivvo-ból</h2>
+    <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
+  </div>
+
+  @if (result) {
+    <p class="alert-success" role="status">Az importálás kész: {{ result.refuelings }} tankolás, {{ result.expenses }} kiadás és {{ result.services }} szerviz került be.</p>
+    @if (result.skipped) {
+      <p class="form-help">{{ result.skipped }} bejegyzés kimaradt, mert már megvolt vagy hibás volt.</p>
+    }
+    <div class="form-actions">
+      <button type="button" class="button button-primary button-compact" (click)="close()">Rendben</button>
+    </div>
+  } @else {
+    <p>A Drivvo alkalmazásból exportált CSV fájl tankolásai, kiadásai és szervizei ehhez a járműhöz kerülnek: <strong>{{ vehicle.make }} {{ vehicle.model }} · {{ vehicle.licensePlate }}</strong></p>
+    <p class="form-help">Az importált bejegyzések a változásnaplóban Drivvo jelölést kapnak, mert az eredeti időpontjuk nem ellenőrizhető. Ami már megvan, az nem kerül be még egyszer.</p>
+    <div class="form-field">
+      <label for="import-file">CSV fájl</label>
+      <input id="import-file" class="form-input" type="file" accept=".csv" (change)="selectFile($event)" [disabled]="saving">
+    </div>
+    @if (error) { <div class="alert-error" role="alert"><p>{{ error }}</p></div> }
+    <div class="form-actions">
+      <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+      <button type="button" class="button button-primary button-compact" (click)="upload()" [disabled]="saving || !file">{{ saving ? 'Importálás…' : 'Importálás' }}</button>
+    </div>
+  }
+</dialog>

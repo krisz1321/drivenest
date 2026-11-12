@@ -4,7 +4,7 @@
   @if (selectedVehicle; as car) {
     <section class="panel vehicle-detail-page"><div class="panel-heading"><div><h2 id="car-details-title">{{ name(car) }}</h2><p class="form-help">{{ car.licensePlate }} · {{ details(car) }}</p></div></div>
     <div class="car-summary"><span>Kilométeróra <strong>{{ mileage(car) }}</strong></span><span>Átlagfogyasztás <strong>{{ averageConsumption(car) }}</strong></span></div>
-    <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="button button-secondary button-compact" (click)="services.downloadBook()" [disabled]="services.pdfLoading" [attr.aria-label]="'Szervizkönyv PDF letöltése: ' + car.licensePlate">{{ services.pdfLoading ? 'PDF készítése…' : 'Szervizkönyv PDF' }}</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
+    <div class="action-row vehicle-management"><button type="button" class="button button-secondary button-compact" (click)="open('edit', car)" [disabled]="!fuelTypes.length">Szerkesztés</button><button type="button" class="button button-secondary button-compact" (click)="services.downloadBook()" [disabled]="services.pdfLoading" [attr.aria-label]="'Szervizkönyv PDF letöltése: ' + car.licensePlate">{{ services.pdfLoading ? 'PDF készítése…' : 'Szervizkönyv PDF' }}</button><button type="button" class="button button-secondary button-compact" (click)="importer.open()">Importálás Drivvo-ból</button><button type="button" class="text-button danger-text" (click)="open('delete', car)">Jármű törlése</button></div>
     <!-- Gyors rögzítés: a gombok a lenti listák felugró ablakait nyitják meg -->
     <div class="car-quick-actions">
       <span class="eyebrow">Gyors rögzítés</span>
@@ -16,6 +16,7 @@
     </div>
     <app-vehicle-refuelings #refuelings [vehicle]="car" [currency]="currency" (changed)="refreshVehicles()" />
     <app-vehicle-services #services [vehicle]="car" [currency]="currency" (changed)="refreshVehicles()" />
+    <app-vehicle-import #importer [vehicle]="car" (imported)="refuelings.load(); services.load(); refreshVehicles()" />
     </section>
   } @else if (loading) {
     <div class="panel empty-state" role="status">Jármű betöltése…</div>
