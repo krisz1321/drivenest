@@ -96,6 +96,9 @@
                       @if (change.date) {
                         <small>{{ change.date | date:'yyyy. MM. dd.' }} · {{ number(change.amount ?? 0) }} {{ unit }}</small>
                       }
+                      @if (change.importSource) {
+                        <span class="badge badge-warning import-badge">Drivvo import</span>
+                      }
                     </td>
                     <td class="wide">
                       @if (hasVehicle(change.vehicleId)) {
@@ -105,7 +108,9 @@
                       }
                     </td>
                     <td class="change-cell">
-                      @if (change.action === 'added') {
+                      @if (change.action === 'added' && change.importSource) {
+                        Drivvóból importálva, az eredeti időpont nem ellenőrizhető
+                      } @else if (change.action === 'added') {
                         {{ change.daysLate }} nappal a dátuma után rögzítve
                       } @else {
                         <ul class="change-list">
@@ -156,6 +161,9 @@
                     @if (entry.date) {
                       <small>{{ entry.date | date:'yyyy. MM. dd.' }} · {{ number(entry.amount ?? 0) }} {{ unit }}</small>
                     }
+                    @if (entry.importSource) {
+                      <span class="badge badge-warning import-badge">Drivvo import</span>
+                    }
                   </td>
                   <td class="wide">
                     @if (hasVehicle(entry.vehicleId)) {
@@ -166,7 +174,9 @@
                   </td>
                   <td class="nowrap">
                     {{ entry.createdAt | date:'yyyy. MM. dd. HH:mm' }}
-                    @if (lateDays(entry) > 0) {
+                    @if (entry.importSource) {
+                      <small>Drivvóból importálva, az eredeti időpont nem ellenőrizhető</small>
+                    } @else if (lateDays(entry) > 0) {
                       <small>{{ lateDays(entry) }} nappal a dátuma után</small>
                     }
                   </td>

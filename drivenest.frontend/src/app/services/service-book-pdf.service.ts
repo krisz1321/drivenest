@@ -136,15 +136,21 @@ export class ServiceBookPdfService {
     const entries = book.entries;
     const late = entries.filter(e => e.isLate).length;
     const edited = entries.filter(e => e.updatedAt).length;
+    const imported = entries.filter(e => e.importSource).length;
 
     doc.setFont(FONT, 'bold');
     doc.setFontSize(9);
-    doc.text(`Bejegyzések: ${entries.length}   Utólag rögzítve: ${late}   Módosítva: ${edited}   Naplózott törlés: ${book.deletedCount}`, MARGIN + 2, y);
+    doc.text(`Bejegyzések: ${entries.length}   Utólag rögzítve: ${late}   Módosítva: ${edited}   Naplózott törlés: ${book.deletedCount}   Drivvo import: ${imported}`, MARGIN + 2, y);
 
     doc.setFont(FONT, 'normal');
     doc.setFontSize(8);
     doc.setTextColor(110);
     doc.text('Utólag rögzített: a szerviz dátuma után több mint 7 nappal felvitt bejegyzés.', MARGIN + 2, y + 4.5);
+    // Csak akkor kell a magyarázat, ha van importált szerviz.
+    if (imported) {
+      doc.text(this.clean('Drivvo import: másik alkalmazásból átvett bejegyzés, a rögzítés ideje az importálás ideje, az eredeti időpont nem ellenőrizhető.'), MARGIN + 2, y + 8.5);
+      y += 4;
+    }
     doc.setTextColor(20);
 
     return y + 9;
@@ -173,7 +179,8 @@ export class ServiceBookPdfService {
     const description = entry.description ? wrap(entry.description.replace(/\s+/g, ' '), COLUMN.work.width) : [];
 
     const recorded: Line[] = [{ text: this.dateTime(entry.createdAt) }, { text: this.timing(entry) }];
-    if (entry.isLate) recorded.push({ text: 'Utólag rögzítve', bold: true });
+    if (entry.importSource) recorded.push({ text: 'Drivvo import', bold: true });
+    else if (entry.isLate) recorded.push({ text: 'Utólag rögzítve', bold: true });
     if (entry.updatedAt) recorded.push({ text: `Módosítva: ${this.dateTime(entry.updatedAt).slice(0, 10)}` });
 
     const row: Row = {

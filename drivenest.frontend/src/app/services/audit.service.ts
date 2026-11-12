@@ -8,6 +8,7 @@ export type AuditAction = 'added' | 'updated' | 'deleted';
 // date, summary, amount, liters: csak ott van értékük, ahol a típusnak van ilyen adata
 // updatedAt = null, ha a bejegyzést létrehozása óta nem módosították
 // deletedAt: csak a 7 napon belül törölt bejegyzésnél van értéke
+// importSource = 'drivvo', ha importból jött, ilyenkor a createdAt az importálás ideje
 export interface AuditEntry {
   type: AuditEntryType;
   id: number;
@@ -15,6 +16,7 @@ export interface AuditEntry {
   licensePlate: string;
   vehicleName: string;
   date: string | null;
+  importSource: string | null;
   summary: string | null;
   amount: number | null;
   liters: number | null;
@@ -45,6 +47,7 @@ export interface AuditChange {
   changedAt: string;
   daysLate: number | null;
   changes: AuditChangeField[];
+  importSource: string | null;
 }
 
 @Injectable({ providedIn: 'root' })

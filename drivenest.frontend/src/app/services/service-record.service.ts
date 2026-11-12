@@ -62,6 +62,7 @@ export interface ServiceBookEntry {
   updatedAt: string | null;
   daysLate: number;
   isLate: boolean;
+  importSource: string | null;
   items: ServiceRecordItem[];
 }
 
