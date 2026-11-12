@@ -245,6 +245,6 @@ public class ServiceRecordsController : ControllerBase
         var daysLate = AuditLogExtensions.DaysLate(s.Date, s.CreatedAt);
         DateTime? updatedAt = s.UpdatedAt is { } value ? DateTime.SpecifyKind(value, DateTimeKind.Utc) : null;
         return new ServiceBookEntryDto(s.Date, s.OdometerKm, s.Items.Sum(i => i.Amount), s.Provider, s.Description,
-            DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), updatedAt, daysLate, daysLate > AuditLogExtensions.LateDays, ToItemDtos(s));
+            DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), updatedAt, daysLate, daysLate > AuditLogExtensions.LateDays, s.ImportSource, ToItemDtos(s));
     }
 }

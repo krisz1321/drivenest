@@ -166,21 +166,21 @@ public class AuditController : ControllerBase
         null, null, null, null, Utc(v.CreatedAt), Utc(v.UpdatedAt));
 
     private static AuditEntryDto ToDto(Refueling r) => new(AuditEntryTypes.Refueling, r.Id, r.VehicleId, r.Vehicle.LicensePlate, VehicleName(r.Vehicle),
-        r.Date, null, r.TotalAmount, r.Liters, Utc(r.CreatedAt), Utc(r.UpdatedAt));
+        r.Date, null, r.TotalAmount, r.Liters, Utc(r.CreatedAt), Utc(r.UpdatedAt), null, r.ImportSource);
 
     private static AuditEntryDto ToDto(ServiceRecord s) => new(AuditEntryTypes.Service, s.Id, s.VehicleId, s.Vehicle.LicensePlate, VehicleName(s.Vehicle),
-        s.Date, string.Join(", ", s.Items.OrderBy(i => i.Id).Select(i => i.Category.Name)), s.Items.Sum(i => i.Amount), null, Utc(s.CreatedAt), Utc(s.UpdatedAt));
+        s.Date, string.Join(", ", s.Items.OrderBy(i => i.Id).Select(i => i.Category.Name)), s.Items.Sum(i => i.Amount), null, Utc(s.CreatedAt), Utc(s.UpdatedAt), null, s.ImportSource);
 
     private static AuditEntryDto ToDto(Expense e) => new(AuditEntryTypes.Expense, e.Id, e.VehicleId, e.Vehicle.LicensePlate, VehicleName(e.Vehicle),
-        e.Date, e.Category.Name, e.Amount, null, Utc(e.CreatedAt), Utc(e.UpdatedAt));
+        e.Date, e.Category.Name, e.Amount, null, Utc(e.CreatedAt), Utc(e.UpdatedAt), null, e.ImportSource);
 
     private static AuditEntryDto ToDeletedDto(AuditLog a) => new(a.EntityType, a.EntityId, a.VehicleId, a.LicensePlate, a.VehicleName,
-        a.Date, a.Summary, a.Amount, a.Liters, Utc(a.EntityCreatedAt ?? a.CreatedAt), null, Utc(a.CreatedAt));
+        a.Date, a.Summary, a.Amount, a.Liters, Utc(a.EntityCreatedAt ?? a.CreatedAt), null, Utc(a.CreatedAt), a.ImportSource);
 
     private static AuditChangeDto ToDto(AuditLog a) => new(a.Action, a.EntityType, a.EntityId, a.VehicleId, a.LicensePlate, a.VehicleName,
         a.Date, a.Summary, a.Amount, a.Liters, Utc(a.CreatedAt), null,
-        a.Changes.OrderBy(c => c.Id).Select(c => new AuditChangeFieldDto(c.Field, c.OldValue, c.NewValue)).ToList());
+        a.Changes.OrderBy(c => c.Id).Select(c => new AuditChangeFieldDto(c.Field, c.OldValue, c.NewValue)).ToList(), a.ImportSource);
 
     private static AuditChangeDto ToAddedDto(AuditEntryDto e) => new(AuditActions.Added, e.Type, e.Id, e.VehicleId, e.LicensePlate, e.VehicleName,
-        e.Date, e.Summary, e.Amount, e.Liters, e.CreatedAt, DaysLate(e), []);
+        e.Date, e.Summary, e.Amount, e.Liters, e.CreatedAt, DaysLate(e), [], e.ImportSource);
 }

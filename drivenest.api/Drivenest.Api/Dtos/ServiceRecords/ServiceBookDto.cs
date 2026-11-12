@@ -6,5 +6,6 @@ public record ServiceBookDto(ServiceBookVehicleDto Vehicle, DateTime GeneratedAt
 public record ServiceBookVehicleDto(string LicensePlate, string? Vin, string Make, string Model, short? Year, string FuelType, int CurrentKm);
 
 // DaysLate = hány nappal a szerviz dátuma után rögzítették, IsLate = utólag rögzített bejegyzés.
+// ImportSource = "drivvo", ha importból jött.
 public record ServiceBookEntryDto(DateOnly Date, int OdometerKm, decimal Total, string? Provider, string? Description,
-    DateTime CreatedAt, DateTime? UpdatedAt, int DaysLate, bool IsLate, List<ServiceRecordItemDto> Items);
+    DateTime CreatedAt, DateTime? UpdatedAt, int DaysLate, bool IsLate, string? ImportSource, List<ServiceRecordItemDto> Items);
