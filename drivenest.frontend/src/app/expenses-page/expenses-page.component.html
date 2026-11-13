@@ -90,7 +90,7 @@
             <tbody>
               @for (entry of filtered; track entry.id) {
                 <tr>
-                  <td class="nowrap">{{ entry.date | date:'yyyy. MM. dd.' }}</td>
+                  <td class="nowrap">{{ entry.date | date:'yyyy. MM. dd.' }} @if (entry.importSource) { <span class="badge badge-warning" title="Drivvóból importálva, az eredeti időpont nem ellenőrizhető">Drivvo</span> }</td>
                   <td><a [routerLink]="['/garage', entry.vehicleId]">{{ vehicleName(entry.vehicleId) }}</a></td>
                   <td><span class="badge">{{ entry.categoryName }}</span></td>
                   <td class="nowrap">{{ number(entry.odometerKm, 0) }}</td>

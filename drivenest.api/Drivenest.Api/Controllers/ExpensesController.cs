@@ -55,7 +55,7 @@ public class ExpensesController : ControllerBase
             .Where(e => e.VehicleId == vehicleId)
             .OrderByDescending(e => e.Date).ThenByDescending(e => e.OdometerKm).ThenByDescending(e => e.Id)
             .Select(e => new ExpenseDto(e.Id, e.VehicleId, e.CategoryId, e.Category.Name, e.Date,
-                e.OdometerKm, e.Amount, e.Location, e.Description, DateTime.SpecifyKind(e.CreatedAt, DateTimeKind.Utc)))
+                e.OdometerKm, e.Amount, e.Location, e.Description, DateTime.SpecifyKind(e.CreatedAt, DateTimeKind.Utc), e.ImportSource))
             .ToListAsync(cancellationToken);
     }
 
@@ -190,5 +190,5 @@ public class ExpensesController : ControllerBase
     }
 
     private static ExpenseDto ToDto(Expense e) => new(e.Id, e.VehicleId, e.CategoryId, e.Category.Name, e.Date,
-        e.OdometerKm, e.Amount, e.Location, e.Description, DateTime.SpecifyKind(e.CreatedAt, DateTimeKind.Utc));
+        e.OdometerKm, e.Amount, e.Location, e.Description, DateTime.SpecifyKind(e.CreatedAt, DateTimeKind.Utc), e.ImportSource);
 }

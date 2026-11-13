@@ -13,7 +13,7 @@ describe('FillUpComponentComponent', () => {
     { id: 4, make: 'Toyota', model: 'Yaris', licensePlate: 'ABC-123', currentKm: 42000 },
     { id: 8, make: 'BMW', model: '320d', licensePlate: 'DEF-456', currentKm: 65000 }
   ];
-  const entry = { id: 1, vehicleId: 4, date: '2026-09-23', time: '08:15:00', odometerKm: 42000, liters: 40, totalAmount: 24000, isFullTank: true, createdAt: '2026-09-23T12:00:00Z' };
+  const entry = { id: 1, vehicleId: 4, date: '2026-09-23', time: '08:15:00', odometerKm: 42000, liters: 40, totalAmount: 24000, isFullTank: true, createdAt: '2026-09-23T12:00:00Z', importSource: null };
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({

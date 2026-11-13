@@ -10,7 +10,7 @@ export interface RefuelingRequest {
   totalAmount: number;
   isFullTank: boolean;
 }
-export interface Refueling extends RefuelingRequest { id: number; vehicleId: number; createdAt: string; }
+export interface Refueling extends RefuelingRequest { id: number; vehicleId: number; createdAt: string; importSource: string | null; }
 
 // Az időmező "HH:mm"-et ad, az API "HH:mm:ss"-t vár; a listában csak óra:perc kell.
 export const toApiTime = (time: string) => time.length === 5 ? `${time}:00` : time;

@@ -238,7 +238,7 @@ public class ServiceRecordsController : ControllerBase
     }
 
     private static ServiceRecordDto ToDto(ServiceRecord s) => new(s.Id, s.VehicleId, s.Date, s.OdometerKm,
-        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), ToItemDtos(s));
+        s.Items.Sum(i => i.Amount), s.Provider, s.Description, DateTime.SpecifyKind(s.CreatedAt, DateTimeKind.Utc), ToItemDtos(s), s.ImportSource);
 
     private static ServiceBookEntryDto ToBookEntry(ServiceRecord s)
     {

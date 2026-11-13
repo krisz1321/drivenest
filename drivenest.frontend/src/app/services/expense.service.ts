@@ -16,6 +16,7 @@ export interface Expense extends ExpenseRequest {
   vehicleId: number;
   categoryName: string;
   createdAt: string;
+  importSource: string | null;
 }
 
 // isCustom = a felhasználó saját kategóriája (ezek felvétele egy későbbi feladat)

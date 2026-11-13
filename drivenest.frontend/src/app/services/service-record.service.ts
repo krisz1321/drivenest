@@ -30,6 +30,7 @@ export interface ServiceRecord {
   provider: string | null;
   description: string | null;
   createdAt: string;
+  importSource: string | null;
   items: ServiceRecordItem[];
 }
 

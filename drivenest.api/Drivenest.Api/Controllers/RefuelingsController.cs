@@ -40,7 +40,7 @@ public class RefuelingsController : ControllerBase
         return await _db.Refuelings.AsNoTracking().Where(r => r.VehicleId == vehicleId)
             .OrderByDescending(r => r.Date).ThenByDescending(r => r.Time).ThenByDescending(r => r.OdometerKm).ThenByDescending(r => r.Id)
             .Select(r => new RefuelingDto(r.Id, r.VehicleId, r.Date, r.Time, r.OdometerKm,
-                r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc)))
+                r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc), r.ImportSource))
             .ToListAsync(cancellationToken);
     }
 
@@ -141,5 +141,5 @@ public class RefuelingsController : ControllerBase
     }
 
     private static RefuelingDto ToDto(Refueling r) => new(r.Id, r.VehicleId, r.Date, r.Time,
-        r.OdometerKm, r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc));
+        r.OdometerKm, r.Liters, r.TotalAmount, r.IsFullTank, DateTime.SpecifyKind(r.CreatedAt, DateTimeKind.Utc), r.ImportSource);
 }
