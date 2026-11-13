@@ -31,6 +31,8 @@ describe('GaragePageComponent', () => {
   function respond(vehicles: unknown[]) {
     http.expectOne(req => req.url.endsWith('/ownvehicles')).flush(vehicles);
     http.expectOne(req => req.url.endsWith('/lookups/fuel-types')).flush([{ id: 1, name: 'Benzin' }]);
+    http.expectOne(req => req.url.endsWith('/vehicle-brands')).flush([]);
+    http.expectOne(req => req.url.endsWith('/vehicle-models')).flush([]);
     http.expectOne(req => req.url.endsWith('/me')).flush({ displayName: 'Teszt', distanceUnit: 'km' });
     http.match(req => req.url.endsWith('/stats/consumption'))
       .forEach(req => req.flush({ lastLitersPer100Km: null, averageLitersPer100Km: null, segments: [] }));
