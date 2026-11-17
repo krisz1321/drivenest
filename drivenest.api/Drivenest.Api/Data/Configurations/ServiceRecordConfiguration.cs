@@ -38,6 +38,14 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(s => s.ImportSource)
                 .HasMaxLength(20);
 
+            builder.Property(s => s.ReminderTitle)
+                .HasMaxLength(150);
+
+            builder.HasOne(s => s.Reminder)
+                .WithMany()
+                .HasForeignKey(s => s.ReminderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             builder.HasOne(s => s.Vehicle)
                 .WithMany()
                 .HasForeignKey(s => s.VehicleId)

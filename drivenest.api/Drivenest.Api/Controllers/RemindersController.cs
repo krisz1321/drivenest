@@ -42,7 +42,7 @@ public class RemindersController : ControllerBase
             .Where(r => r.VehicleId == vehicleId)
             .OrderBy(r => r.DueDate == null).ThenBy(r => r.DueDate).ThenBy(r => r.DueOdometerKm).ThenBy(r => r.Id)
             .Select(r => new ReminderDto(r.Id, r.VehicleId, r.Title, r.DueDate, r.DueOdometerKm,
-                r.IntervalMonths, r.IntervalKm))
+                r.IntervalMonths, r.IntervalKm, r.IsCompleted, r.RowVersion))
             .ToListAsync(cancellationToken);
     }
 
@@ -159,5 +159,5 @@ public class RemindersController : ControllerBase
     }
 
     private static ReminderDto ToDto(Reminder r) => new(r.Id, r.VehicleId, r.Title, r.DueDate, r.DueOdometerKm,
-        r.IntervalMonths, r.IntervalKm);
+        r.IntervalMonths, r.IntervalKm, r.IsCompleted, r.RowVersion);
 }

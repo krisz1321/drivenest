@@ -523,6 +523,17 @@ namespace Drivenest.Api.Migrations
                     b.Property<short?>("IntervalMonths")
                         .HasColumnType("smallint");
 
+                    b.Property<bool>("IsCompleted")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<byte[]>("RowVersion")
+                        .IsConcurrencyToken()
+                        .IsRequired()
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("rowversion");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(150)
@@ -1197,6 +1208,13 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(150)
                         .HasColumnType("nvarchar(150)");
 
+                    b.Property<int?>("ReminderId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("ReminderTitle")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(3)");
 
@@ -1204,6 +1222,8 @@ namespace Drivenest.Api.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ReminderId");
 
                     b.HasIndex("VehicleId", "Date", "OdometerKm")
                         .IsDescending(false, true, true);
@@ -1592,11 +1612,18 @@ namespace Drivenest.Api.Migrations
 
             modelBuilder.Entity("Drivenest.Api.Data.Entities.ServiceRecord", b =>
                 {
+                    b.HasOne("Drivenest.Api.Data.Entities.Reminder", "Reminder")
+                        .WithMany()
+                        .HasForeignKey("ReminderId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Drivenest.Api.Data.Entities.Vehicle", "Vehicle")
                         .WithMany()
                         .HasForeignKey("VehicleId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Reminder");
 
                     b.Navigation("Vehicle");
                 });

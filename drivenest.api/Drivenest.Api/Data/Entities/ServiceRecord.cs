@@ -6,6 +6,12 @@ namespace Drivenest.Api.Data.Entities
 
         public int VehicleId { get; set; }
 
+        public int? ReminderId { get; set; }
+
+        public string? ReminderTitle { get; set; }
+
+        public Reminder? Reminder { get; set; }
+
         public DateOnly Date { get; set; }
 
         public int OdometerKm { get; set; }

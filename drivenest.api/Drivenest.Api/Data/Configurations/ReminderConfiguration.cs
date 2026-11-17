@@ -22,6 +22,12 @@ namespace Drivenest.Api.Data.Configurations
             builder.Property(r => r.DueDate)
                 .HasColumnType("date");
 
+            builder.Property(r => r.IsCompleted)
+                .HasDefaultValue(false);
+
+            builder.Property(r => r.RowVersion)
+                .IsRowVersion();
+
             builder.HasOne(r => r.Vehicle)
                 .WithMany()
                 .HasForeignKey(r => r.VehicleId)

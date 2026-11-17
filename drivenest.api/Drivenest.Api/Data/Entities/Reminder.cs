@@ -16,6 +16,10 @@ namespace Drivenest.Api.Data.Entities
 
         public int? IntervalKm { get; set; }
 
+        public bool IsCompleted { get; set; }
+
+        public byte[] RowVersion { get; set; } = [];
+
         public Vehicle Vehicle { get; set; } = null!;
     }
 }
