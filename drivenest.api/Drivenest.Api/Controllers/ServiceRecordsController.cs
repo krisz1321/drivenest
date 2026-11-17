@@ -102,7 +102,7 @@ public class ServiceRecordsController : ControllerBase
     [ProducesResponseType(typeof(ServiceRecordDto), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ValidationProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ServiceRecordDto>> Create(int vehicleId, ServiceRecordRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ServiceRecordDto>> Create(int vehicleId, ServiceRecordCreateRequest request, CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
@@ -111,11 +111,44 @@ public class ServiceRecordsController : ControllerBase
 
         var record = new ServiceRecord { VehicleId = vehicleId, CreatedAt = _clock.GetUtcNow().UtcDateTime };
         Apply(request, record);
+
+        if (request.ReminderId is { } reminderId)
+        {
+            var reminder = await _db.Reminders.SingleOrDefaultAsync(r => r.Id == reminderId && r.VehicleId == vehicleId,
+                cancellationToken);
+            if (reminder is null) return NotFound();
+            if (reminder.IsCompleted || !reminder.RowVersion.SequenceEqual(request.ReminderVersion!))
+                return Problem(statusCode: 409, title: "The reminder changed or was completed. Reload and try again.");
+
+            if (!reminder.TryComplete(record.Date, record.OdometerKm))
+            {
+                ModelState.AddModelError(nameof(request.ReminderId), "The next due date or odometer reading is out of range.");
+                return ValidationProblem(ModelState);
+            }
+
+            record.ReminderId = reminder.Id;
+            record.ReminderTitle = reminder.Title;
+            // Azonos szervizadatokból számolva is új verzió kell a következő teljesítéshez.
+            _db.Entry(reminder).Property(r => r.IsCompleted).IsModified = true;
+        }
+
         _db.ServiceRecords.Add(record);
 
-        var error = await Save(cancellationToken);
-        if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await _db.SaveChangesAsync(cancellationToken);
+            await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch (DbUpdateConcurrencyException)
+        {
+            return Problem(statusCode: 409, title: "The reminder or vehicle changed or was deleted. Reload and try again.");
+        }
+        catch (DbUpdateException ex) when (ex.InnerException is SqlException { Number: 547 })
+        {
+            return Problem(statusCode: 409, title: "The linked vehicle, reminder or service type changed or was deleted. Reload and try again.");
+        }
 
         // Újra betöltjük, hogy a válaszban a típusok neve is benne legyen.
         var saved = await WithItems().AsNoTracking().SingleAsync(s => s.Id == record.Id, cancellationToken);

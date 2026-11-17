@@ -4,6 +4,7 @@ using Drivenest.Api.Dtos.Reminders;
 using Drivenest.Api.Extensions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
@@ -33,13 +34,14 @@ public class RemindersController : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(List<ReminderDto>), StatusCodes.Status200OK)]
-    public async Task<ActionResult<List<ReminderDto>>> GetAll(int vehicleId, CancellationToken cancellationToken)
+    public async Task<ActionResult<List<ReminderDto>>> GetAll(int vehicleId, CancellationToken cancellationToken,
+        bool includeCompleted = false)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
         // Elöl a legkorábban esedékesek (a csak km-es emlékeztetők a végén).
         return await _db.Reminders.AsNoTracking()
-            .Where(r => r.VehicleId == vehicleId)
+            .Where(r => r.VehicleId == vehicleId && (includeCompleted || !r.IsCompleted))
             .OrderBy(r => r.DueDate == null).ThenBy(r => r.DueDate).ThenBy(r => r.DueOdometerKm).ThenBy(r => r.Id)
             .Select(r => new ReminderDto(r.Id, r.VehicleId, r.Title, r.DueDate, r.DueOdometerKm,
                 r.IntervalMonths, r.IntervalKm, r.IsCompleted, r.RowVersion))
@@ -106,12 +108,14 @@ public class RemindersController : ControllerBase
         return error is not null ? error : NoContent();
     }
 
-    // Elvégezve: ismétlődő emlékeztetőnél beállítja a következő esedékességet (mától, illetve a jelenlegi km-től).
+    // Szerviz nélkül a mai napból és a jármű aktuális óraállásából számolunk.
     [HttpPost("{id:int}/complete")]
     [ProducesResponseType(typeof(ReminderDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status409Conflict)]
-    public async Task<ActionResult<ReminderDto>> Complete(int vehicleId, int id, CancellationToken cancellationToken)
+    public async Task<ActionResult<ReminderDto>> Complete(int vehicleId, int id,
+        [FromBody(EmptyBodyBehavior = EmptyBodyBehavior.Allow)] ReminderCompleteRequest? request,
+        CancellationToken cancellationToken)
     {
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
 
@@ -119,14 +123,18 @@ public class RemindersController : ControllerBase
             .SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
 
-        // Az egyszeri emlékeztetőt a felületen törléssel lehet lezárni.
-        if (entry.IntervalMonths is null && entry.IntervalKm is null)
-            return Problem(statusCode: 400, title: "This reminder does not repeat. Delete it instead.");
+        if (entry.IsCompleted || (request?.RowVersion is { } version && !entry.RowVersion.SequenceEqual(version)))
+            return Problem(statusCode: 409, title: "The reminder changed or was completed. Reload and try again.");
 
-        // Amihez nincs ismétlődés, azt kiürítjük, különben a régi határidő miatt lejártnak látszana.
         var today = DateOnly.FromDateTime(_clock.GetLocalNow().DateTime);
-        entry.DueDate = entry.IntervalMonths is null ? null : today.AddMonths(entry.IntervalMonths.Value);
-        entry.DueOdometerKm = entry.IntervalKm is null ? null : entry.Vehicle.CurrentKm + entry.IntervalKm.Value;
+        if (!entry.TryComplete(today, entry.Vehicle.CurrentKm))
+        {
+            ModelState.AddModelError(nameof(ReminderCompleteRequest), "The next due date or odometer reading is out of range.");
+            return ValidationProblem(ModelState);
+        }
+
+        // Azonos esedékességnél is ellenőrizzük és frissítjük a verziót.
+        _db.Entry(entry).Property(r => r.IsCompleted).IsModified = true;
 
         var error = await Save(cancellationToken);
         return error is not null ? error : Ok(ToDto(entry));

@@ -22,7 +22,7 @@ public class ServiceRecordRequest : IValidatableObject
     [MaxLength(50)]
     public List<ServiceRecordItemRequest> Items { get; set; } = new();
 
-    public IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    public virtual IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
     {
         if (Date == default)
             yield return new ValidationResult("A service date is required.", new[] { nameof(Date) });
@@ -30,6 +30,26 @@ public class ServiceRecordRequest : IValidatableObject
             yield return new ValidationResult("At least one service type is required.", new[] { nameof(Items) });
         if (Items.Select(i => i.CategoryId).Distinct().Count() != Items.Count)
             yield return new ValidationResult("A service type can only be added once.", new[] { nameof(Items) });
+    }
+}
+
+public class ServiceRecordCreateRequest : ServiceRecordRequest
+{
+    [Range(1, int.MaxValue)]
+    public int? ReminderId { get; set; }
+
+    [MinLength(8), MaxLength(8)]
+    public byte[]? ReminderVersion { get; set; }
+
+    public override IEnumerable<ValidationResult> Validate(ValidationContext validationContext)
+    {
+        foreach (var error in base.Validate(validationContext))
+            yield return error;
+
+        if (ReminderId.HasValue && ReminderVersion is null)
+            yield return new ValidationResult("The reminder version is required.", new[] { nameof(ReminderVersion) });
+        if (!ReminderId.HasValue && ReminderVersion is not null)
+            yield return new ValidationResult("A reminder is required when providing its version.", new[] { nameof(ReminderId) });
     }
 }
 
