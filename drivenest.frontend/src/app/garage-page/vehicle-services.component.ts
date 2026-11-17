@@ -75,7 +75,9 @@ export class VehicleServicesComponent implements OnInit {
 
   onSaved(result: { entry: ServiceRecord; edited: boolean }) {
     this.entries = this.sorted([...this.entries.filter(e => e.id !== result.entry.id), result.entry]);
-    this.message = result.edited ? 'A szervizt módosítottuk.' : 'A szervizt elmentettük.';
+    this.message = result.edited ? 'A szervizt módosítottuk.' : result.entry.reminderTitle
+      ? `A szervizt elmentettük, és teljesítettük a(z) „${result.entry.reminderTitle}” emlékeztetőt.`
+      : 'A szervizt elmentettük.';
     this.changed.emit();
   }
 

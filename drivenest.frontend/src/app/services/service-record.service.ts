@@ -20,6 +20,11 @@ export interface ServiceRecordRequest {
   items: ServiceRecordItemRequest[];
 }
 
+export interface ServiceRecordCreateRequest extends ServiceRecordRequest {
+  reminderId?: number;
+  reminderVersion?: string;
+}
+
 // total = a tételek összege (a backend számolja)
 export interface ServiceRecord {
   id: number;
@@ -31,6 +36,8 @@ export interface ServiceRecord {
   description: string | null;
   createdAt: string;
   importSource: string | null;
+  reminderId: number | null;
+  reminderTitle: string | null;
   items: ServiceRecordItem[];
 }
 
@@ -91,7 +98,7 @@ export class ServiceRecordService {
     return this.http.get<ServiceBook>(`${this.url(vehicleId)}/book`);
   }
 
-  create(vehicleId: number, body: ServiceRecordRequest) {
+  create(vehicleId: number, body: ServiceRecordCreateRequest) {
     return this.http.post<ServiceRecord>(this.url(vehicleId), body);
   }
 

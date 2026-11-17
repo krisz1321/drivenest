@@ -1,4 +1,4 @@
-<dialog #serviceDialog class="modal dashboard-theme" aria-labelledby="service-title" (cancel)="cancel($event)">
+<dialog #serviceDialog class="modal dashboard-theme" aria-labelledby="service-title" (cancel)="cancel($event)" (close)="onClosed()">
   <div class="panel-heading">
     <h2 id="service-title">{{ title }}</h2>
     <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
@@ -84,6 +84,42 @@
           @if (invalid('odometerKm')) { <p class="field-error">Adj meg egy nemnegatív egész számot.</p> }
         </div>
 
+        @if (mode === 'create') {
+          <div class="form-field form-wide">
+            <label for="service-reminder">Kapcsolódó emlékeztető</label>
+            <select id="service-reminder" class="form-input" [ngModel]="selectedReminder?.id ?? 0"
+              (ngModelChange)="selectReminder($event)" [ngModelOptions]="{ standalone: true }" [disabled]="loadingReminders"
+              aria-describedby="service-reminder-help service-reminder-status">
+              <option [ngValue]="0">Nincs</option>
+              @if (reminderUnavailable && selectedReminder) {
+                <option [ngValue]="selectedReminder.id" disabled>{{ selectedReminder.title }} (már nem elérhető)</option>
+              }
+              @for (reminder of reminders; track reminder.id) {
+                <option [ngValue]="reminder.id">{{ reminder.title }} · {{ reminderDueText(reminder) }}</option>
+              }
+            </select>
+            <p id="service-reminder-help" class="muted reminder-hint">A szerviz mentése egyúttal teljesíti a kiválasztott emlékeztetőt.</p>
+            <div id="service-reminder-status" aria-live="polite">
+              @if (loadingReminders) {
+                <p class="muted reminder-hint">Emlékeztetők betöltése…</p>
+              } @else if (reminderLoadError) {
+                <p class="field-error">{{ reminderLoadError }}</p>
+              } @else if (reminderUnavailable) {
+                <p class="field-error">A kiválasztott emlékeztető már nem aktív. Válassz másikat vagy a „Nincs” lehetőséget.</p>
+              } @else if (reminderNeedsRefresh) {
+                <p class="field-error">A folytatáshoz frissítsd az emlékeztetők listáját.</p>
+              } @else if (!reminders.length) {
+                <p class="muted reminder-hint">Ehhez a járműhöz nincs aktív emlékeztető.</p>
+              }
+              @if (selectedReminder) {
+                <p class="reminder-preview">{{ reminderPreview }}</p>
+              }
+            </div>
+            <button type="button" class="button button-secondary button-compact reminder-refresh" (click)="loadReminders()"
+              [disabled]="loadingReminders">{{ reminderLoadError ? 'Újrapróbálás' : 'Lista frissítése' }}</button>
+          </div>
+        }
+
         <div class="form-field form-wide">
           <label for="service-provider">Szerviz / helyszín</label>
           <input id="service-provider" class="form-input" type="text" maxlength="150" formControlName="provider" placeholder="pl. Autó-Szerviz Kft.">
@@ -112,7 +148,7 @@
     @if (mode === 'delete') {
       <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
     } @else {
-      <button type="submit" form="service-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
+      <button type="submit" form="service-form" class="button button-primary button-compact" [disabled]="saving || (mode === 'create' && reminderBlocked)">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
     }
   </div>
 </dialog>

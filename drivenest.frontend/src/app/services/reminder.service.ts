@@ -14,6 +14,8 @@ export interface ReminderRequest {
 export interface Reminder extends ReminderRequest {
   id: number;
   vehicleId: number;
+  isCompleted: boolean;
+  rowVersion: string;
 }
 
 // Ennyi napon / km-en belül számít "hamarosan" esedékesnek egy emlékeztető.

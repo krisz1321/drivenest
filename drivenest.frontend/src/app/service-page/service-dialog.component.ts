@@ -3,9 +3,10 @@ import { CommonModule } from '@angular/common';
 import { AbstractControl, FormArray, FormBuilder, FormControl, FormGroup, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { finalize } from 'rxjs';
+import { finalize, Subscription } from 'rxjs';
 import { Vehicle } from '../services/vehicle.service';
 import { ServiceCategory, ServiceRecord, ServiceRecordItemRequest, ServiceRecordRequest, ServiceRecordService } from '../services/service-record.service';
+import { Reminder, ReminderService } from '../services/reminder.service';
 
 // Egész szám (a km-hez)
 const integer = (control: AbstractControl) =>
@@ -39,7 +40,9 @@ type ItemForm = FormGroup<{ categoryId: FormControl<number>; amount: FormControl
 })
 export class ServiceDialogComponent {
   private readonly api = inject(ServiceRecordService);
+  private readonly reminderApi = inject(ReminderService);
   private readonly destroyRef = inject(DestroyRef);
+  private reminderLoad?: Subscription;
 
   @Input({ required: true }) vehicles: Vehicle[] = [];
   @Input({ required: true }) categories: ServiceCategory[] = [];
@@ -54,6 +57,93 @@ export class ServiceDialogComponent {
   target: ServiceRecord | null = null; // szerkesztésnél / törlésnél a kiválasztott szerviz
   saving = false;
   errors: string[] = [];
+  reminders: Reminder[] = [];
+  selectedReminder: Reminder | null = null;
+  loadingReminders = false;
+  reminderLoadError = '';
+  reminderNeedsRefresh = false;
+
+  get reminderUnavailable() {
+    return this.selectedReminder !== null && !this.reminders.some(r => r.id === this.selectedReminder?.id);
+  }
+
+  get reminderBlocked() {
+    return this.selectedReminder !== null && (this.loadingReminders || !!this.reminderLoadError || this.reminderNeedsRefresh);
+  }
+
+  reminderDueText(reminder: Reminder) {
+    const parts: string[] = [];
+    if (reminder.dueDate) parts.push(reminder.dueDate.replaceAll('-', '. ') + '.');
+    if (reminder.dueOdometerKm !== null) parts.push(`${this.number(reminder.dueOdometerKm, 0)} km`);
+    return parts.join(' · ');
+  }
+
+  get reminderPreview() {
+    const reminder = this.selectedReminder;
+    if (!reminder) return '';
+    if (reminder.intervalMonths === null && reminder.intervalKm === null)
+      return 'Mentéskor az emlékeztető elvégzett állapotba kerül.';
+    if (this.form.controls.date.invalid || this.form.controls.odometerKm.invalid)
+      return 'Az előnézethez adj meg érvényes dátumot és km-állást.';
+
+    const parts: string[] = [];
+    if (reminder.intervalMonths !== null) {
+      const date = new Date(`${this.form.controls.date.value}T00:00:00Z`);
+      if (Number.isNaN(date.getTime())) return 'Az előnézethez adj meg érvényes dátumot.';
+      const day = date.getUTCDate();
+      date.setUTCMonth(date.getUTCMonth() + reminder.intervalMonths, 1);
+      const lastDay = new Date(date);
+      lastDay.setUTCMonth(lastDay.getUTCMonth() + 1, 0);
+      date.setUTCDate(Math.min(day, lastDay.getUTCDate()));
+      if (date.getUTCFullYear() > 9999) return 'A következő esedékesség dátuma túl nagy.';
+      parts.push(date.toISOString().slice(0, 10).replaceAll('-', '. ') + '.');
+    }
+    if (reminder.intervalKm !== null) {
+      const km = this.form.controls.odometerKm.value + reminder.intervalKm;
+      if (km > 2147483647) return 'A következő esedékesség km-állása túl nagy.';
+      parts.push(`${this.number(km, 0)} km`);
+    }
+    return `Következő esedékesség: ${parts.join(' · ')} (a szerviz adataiból).`;
+  }
+
+  selectReminder(id: number) {
+    this.selectedReminder = this.reminders.find(r => r.id === id) ?? null;
+    this.reminderNeedsRefresh = false;
+  }
+
+  loadReminders() {
+    if (this.saving || this.mode !== 'create') return;
+    this.reminderLoad?.unsubscribe();
+    this.loadingReminders = true;
+    this.reminderLoadError = '';
+    const vehicleId = this.form.controls.vehicleId.value;
+    this.reminderLoad = this.reminderApi.list(vehicleId).pipe(
+      takeUntilDestroyed(this.destroyRef),
+      finalize(() => this.loadingReminders = false)
+    ).subscribe({
+      next: reminders => {
+        this.reminders = reminders.filter(r => !r.isCompleted);
+        if (this.selectedReminder) {
+          const refreshed = this.reminders.find(r => r.id === this.selectedReminder?.id);
+          this.selectedReminder = refreshed ?? this.selectedReminder;
+          this.reminderNeedsRefresh = !refreshed;
+        }
+      },
+      error: () => this.reminderLoadError = 'Az emlékeztetőket nem sikerült betölteni. Próbáld újra, vagy ments emlékeztető nélkül.'
+    });
+  }
+
+  private resetReminders() {
+    this.reminderLoad?.unsubscribe();
+    this.reminders = [];
+    this.selectedReminder = null;
+    this.reminderLoadError = '';
+    this.reminderNeedsRefresh = false;
+  }
+
+  onClosed() {
+    if (!this.dialog.nativeElement.open) this.resetReminders();
+  }
 
   // A típuslista keresőmezője (nem része a formnak, csak szűri a listát)
   categorySearch = '';
@@ -157,6 +247,7 @@ export class ServiceDialogComponent {
     const car = this.vehicles.find(v => v.id === vehicleId);
     if (!car || this.saving) return;
 
+    this.resetReminders();
     this.mode = 'create';
     this.target = null;
     this.errors = [];
@@ -177,11 +268,13 @@ export class ServiceDialogComponent {
     });
     this.setItems(categoryId ? [{ categoryId, amount: 0 }] : []);
     this.dialog.nativeElement.showModal();
+    this.loadReminders();
   }
 
   openEdit(entry: ServiceRecord) {
     if (this.saving) return;
 
+    this.resetReminders();
     this.mode = 'edit';
     this.target = entry;
     this.errors = [];
@@ -203,6 +296,7 @@ export class ServiceDialogComponent {
   openDelete(entry: ServiceRecord) {
     if (this.saving) return;
 
+    this.resetReminders();
     this.mode = 'delete';
     this.target = entry;
     this.errors = [];
@@ -212,10 +306,15 @@ export class ServiceDialogComponent {
   // Járműváltáskor a km-et a kiválasztott autó aktuális km-ére állítjuk.
   onVehicleChange() {
     this.form.controls.odometerKm.setValue(this.selectedVehicle?.currentKm ?? 0);
+    this.resetReminders();
+    this.loadReminders();
   }
 
   close() {
-    if (!this.saving) this.dialog.nativeElement.close();
+    if (!this.saving) {
+      this.dialog.nativeElement.close();
+      this.resetReminders();
+    }
   }
 
   cancel(event: Event) {
@@ -226,6 +325,10 @@ export class ServiceDialogComponent {
   save() {
     if (this.saving) return;
     this.errors = [];
+    if (this.mode === 'create' && this.reminderBlocked) {
+      this.errors = ['Frissítsd a kapcsolódó emlékeztetőt, vagy válaszd a „Nincs” lehetőséget.'];
+      return;
+    }
     if (this.form.invalid) {
       this.form.markAllAsTouched();
       return;
@@ -245,7 +348,10 @@ export class ServiceDialogComponent {
     const edited = target !== null;
     const request = target
       ? this.api.update(target.vehicleId, target.id, body)
-      : this.api.create(value.vehicleId, body);
+      : this.api.create(value.vehicleId, {
+        ...body,
+        ...(this.selectedReminder ? { reminderId: this.selectedReminder.id, reminderVersion: this.selectedReminder.rowVersion } : {})
+      });
 
     this.saving = true;
     request.pipe(
@@ -255,6 +361,7 @@ export class ServiceDialogComponent {
       next: entry => {
         this.saved.emit({ entry, edited });
         this.dialog.nativeElement.close();
+        this.resetReminders();
       },
       error: (error: HttpErrorResponse) => this.showError(error)
     });
@@ -279,6 +386,11 @@ export class ServiceDialogComponent {
   }
 
   private showError(error: HttpErrorResponse) {
+    if (this.mode === 'create' && this.selectedReminder && (error.status === 404 || error.status === 409)) {
+      this.reminderNeedsRefresh = true;
+      this.errors = ['A jármű vagy az emlékeztető időközben megváltozott vagy már nem érhető el. Frissítsd az emlékeztetők listáját. A kitöltött szervizadatok megmaradtak.'];
+      return;
+    }
     // 400-nál a backend mezőnkénti hibákat küld, ezeket kiírjuk.
     const details = error.error?.errors;
     const messages = details && typeof details === 'object'

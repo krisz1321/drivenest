@@ -4,6 +4,9 @@
 fieldset { border: 0; padding: 0; margin: 0; min-width: 0; }
 .modal { width: min(600px, calc(100% - 32px)); border-radius: 18px; }
 textarea.form-input { resize: vertical; font: inherit; }
+.reminder-hint { margin: 6px 0; }
+.reminder-preview { margin: 8px 0; overflow-wrap: anywhere; }
+.reminder-refresh { align-self: flex-start; }
 
 // Kereshető típuslista (119 elem, ezért görgethető)
 .category-list {
