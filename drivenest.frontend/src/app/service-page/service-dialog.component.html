@@ -4,6 +4,15 @@
     <button type="button" class="modal-close" (click)="close()" [disabled]="saving" aria-label="Bezárás">×</button>
   </div>
 
+  @if (target?.reminderTitle && mode !== 'create') {
+    <p>Teljesített emlékeztető: <strong>{{ target?.reminderTitle }}</strong></p>
+    @if (target?.reminderId !== null) {
+      <p class="muted">A szerviz {{ mode === 'delete' ? 'törlése' : 'módosítása' }} nem változtatja meg az emlékeztető állapotát vagy esedékességét. Az aktív emlékeztetők esedékessége külön szerkeszthető.</p>
+    } @else {
+      <p class="muted">Az eredeti emlékeztető már nem érhető el. Itt a teljesítéskor mentett címe látható.</p>
+    }
+  }
+
   @if (mode === 'delete') {
     <p>
       Biztosan törlöd a(z) {{ target?.date | date:'yyyy. MM. dd.' }} dátumú

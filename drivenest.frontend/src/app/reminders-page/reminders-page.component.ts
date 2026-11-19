@@ -12,7 +12,7 @@ import { distanceLabel, toDistance } from '../shared/units';
 import { ReminderDialogComponent } from './reminder-dialog.component';
 
 // A sürgősebb állapot kerül előre a listában.
-const STATUS_ORDER: Record<ReminderStatus, number> = { overdue: 0, soon: 1, ok: 2 };
+const STATUS_ORDER: Record<ReminderStatus, number> = { overdue: 0, soon: 1, ok: 2, completed: 3 };
 
 @Component({
   selector: 'app-reminders-page',
@@ -38,9 +38,9 @@ export class RemindersPageComponent implements OnInit {
   error = '';
   completingId: number | null = null; // amelyik emlékeztetőnél épp fut az "Elvégezve"
 
-  // Szűrők: 0 / '' = mindegyik
+  // Alapból csak az aktív emlékeztetők látszanak.
   vehicleFilter = 0;
-  statusFilter: ReminderStatus | '' = '';
+  statusFilter: ReminderStatus | '' | 'all' = '';
 
   // Az új emlékeztető / szerkesztés / törlés ablaka külön komponensben van.
   @ViewChild(ReminderDialogComponent) dialog!: ReminderDialogComponent;
@@ -64,24 +64,20 @@ export class RemindersPageComponent implements OnInit {
     this.error = '';
   }
 
-  // Ismétlődőnél a szerver kiszámolja a következő esedékességet, az egyszerit törlésre ajánljuk fel.
   complete(entry: Reminder) {
-    if (this.completingId !== null) return;
-    if (!entry.intervalMonths && !entry.intervalKm) {
-      this.dialog.openDelete(entry);
-      return;
-    }
+    if (this.completingId !== null || entry.isCompleted) return;
 
     this.completingId = entry.id;
     this.message = '';
     this.error = '';
-    this.api.complete(entry.vehicleId, entry.id).pipe(
+    this.api.complete(entry.vehicleId, entry.id, entry.rowVersion).pipe(
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.completingId = null)
     ).subscribe({
       next: updated => {
         this.entries = this.entries.map(e => e.id === updated.id ? updated : e);
-        this.message = `${updated.title}: elvégezve. Következő esedékesség: ${this.nextDue(updated)}.`;
+        this.message = updated.isCompleted ? `${updated.title}: elvégezve.`
+          : `${updated.title}: elvégezve. Következő esedékesség: ${this.nextDue(updated)}.`;
       },
       error: () => this.error = 'Nem sikerült elvégzettnek jelölni. Frissítsd az adatokat, majd próbáld újra.'
     });
@@ -114,7 +110,7 @@ export class RemindersPageComponent implements OnInit {
       switchMap(result => {
         this.vehicles = result.vehicles;
         if (!this.vehicles.length) return of([] as Reminder[]);
-        return forkJoin(this.vehicles.map(car => this.api.list(car.id))).pipe(map(groups => groups.flat()));
+        return forkJoin(this.vehicles.map(car => this.api.list(car.id, true))).pipe(map(groups => groups.flat()));
       }),
       takeUntilDestroyed(this.destroyRef),
       finalize(() => this.loading = false)
@@ -137,7 +133,7 @@ export class RemindersPageComponent implements OnInit {
   // Elöl a lejártak, utána a hamarosan esedékesek, azon belül dátum szerint.
   get filtered() {
     return this.vehicleEntries
-      .filter(e => this.statusFilter === '' || this.status(e) === this.statusFilter)
+      .filter(e => this.statusFilter === 'all' || (this.statusFilter === '' ? !e.isCompleted : this.status(e) === this.statusFilter))
       .sort((a, b) => STATUS_ORDER[this.status(a)] - STATUS_ORDER[this.status(b)]
         || (a.dueDate ?? '9999').localeCompare(b.dueDate ?? '9999')
         || (a.dueOdometerKm ?? 0) - (b.dueOdometerKm ?? 0));

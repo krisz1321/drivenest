@@ -98,6 +98,7 @@
                         <span class="badge" [title]="number(item.amount) + ' ' + unit">{{ item.categoryName }}</span>
                       }
                     </div>
+                    @if (entry.reminderTitle) { <small>Teljesített emlékeztető: {{ entry.reminderTitle }}</small> }
                   </td>
                   <td class="nowrap">{{ number(entry.odometerKm, 0) }}</td>
                   <td>{{ entry.provider || '—' }}</td>

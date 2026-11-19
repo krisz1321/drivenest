@@ -46,7 +46,8 @@ namespace Drivenest.Api.Extensions
                 ["date"] = Text(s.Date),
                 ["odometerKm"] = Text(s.OdometerKm),
                 ["provider"] = s.Provider,
-                ["description"] = s.Description
+                ["description"] = s.Description,
+                ["reminderTitle"] = s.ReminderTitle
             };
             foreach (var item in s.Items)
                 fields[$"item:{categories.GetValueOrDefault(item.CategoryId)}"] = Text(item.Amount);

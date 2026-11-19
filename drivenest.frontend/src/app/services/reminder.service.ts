@@ -22,7 +22,7 @@ export interface Reminder extends ReminderRequest {
 export const WARNING_DAYS = 30;
 export const WARNING_KM = 1000;
 
-export type ReminderStatus = 'overdue' | 'soon' | 'ok';
+export type ReminderStatus = 'overdue' | 'soon' | 'ok' | 'completed';
 
 // Hány nap van hátra a megadott napig (negatív, ha már elmúlt).
 export function daysUntil(date: string) {
@@ -32,6 +32,7 @@ export function daysUntil(date: string) {
 
 // Piros: lejárt, sárga: hamarosan, zöld: rendben. A dátum és a km közül a sürgősebb számít.
 export function reminderStatus(reminder: Reminder, currentKm: number): ReminderStatus {
+  if (reminder.isCompleted) return 'completed';
   const days = reminder.dueDate ? daysUntil(reminder.dueDate) : null;
   const km = reminder.dueOdometerKm !== null ? reminder.dueOdometerKm - currentKm : null;
 
@@ -42,6 +43,7 @@ export function reminderStatus(reminder: Reminder, currentKm: number): ReminderS
 
 // Pl. "12 nap múlva · 800 km múlva" vagy "Lejárt 3 napja" (a km a választott mértékegységben)
 export function remainingText(reminder: Reminder, currentKm: number, unit: DistanceUnit) {
+  if (reminder.isCompleted) return 'Elvégzett emlékeztető';
   const distance = (km: number) => `${toDistance(km, unit).toLocaleString('hu-HU')} ${distanceLabel(unit)}`;
   const parts: string[] = [];
   if (reminder.dueDate) {
@@ -64,8 +66,8 @@ export class ReminderService {
     return `${this.base}/vehicles/${vehicleId}/reminders`;
   }
 
-  list(vehicleId: number) {
-    return this.http.get<Reminder[]>(this.url(vehicleId));
+  list(vehicleId: number, includeCompleted = false) {
+    return this.http.get<Reminder[]>(this.url(vehicleId), { params: includeCompleted ? { includeCompleted: true } : {} });
   }
 
   create(vehicleId: number, body: ReminderRequest) {
@@ -80,8 +82,7 @@ export class ReminderService {
     return this.http.delete<void>(`${this.url(vehicleId)}/${id}`);
   }
 
-  // Elvégezve: ismétlődő emlékeztetőnél a szerver kiszámolja a következő esedékességet.
-  complete(vehicleId: number, id: number) {
-    return this.http.post<Reminder>(`${this.url(vehicleId)}/${id}/complete`, null);
+  complete(vehicleId: number, id: number, rowVersion: string) {
+    return this.http.post<Reminder>(`${this.url(vehicleId)}/${id}/complete`, { rowVersion });
   }
 }

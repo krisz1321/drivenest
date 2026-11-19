@@ -76,10 +76,10 @@
   }
 
   <div class="form-actions">
-    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>
+    <button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">{{ mode === 'view' ? 'Bezárás' : 'Mégse' }}</button>
     @if (mode === 'delete') {
       <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Törlés' }}</button>
-    } @else {
+    } @else if (mode !== 'view') {
       <button type="submit" form="reminder-form" class="button button-primary button-compact" [disabled]="saving">{{ saving ? 'Mentés…' : 'Mentés' }}</button>
     }
   </div>

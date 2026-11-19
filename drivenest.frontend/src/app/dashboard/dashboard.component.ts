@@ -176,6 +176,7 @@ export class DashboardComponent implements OnInit {
   // A lejárt és a hamarosan esedékes emlékeztetők, elöl a lejártak, azon belül dátum szerint (max. 5)
   get upcomingReminders() {
     return this.reminders
+      .filter(entry => !entry.isCompleted)
       .map(entry => ({ entry, status: reminderStatus(entry, this.currentKm(entry.vehicleId)) }))
       .filter(r => r.status !== 'ok')
       .sort((a, b) => (a.status === 'overdue' ? 0 : 1) - (b.status === 'overdue' ? 0 : 1)

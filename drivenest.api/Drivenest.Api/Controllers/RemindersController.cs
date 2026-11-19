@@ -88,6 +88,9 @@ public class RemindersController : ControllerBase
         var entry = await _db.Reminders.SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
 
+        if (entry.IsCompleted)
+            return Problem(statusCode: 409, title: "Completed reminders cannot be edited.");
+
         Apply(request, entry);
         var error = await Save(cancellationToken);
         return error is not null ? error : Ok(ToDto(entry));

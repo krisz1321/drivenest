@@ -21,6 +21,7 @@ const FIELD_LABELS: Record<string, string> = {
   provider: 'Szerviz / helyszín',
   location: 'Helyszín',
   description: 'Megjegyzés',
+  reminderTitle: 'Teljesített emlékeztető',
   category: 'Kategória',
   licensePlate: 'Rendszám',
   vin: 'Alvázszám',

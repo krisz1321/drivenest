@@ -61,10 +61,12 @@
         <div class="form-field">
           <label for="filter-status">Állapot</label>
           <select id="filter-status" class="form-input" [(ngModel)]="statusFilter">
-            <option value="">Összes állapot</option>
+            <option value="">Aktív emlékeztetők</option>
+            <option value="all">Összes emlékeztető</option>
             <option value="overdue">Lejárt</option>
             <option value="soon">Hamarosan</option>
             <option value="ok">Rendben</option>
+            <option value="completed">Elvégzett</option>
           </select>
         </div>
         @if (hasFilter) {
@@ -93,11 +95,12 @@
                   </td>
                   <td>
                     @switch (status(entry)) {
+                      @case ('completed') { <span class="badge">Elvégzett</span> }
                       @case ('overdue') { <span class="badge badge-danger">Lejárt</span> }
                       @case ('soon') { <span class="badge badge-warning">Hamarosan</span> }
                       @default { <span class="badge badge-success">Rendben</span> }
                     }
-                    <small>{{ remaining(entry) }}</small>
+                    @if (!entry.isCompleted) { <small>{{ remaining(entry) }}</small> }
                   </td>
                   <td class="nowrap">
                     @if (entry.dueDate) {
@@ -110,11 +113,13 @@
                   <td class="muted">{{ repeat(entry) }}</td>
                   <td>
                     <div class="action-row">
-                      <button type="button" class="text-button" (click)="complete(entry)" [disabled]="completingId !== null"
-                        [attr.aria-label]="entry.title + ' elvégezve'">{{ completingId === entry.id ? 'Mentés…' : 'Elvégezve' }}</button>
-                      <button type="button" class="text-button" (click)="dialog.openEdit(entry)"
-                        [attr.aria-label]="entry.title + ' szerkesztése'">Szerkesztés</button>
-                      <button type="button" class="text-button danger-text" (click)="dialog.openDelete(entry)"
+                      @if (!entry.isCompleted) {
+                        <button type="button" class="text-button" (click)="complete(entry)" [disabled]="completingId !== null"
+                          [attr.aria-label]="entry.title + ' elvégezve'">{{ completingId === entry.id ? 'Mentés…' : 'Elvégezve' }}</button>
+                      }
+                      <button type="button" class="text-button" (click)="dialog.openEdit(entry)" [disabled]="completingId !== null"
+                        [attr.aria-label]="entry.title + (entry.isCompleted ? ' megtekintése' : ' szerkesztése')">{{ entry.isCompleted ? 'Megtekintés' : 'Szerkesztés' }}</button>
+                      <button type="button" class="text-button danger-text" (click)="dialog.openDelete(entry)" [disabled]="completingId !== null"
                         [attr.aria-label]="entry.title + ' törlése'">Törlés</button>
                     </div>
                   </td>

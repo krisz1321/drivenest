@@ -35,7 +35,7 @@ export class ReminderDialogComponent {
   @Output() deleted = new EventEmitter<number>();
 
   @ViewChild('reminderDialog') dialog!: ElementRef<HTMLDialogElement>;
-  mode: 'create' | 'edit' | 'delete' = 'create';
+  mode: 'create' | 'edit' | 'delete' | 'view' = 'create';
   target: Reminder | null = null;
   saving = false;
   errors: string[] = [];
@@ -75,6 +75,7 @@ export class ReminderDialogComponent {
   get title() {
     if (this.mode === 'edit') return 'Emlékeztető szerkesztése';
     if (this.mode === 'delete') return 'Emlékeztető törlése';
+    if (this.mode === 'view') return 'Elvégzett emlékeztető';
     return 'Új emlékeztető';
   }
 
@@ -84,7 +85,7 @@ export class ReminderDialogComponent {
     this.mode = 'create';
     this.target = null;
     this.errors = [];
-    this.form.controls.vehicleId.enable();
+    this.form.enable();
     this.form.reset({
       vehicleId,
       title: '',
@@ -99,10 +100,11 @@ export class ReminderDialogComponent {
   openEdit(entry: Reminder) {
     if (this.saving) return;
 
-    this.mode = 'edit';
+    this.mode = entry.isCompleted ? 'view' : 'edit';
     this.target = entry;
     this.errors = [];
     // Szerkesztésnél a jármű nem változtatható.
+    this.form.enable();
     this.form.controls.vehicleId.disable();
     this.form.reset({
       vehicleId: entry.vehicleId,
@@ -112,6 +114,7 @@ export class ReminderDialogComponent {
       intervalMonths: entry.intervalMonths,
       intervalDistance: entry.intervalKm === null ? null : toDistance(entry.intervalKm, this.distanceUnit)
     });
+    if (entry.isCompleted) this.form.disable();
     this.dialog.nativeElement.showModal();
   }
 
@@ -134,7 +137,7 @@ export class ReminderDialogComponent {
   }
 
   save() {
-    if (this.saving) return;
+    if (this.saving || this.mode === 'view' || this.mode === 'delete') return;
     this.errors = [];
     if (this.form.invalid) {
       this.form.markAllAsTouched();
