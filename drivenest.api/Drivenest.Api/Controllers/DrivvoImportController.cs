@@ -93,6 +93,7 @@ public class DrivvoImportController : ControllerBase
         var expenseCategories = await _db.ExpenseCategories.Where(c => c.UserId == null || c.UserId == userId)
             .OrderBy(c => c.UserId).ToListAsync(cancellationToken);
         var oldExpenses = await _db.Expenses.AsNoTracking().Where(e => e.VehicleId == vehicleId).ToListAsync(cancellationToken);
+        var expenseKeys = new HashSet<(DateOnly Date, int OdometerKm, ExpenseCategory Category, decimal Amount)>();
         foreach (var row in data.Expenses)
         {
             if (row.Type == "")
@@ -110,7 +111,8 @@ public class DrivvoImportController : ControllerBase
                 expenseCategories.Add(category);
             }
 
-            if (oldExpenses.Any(e => e.Date == date && e.OdometerKm == row.OdometerKm && e.CategoryId == category.Id && e.Amount == row.Amount))
+            if ((category.Id > 0 && oldExpenses.Any(e => e.Date == date && e.OdometerKm == row.OdometerKm && e.CategoryId == category.Id && e.Amount == row.Amount))
+                || !expenseKeys.Add((date, row.OdometerKm, category, row.Amount)))
             {
                 skipped++;
                 continue;
