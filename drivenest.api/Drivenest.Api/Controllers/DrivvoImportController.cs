@@ -59,11 +59,16 @@ public class DrivvoImportController : ControllerBase
 
         // Tankolások
         var oldRefuelings = await _db.Refuelings.AsNoTracking().Where(r => r.VehicleId == vehicleId).ToListAsync(cancellationToken);
+        var refuelingKeys = oldRefuelings.Select(r => (
+            r.Date,
+            Time: r.Time is { } t ? new TimeOnly(t.Hour, t.Minute) : (TimeOnly?)null,
+            r.OdometerKm, r.Liters, r.TotalAmount, r.IsFullTank)).ToHashSet();
         foreach (var row in data.Refuelings)
         {
             var date = DateOnly.FromDateTime(row.Date);
+            var time = new TimeOnly(row.Date.Hour, row.Date.Minute);
             // Liter nélküli sor (pl. elektromos töltés) és a már meglévő tankolás kimarad.
-            if (row.Liters <= 0 || oldRefuelings.Any(r => r.Date == date && r.OdometerKm == row.OdometerKm && r.Liters == row.Liters))
+            if (row.Liters <= 0 || !refuelingKeys.Add((date, (TimeOnly?)time, row.OdometerKm, row.Liters, row.TotalAmount, row.IsFullTank)))
             {
                 skipped++;
                 continue;
@@ -73,7 +78,7 @@ public class DrivvoImportController : ControllerBase
             {
                 VehicleId = vehicleId,
                 Date = date,
-                Time = new TimeOnly(row.Date.Hour, row.Date.Minute),
+                Time = time,
                 OdometerKm = row.OdometerKm,
                 Liters = row.Liters,
                 TotalAmount = row.TotalAmount,
