@@ -179,16 +179,17 @@ public class DrivvoImportController : ControllerBase
             services++;
         }
 
-        // Egy mentés, így hibánál semmi nem kerül be.
+        await using var transaction = await _db.Database.BeginTransactionAsync(cancellationToken);
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
+            await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException)
         {
             return Problem(statusCode: 400, title: "The file contains invalid data.");
         }
-        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
 
         return new DrivvoImportResultDto(refuelings, expenses, services, skipped);
     }
