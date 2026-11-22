@@ -10,9 +10,8 @@ namespace Drivenest.Api.Controllers;
 
 [ApiController]
 [Authorize]
-[Route("api/vehicles/{vehicleId:int}/import/drivvo")]
+[Route("api/vehicles")]
 [ProducesResponseType(StatusCodes.Status401Unauthorized)]
-[ProducesResponseType(StatusCodes.Status404NotFound)]
 public class DrivvoImportController : ControllerBase
 {
     private readonly AppDbContext _db;
@@ -24,7 +23,8 @@ public class DrivvoImportController : ControllerBase
         _importService = importService;
     }
 
-    [HttpPost]
+    [HttpPost("{vehicleId:int}/import/drivvo")]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(DrivvoImportResultDto), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
     public async Task<ActionResult<DrivvoImportResultDto>> Import(int vehicleId, IFormFile file, CancellationToken cancellationToken)
@@ -57,5 +57,20 @@ public class DrivvoImportController : ControllerBase
         }
 
         return result;
+    }
+
+    [HttpPost("import/drivvo/preview")]
+    [ProducesResponseType(typeof(DrivvoImportPreviewDto), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ProblemDetails), StatusCodes.Status400BadRequest)]
+    public async Task<ActionResult<DrivvoImportPreviewDto>> Preview(IFormFile file, CancellationToken cancellationToken)
+    {
+        try
+        {
+            return await _importService.PreviewAsync(file, cancellationToken);
+        }
+        catch (FormatException ex)
+        {
+            return Problem(statusCode: 400, title: ex.Message);
+        }
     }
 }

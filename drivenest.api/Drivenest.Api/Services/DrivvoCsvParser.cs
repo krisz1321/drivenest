@@ -2,16 +2,30 @@ using System.Globalization;
 
 namespace Drivenest.Api.Services;
 
-public record DrivvoRefueling(DateTime Date, int OdometerKm, decimal Liters, decimal TotalAmount, bool IsFullTank);
+public record DrivvoRefueling(DateTime Date, int OdometerKm, decimal Liters, decimal TotalAmount, bool IsFullTank,
+    string? Fuel, string? SecondFuel, string? ThirdFuel)
+{
+    public bool IsImportable => Liters > 0;
+}
 
 // Kiadás vagy szerviz sor, a kettő ugyanúgy néz ki. Szerviznél minden tétel külön sor.
-public record DrivvoCost(DateTime Date, int OdometerKm, decimal Amount, string Type, string? Location, string? Notes);
+public record DrivvoCost(DateTime Date, int OdometerKm, decimal Amount, string Type, string? Location, string? Notes)
+{
+    public bool IsImportable => Type != "";
+}
 
 public class DrivvoData
 {
     public List<DrivvoRefueling> Refuelings { get; } = new();
     public List<DrivvoCost> Expenses { get; } = new();
     public List<DrivvoCost> Services { get; } = new();
+
+    public int? GetMaxOdometerKm()
+    {
+        var refuelingKm = Refuelings.Where(row => row.IsImportable).Select(row => (int?)row.OdometerKm);
+        var costKm = Expenses.Concat(Services).Where(row => row.IsImportable).Select(row => (int?)row.OdometerKm);
+        return refuelingKm.Concat(costKm).Max();
+    }
 }
 
 // A Drivvo CSV exportját olvassa be. A fájlban ## kezdetű sorok választják el a részeket,
@@ -53,7 +67,9 @@ public static class DrivvoCsvParser
             try
             {
                 if (section == "##Refuelling")
-                    data.Refuelings.Add(new DrivvoRefueling(Date(c[1]), Km(c[0]), Math.Round(Number(c[5]), 3), Math.Round(Number(c[4]), 2), c[6] == "Yes"));
+                    data.Refuelings.Add(new DrivvoRefueling(
+                        Date(c[1]), Km(c[0]), Math.Round(Number(c[5]), 3), Math.Round(Number(c[4]), 2), c[6] == "Yes",
+                        Text(c[2]), c.Length > 7 ? Text(c[7]) : null, c.Length > 12 ? Text(c[12]) : null));
                 else if (section == "##Expense")
                     data.Expenses.Add(new DrivvoCost(Date(c[1]), Km(c[0]), Math.Round(Number(c[2]), 2), c[3].Trim(), Text(c[4]), Text(c[8])));
                 else if (section == "##Service")

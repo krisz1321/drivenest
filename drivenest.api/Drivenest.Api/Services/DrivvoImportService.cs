@@ -18,6 +18,36 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
         return DrivvoCsvParser.Parse(await reader.ReadToEndAsync(cancellationToken));
     }
 
+    public async Task<DrivvoImportPreviewDto> PreviewAsync(IFormFile file, CancellationToken cancellationToken)
+    {
+        var data = await ReadAsync(file, cancellationToken);
+        var fuelNames = data.Refuelings.SelectMany(row => new[] { row.Fuel, row.SecondFuel, row.ThirdFuel })
+            .OfType<string>()
+            .Select(NormalizeFuelName)
+            .Distinct(StringComparer.OrdinalIgnoreCase)
+            .Take(2)
+            .ToArray();
+
+        int? fuelTypeId = null;
+        if (fuelNames.Length == 1)
+        {
+            var fuelTypes = await db.FuelTypes.Select(fuel => new { fuel.Id, fuel.Name }).ToListAsync(cancellationToken);
+            var matches = fuelTypes.Where(fuel => string.Equals(fuel.Name, fuelNames[0], StringComparison.OrdinalIgnoreCase))
+                .Take(2).ToArray();
+            if (matches.Length == 1) fuelTypeId = matches[0].Id;
+        }
+
+        return new DrivvoImportPreviewDto(fuelTypeId, data.GetMaxOdometerKm());
+    }
+
+    private static string NormalizeFuelName(string name) => name.ToUpperInvariant() switch
+    {
+        "PETROL" or "GASOLINE" => "Benzin",
+        "DIESEL" or "DIZEL" => "Dízel",
+        "HYBRID" => "Hibrid",
+        _ => name
+    };
+
     public async Task<DrivvoImportResultDto> PrepareAsync(
         int vehicleId, int userId, DrivvoData data, CancellationToken cancellationToken)
     {
@@ -37,7 +67,7 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
             var date = DateOnly.FromDateTime(row.Date);
             var time = new TimeOnly(row.Date.Hour, row.Date.Minute);
             // Liter nélküli sor (pl. elektromos töltés) és a már meglévő tankolás kimarad.
-            if (row.Liters <= 0 || !refuelingKeys.Add((date, (TimeOnly?)time, row.OdometerKm, row.Liters, row.TotalAmount, row.IsFullTank)))
+            if (!row.IsImportable || !refuelingKeys.Add((date, (TimeOnly?)time, row.OdometerKm, row.Liters, row.TotalAmount, row.IsFullTank)))
             {
                 skipped++;
                 continue;
@@ -65,7 +95,7 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
         var expenseKeys = new HashSet<(DateOnly Date, int OdometerKm, ExpenseCategory Category, decimal Amount)>();
         foreach (var row in data.Expenses)
         {
-            if (row.Type == "")
+            if (!row.IsImportable)
             {
                 skipped++;
                 continue;
@@ -106,7 +136,7 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
         var serviceCategories = await db.ServiceCategories.Where(c => c.UserId == null || c.UserId == userId)
             .OrderBy(c => c.UserId).ToListAsync(cancellationToken);
         var oldServices = await db.ServiceRecords.AsNoTracking().Where(s => s.VehicleId == vehicleId).ToListAsync(cancellationToken);
-        foreach (var group in data.Services.Where(s => s.Type != "").GroupBy(s => new { s.Date, s.OdometerKm }))
+        foreach (var group in data.Services.Where(s => s.IsImportable).GroupBy(s => new { s.Date, s.OdometerKm }))
         {
             var date = DateOnly.FromDateTime(group.Key.Date);
             if (oldServices.Any(s => s.Date == date && s.OdometerKm == group.Key.OdometerKm))
