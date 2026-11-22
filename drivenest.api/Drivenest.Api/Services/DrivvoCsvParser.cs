@@ -21,11 +21,15 @@ public class DrivvoData
     public List<DrivvoCost> Expenses { get; } = new();
     public List<DrivvoCost> Services { get; } = new();
 
-    public int? GetMaxOdometerKm()
+    public int? GetMinOdometerKm() => ImportableOdometerValues().Min();
+
+    public int? GetMaxOdometerKm() => ImportableOdometerValues().Max();
+
+    private IEnumerable<int?> ImportableOdometerValues()
     {
         var refuelingKm = Refuelings.Where(row => row.IsImportable).Select(row => (int?)row.OdometerKm);
         var costKm = Expenses.Concat(Services).Where(row => row.IsImportable).Select(row => (int?)row.OdometerKm);
-        return refuelingKm.Concat(costKm).Max();
+        return refuelingKm.Concat(costKm);
     }
 }
 
@@ -68,7 +72,8 @@ public static class DrivvoCsvParser
                 var c = ReadFields(reader, line, ref lineNumber);
                 if (section == "##Refuelling")
                     data.Refuelings.Add(new DrivvoRefueling(
-                        Date(c[1]), Km(c[0]), Math.Round(Number(c[5]), 3), Math.Round(Number(c[4]), 2), c[6] == "Yes",
+                        Date(c[1]), Km(c[0]), Math.Round(Number(c[5]), 3), Math.Round(Number(c[4]), 2),
+                        c[6].Trim().ToUpperInvariant() is "YES" or "IGEN",
                         Text(c[2]), c.Length > 7 ? Text(c[7]) : null, c.Length > 12 ? Text(c[12]) : null));
                 else if (section == "##Expense")
                     data.Expenses.Add(new DrivvoCost(Date(c[1]), Km(c[0]), Math.Round(Number(c[2]), 2), c[3].Trim(), Text(c[4]), Text(c[8])));

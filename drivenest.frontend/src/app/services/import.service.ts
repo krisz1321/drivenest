@@ -13,6 +13,7 @@ export interface DrivvoImportResult {
 
 export interface DrivvoImportPreview {
   fuelTypeId: number | null;
+  minOdometerKm: number | null;
   maxOdometerKm: number | null;
 }
 

@@ -179,7 +179,9 @@ export class GaragePageComponent implements OnInit {
     this.form.reset({
       source: 'catalog', brandId: 0, vehicleModelID: null, customMake: '', customModel: '',
       licensePlate: '', fuelTypeId: importDraft ? (importDraft.preview.fuelTypeId ?? 0) : (this.fuelTypes[0]?.id ?? 0),
-      vin: '', year: null, initialKm: 0, currentKm: importDraft?.preview.maxOdometerKm ?? 0
+      vin: '', year: null,
+      initialKm: importDraft?.preview.minOdometerKm ?? 0,
+      currentKm: importDraft?.preview.maxOdometerKm ?? 0
     });
     if (vehicle) {
       const selectedModel = this.models.find(model =>

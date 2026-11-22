@@ -37,7 +37,7 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
             if (matches.Length == 1) fuelTypeId = matches[0].Id;
         }
 
-        return new DrivvoImportPreviewDto(fuelTypeId, data.GetMaxOdometerKm());
+        return new DrivvoImportPreviewDto(fuelTypeId, data.GetMinOdometerKm(), data.GetMaxOdometerKm());
     }
 
     private static string NormalizeFuelName(string name) => name.ToUpperInvariant() switch
