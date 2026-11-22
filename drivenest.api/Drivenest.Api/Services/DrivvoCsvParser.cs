@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text;
 
 namespace Drivenest.Api.Services;
 
@@ -39,18 +40,20 @@ public static class DrivvoCsvParser
         var isHeader = false;
         var lineNumber = 0;
 
-        foreach (var rawLine in text.Split('\n'))
+        using var reader = new StringReader(text);
+        while (reader.ReadLine() is { } rawLine)
         {
-            lineNumber++;
-            var line = rawLine.Trim();
-            if (line == "") continue;
+            var recordStart = ++lineNumber;
+            var line = rawLine.TrimStart();
+            if (line.Length == 0) continue;
 
-            if (line.StartsWith("##"))
+            if (line.StartsWith("##", StringComparison.Ordinal))
             {
-                section = line;
+                section = line.TrimEnd();
                 isHeader = true;
                 continue;
             }
+            // A fejlécben előfordul idézőjel után írt oszlopszám.
             if (isHeader)
             {
                 isHeader = false;
@@ -59,13 +62,10 @@ public static class DrivvoCsvParser
 
             // Ha az első sor nem ## rész, akkor ez nem Drivvo export.
             if (section == "") throw new FormatException("Not a Drivvo export file.");
-            if (line.Length < 2) throw new FormatException($"Invalid row at line {lineNumber}.");
-
-            // Minden mező idézőjelben van, ezért elég a "," mentén darabolni.
-            var c = line.Substring(1, line.Length - 2).Split("\",\"");
 
             try
             {
+                var c = ReadFields(reader, line, ref lineNumber);
                 if (section == "##Refuelling")
                     data.Refuelings.Add(new DrivvoRefueling(
                         Date(c[1]), Km(c[0]), Math.Round(Number(c[5]), 3), Math.Round(Number(c[4]), 2), c[6] == "Yes",
@@ -78,12 +78,67 @@ public static class DrivvoCsvParser
             }
             catch (Exception ex) when (ex is FormatException or IndexOutOfRangeException or OverflowException)
             {
-                throw new FormatException($"Invalid row at line {lineNumber}.");
+                throw new FormatException($"Invalid row at line {recordStart}.");
             }
         }
 
         if (section == "") throw new FormatException("Not a Drivvo export file.");
         return data;
+    }
+
+    private static string[] ReadFields(StringReader reader, string line, ref int lineNumber)
+    {
+        var fields = new List<string>();
+        var index = 0;
+        while (true)
+        {
+            if (index < line.Length && line[index] == '"')
+            {
+                fields.Add(ReadQuotedField(reader, ref line, ref index, ref lineNumber));
+            }
+            else
+            {
+                var end = line.IndexOf(',', index);
+                if (end < 0) end = line.Length;
+                var field = line.AsSpan(index, end - index);
+                if (field.Contains('"')) throw new FormatException();
+                fields.Add(field.ToString());
+                index = end;
+            }
+
+            if (index == line.Length) return fields.ToArray();
+            if (line[index++] != ',') throw new FormatException();
+        }
+    }
+
+    private static string ReadQuotedField(StringReader reader, ref string line, ref int index, ref int lineNumber)
+    {
+        var field = new StringBuilder();
+        index++;
+        while (true)
+        {
+            var quote = line.IndexOf('"', index);
+            if (quote < 0)
+            {
+                field.Append(line, index, line.Length - index).Append('\n');
+                line = reader.ReadLine() ?? throw new FormatException();
+                lineNumber++;
+                index = 0;
+                continue;
+            }
+
+            field.Append(line, index, quote - index);
+            index = quote + 1;
+            if (index < line.Length && line[index] == '"')
+            {
+                field.Append('"');
+                index++;
+                continue;
+            }
+
+            while (index < line.Length && char.IsWhiteSpace(line[index])) index++;
+            return field.ToString();
+        }
     }
 
     private static DateTime Date(string value) => DateTime.ParseExact(value, "yyyy-MM-dd HH:mm:ss", CultureInfo.InvariantCulture);
@@ -95,7 +150,7 @@ public static class DrivvoCsvParser
 
     private static string? Text(string value)
     {
-        value = value.Replace("\"\"", "\"").Trim();
+        value = value.Trim();
         return value == "" ? null : value;
     }
 }
