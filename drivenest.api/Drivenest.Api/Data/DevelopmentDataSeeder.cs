@@ -152,6 +152,7 @@ namespace Drivenest.Api.Data
                 Year = 2018,
                 InitialKm = 42000,
                 CurrentKm = 47770,
+                ManualCurrentKm = 47770,
                 CreatedAt = new DateTime(2026, 1, 1, 18, 0, 0, DateTimeKind.Utc),
                 UpdatedAt = new DateTime(2026, 6, 10, 18, 0, 0, DateTimeKind.Utc)
             };
@@ -166,6 +167,7 @@ namespace Drivenest.Api.Data
                 Year = 2015,
                 InitialKm = 118000,
                 CurrentKm = 124230,
+                ManualCurrentKm = 124230,
                 CreatedAt = new DateTime(2026, 1, 1, 18, 0, 0, DateTimeKind.Utc)
             };
 
@@ -309,6 +311,7 @@ namespace Drivenest.Api.Data
                 Year = 1992,
                 InitialKm = 405000,
                 CurrentKm = 409200,
+                ManualCurrentKm = 409200,
                 CreatedAt = new DateTime(2026, 1, 1, 18, 0, 0, DateTimeKind.Utc)
             };
 

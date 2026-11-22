@@ -26,6 +26,7 @@ namespace Drivenest.Api.Data.Entities
 
         // "drivvo", ha importból jött. Ilyenkor a CreatedAt az importálás ideje.
         public string? ImportSource { get; set; }
+        public string? ImportRecordKey { get; set; }
 
         public Vehicle Vehicle { get; set; } = null!;
 

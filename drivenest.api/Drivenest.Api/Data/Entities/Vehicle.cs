@@ -24,6 +24,7 @@ namespace Drivenest.Api.Data.Entities
         public int InitialKm { get; set; }
 
         public int CurrentKm { get; set; }
+        public int ManualCurrentKm { get; set; }
 
         public DateTime CreatedAt { get; set; }
 

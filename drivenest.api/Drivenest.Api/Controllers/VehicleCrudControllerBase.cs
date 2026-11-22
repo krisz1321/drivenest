@@ -122,6 +122,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
     {
         var vehicle = new Vehicle { UserId = User.GetUserId(), CreatedAt = _clock.GetUtcNow().UtcDateTime };
         Apply(request, vehicle);
+        vehicle.ManualCurrentKm = request.CurrentKm;
         _db.Vehicles.Add(vehicle);
         return vehicle;
     }
@@ -182,6 +183,9 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         vehicle.CustomModel = request.VehicleModelID is null ? request.CustomModel!.Trim() : string.Empty;
         vehicle.Year = request.Year;
         vehicle.InitialKm = request.InitialKm;
+        vehicle.ManualCurrentKm = request.CurrentKm == vehicle.CurrentKm
+            ? Math.Max(request.InitialKm, vehicle.ManualCurrentKm)
+            : request.CurrentKm;
         vehicle.CurrentKm = request.CurrentKm;
     }
 

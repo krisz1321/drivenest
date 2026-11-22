@@ -2,6 +2,9 @@ using Drivenest.Api.Data;
 using Drivenest.Api.Data.Entities;
 using Drivenest.Api.Dtos.Import;
 using Microsoft.EntityFrameworkCore;
+using System.Globalization;
+using System.Security.Cryptography;
+using System.Text.Json;
 
 namespace Drivenest.Api.Services;
 
@@ -15,7 +18,10 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
         if (file.Length > MaxFileSize) throw new FormatException("The file is too large.");
 
         using var reader = new StreamReader(file.OpenReadStream());
-        return DrivvoCsvParser.Parse(await reader.ReadToEndAsync(cancellationToken));
+        var data = DrivvoCsvParser.Parse(await reader.ReadToEndAsync(cancellationToken));
+        if (data.GetMinOdometerKm() is null)
+            throw new FormatException("A Drivvo fájlban nincs importálható tankolás, kiadás vagy szerviz.");
+        return data;
     }
 
     public async Task<DrivvoImportPreviewDto> PreviewAsync(IFormFile file, CancellationToken cancellationToken)
@@ -91,8 +97,10 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
         // Kiadások: a kategóriát név alapján keressük, ha nincs ilyen, saját kategória lesz belőle.
         var expenseCategories = await db.ExpenseCategories.Where(c => c.UserId == null || c.UserId == userId)
             .OrderBy(c => c.UserId).ToListAsync(cancellationToken);
-        var oldExpenses = await db.Expenses.AsNoTracking().Where(e => e.VehicleId == vehicleId).ToListAsync(cancellationToken);
-        var expenseKeys = new HashSet<(DateOnly Date, int OdometerKm, ExpenseCategory Category, decimal Amount)>();
+        var oldExpenses = await db.Expenses.Where(e => e.VehicleId == vehicleId)
+            .OrderBy(e => e.Id).ToListAsync(cancellationToken);
+        var expenseKeys = oldExpenses.Select(e => e.ImportRecordKey).OfType<string>().ToHashSet();
+        var legacyExpenses = oldExpenses.Where(e => e.ImportRecordKey is null).ToList();
         foreach (var row in data.Expenses)
         {
             if (!row.IsImportable)
@@ -110,9 +118,21 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
                 expenseCategories.Add(category);
             }
 
-            if ((category.Id > 0 && oldExpenses.Any(e => e.Date == date && e.OdometerKm == row.OdometerKm && e.CategoryId == category.Id && e.Amount == row.Amount))
-                || !expenseKeys.Add((date, row.OdometerKm, category, row.Amount)))
+            var location = Cut(row.Location, 200);
+            var notes = Cut(row.Notes, 500);
+            var key = ImportKey(new { row.Date, row.OdometerKm, Category = category.Name.ToUpperInvariant(), Amount = KeyAmount(row.Amount), row.Location, row.Notes });
+            if (!expenseKeys.Add(key))
             {
+                skipped++;
+                continue;
+            }
+
+            var legacy = category.Id > 0 ? legacyExpenses.Find(e => e.Date == date && e.OdometerKm == row.OdometerKm
+                && e.CategoryId == category.Id && e.Amount == row.Amount && e.Location == location && e.Description == notes) : null;
+            if (legacy is not null)
+            {
+                if (legacy.ImportSource == Source) legacy.ImportRecordKey = key;
+                legacyExpenses.Remove(legacy);
                 skipped++;
                 continue;
             }
@@ -124,10 +144,11 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
                 Date = date,
                 OdometerKm = row.OdometerKm,
                 Amount = row.Amount,
-                Location = Cut(row.Location, 200),
-                Description = Cut(row.Notes, 500),
+                Location = location,
+                Description = notes,
                 CreatedAt = now,
-                ImportSource = Source
+                ImportSource = Source,
+                ImportRecordKey = key
             });
             expenses++;
         }
@@ -135,16 +156,13 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
         // Szervizek: a Drivvo tételenként ír egy sort, az azonos időpontú és óraállású sorok egy szervizhez tartoznak.
         var serviceCategories = await db.ServiceCategories.Where(c => c.UserId == null || c.UserId == userId)
             .OrderBy(c => c.UserId).ToListAsync(cancellationToken);
-        var oldServices = await db.ServiceRecords.AsNoTracking().Where(s => s.VehicleId == vehicleId).ToListAsync(cancellationToken);
+        var oldServices = await db.ServiceRecords.Include(s => s.Items).ThenInclude(i => i.Category)
+            .Where(s => s.VehicleId == vehicleId).OrderBy(s => s.Id).ToListAsync(cancellationToken);
+        var serviceKeys = oldServices.Select(s => s.ImportRecordKey).OfType<string>().ToHashSet();
+        var legacyServices = oldServices.Where(s => s.ImportRecordKey is null).ToList();
         foreach (var group in data.Services.Where(s => s.IsImportable).GroupBy(s => new { s.Date, s.OdometerKm }))
         {
             var date = DateOnly.FromDateTime(group.Key.Date);
-            if (oldServices.Any(s => s.Date == date && s.OdometerKm == group.Key.OdometerKm))
-            {
-                skipped++;
-                continue;
-            }
-
             var record = new ServiceRecord
             {
                 VehicleId = vehicleId,
@@ -174,12 +192,41 @@ public class DrivvoImportService(AppDbContext db, TimeProvider clock)
                     item.Amount += row.Amount;
             }
 
+            var items = ServiceItems(record);
+            var key = ImportKey(new { group.Key.Date, group.Key.OdometerKm, record.Provider, record.Description,
+                Items = items.Select(item => new { item.Category, Amount = KeyAmount(item.Amount) }) });
+            if (!serviceKeys.Add(key))
+            {
+                skipped++;
+                continue;
+            }
+
+            var legacy = legacyServices.Find(s => s.Date == date && s.OdometerKm == record.OdometerKm
+                && s.Provider == record.Provider && s.Description == record.Description && ServiceItems(s).SequenceEqual(items));
+            if (legacy is not null)
+            {
+                if (legacy.ImportSource == Source) legacy.ImportRecordKey = key;
+                legacyServices.Remove(legacy);
+                skipped++;
+                continue;
+            }
+
+            record.ImportRecordKey = key;
             db.ServiceRecords.Add(record);
             services++;
         }
 
         return new DrivvoImportResultDto(refuelings, expenses, services, skipped);
     }
+
+    private static (string Category, decimal Amount)[] ServiceItems(ServiceRecord service) =>
+        service.Items.Select(item => (Category: item.Category.Name.ToUpperInvariant(), item.Amount))
+            .OrderBy(item => item.Category, StringComparer.Ordinal).ToArray();
+
+    private static string ImportKey<T>(T value) =>
+        Convert.ToHexString(SHA256.HashData(JsonSerializer.SerializeToUtf8Bytes(value)));
+
+    private static string KeyAmount(decimal amount) => amount.ToString("0.00", CultureInfo.InvariantCulture);
 
     private static string? Cut(string? value, int max)
     {

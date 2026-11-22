@@ -14,22 +14,13 @@ namespace Drivenest.Api.Extensions
             return Math.Max(refuelingKm, Math.Max(serviceKm, expenseKm));
         }
 
-        // A jármű aktuális óraállását a tankolások, szervizek és kiadások óraállásából frissíti.
-        // oldKm: a módosított vagy törölt bejegyzés korábbi óraállása (új bejegyzésnél null).
-        public static async Task UpdateCurrentKm(this AppDbContext db, int vehicleId, int? oldKm, CancellationToken cancellationToken)
+        public static async Task UpdateCurrentKm(this AppDbContext db, int vehicleId, CancellationToken cancellationToken)
         {
             var vehicle = await db.Vehicles.SingleOrDefaultAsync(v => v.Id == vehicleId, cancellationToken);
             if (vehicle is null) return;
 
             var maxKm = await db.MaxOdometerKm(vehicleId, cancellationToken);
-
-            // Ha a módosított/törölt bejegyzés adta az óraállást, a maradék bejegyzésekből számoljuk újra.
-            // Különben csak nőhet, így a kézzel megadott nagyobb érték megmarad.
-            if (oldKm == vehicle.CurrentKm)
-                vehicle.CurrentKm = Math.Max(vehicle.InitialKm, maxKm);
-            else
-                vehicle.CurrentKm = Math.Max(vehicle.CurrentKm, maxKm);
-
+            vehicle.CurrentKm = Math.Max(vehicle.ManualCurrentKm, maxKm);
             await db.SaveChangesAsync(cancellationToken);
         }
     }

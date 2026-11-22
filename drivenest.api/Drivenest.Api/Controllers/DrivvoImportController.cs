@@ -48,7 +48,7 @@ public class DrivvoImportController : ControllerBase
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
-            await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+            await _db.UpdateCurrentKm(vehicleId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateException)

@@ -138,7 +138,7 @@ public class ServiceRecordsController : ControllerBase
         try
         {
             await _db.SaveChangesAsync(cancellationToken);
-            await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+            await _db.UpdateCurrentKm(vehicleId, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
         }
         catch (DbUpdateConcurrencyException)
@@ -171,7 +171,7 @@ public class ServiceRecordsController : ControllerBase
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         var categories = await CategoryNames(cancellationToken);
-        var oldKm = record.OdometerKm;
+
         var before = record.AuditFields(categories);
         Apply(request, record);
         var changes = before.AuditChanges(record.AuditFields(categories));
@@ -184,7 +184,7 @@ public class ServiceRecordsController : ControllerBase
         }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
 
         var saved = await WithItems().AsNoTracking().SingleAsync(s => s.Id == record.Id, cancellationToken);
         return Ok(ToDto(saved));
@@ -208,7 +208,7 @@ public class ServiceRecordsController : ControllerBase
         _db.ServiceRecords.Remove(record);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, record.OdometerKm, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
         return NoContent();
     }
 

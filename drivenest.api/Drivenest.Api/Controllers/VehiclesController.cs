@@ -51,7 +51,7 @@ public class VehiclesController : VehicleCrudControllerBase
         {
             var result = await importService.PrepareAsync(vehicle.Id, vehicle.UserId, data, cancellationToken);
             await Db.SaveChangesAsync(cancellationToken);
-            await Db.UpdateCurrentKm(vehicle.Id, null, cancellationToken);
+            await Db.UpdateCurrentKm(vehicle.Id, cancellationToken);
             await transaction.CommitAsync(cancellationToken);
             return CreatedAtAction(nameof(GetById), new { id = vehicle.Id },
                 new DrivvoVehicleImportResultDto(vehicle.Id, result));

@@ -42,6 +42,9 @@ namespace Drivenest.Api.Data.Configurations
 
             builder.Property(e => e.ImportSource)
                 .HasMaxLength(20);
+            builder.Property(e => e.ImportRecordKey).HasMaxLength(64).IsUnicode(false);
+            builder.HasIndex(e => new { e.VehicleId, e.ImportRecordKey }).IsUnique()
+                .HasFilter("[ImportRecordKey] IS NOT NULL");
 
             builder.HasOne(e => e.Vehicle)
                 .WithMany()

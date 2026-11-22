@@ -66,7 +66,7 @@ public class RefuelingsController : ControllerBase
         _db.Refuelings.Add(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
         return CreatedAtAction(nameof(GetById), new { vehicleId, id = entry.Id }, ToDto(entry));
     }
 
@@ -79,7 +79,7 @@ public class RefuelingsController : ControllerBase
         if (!await OwnsVehicle(vehicleId, cancellationToken)) return NotFound();
         var entry = await _db.Refuelings.Include(r => r.Vehicle).SingleOrDefaultAsync(r => r.Id == id && r.VehicleId == vehicleId, cancellationToken);
         if (entry is null) return NotFound();
-        var oldKm = entry.OdometerKm;
+
         var before = entry.AuditFields();
         Apply(request, entry);
         var changes = before.AuditChanges(entry.AuditFields());
@@ -92,7 +92,7 @@ public class RefuelingsController : ControllerBase
         }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
         return Ok(ToDto(entry));
     }
 
@@ -108,7 +108,7 @@ public class RefuelingsController : ControllerBase
         _db.Refuelings.Remove(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, entry.OdometerKm, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
         return NoContent();
     }
 

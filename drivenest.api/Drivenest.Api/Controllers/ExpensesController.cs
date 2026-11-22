@@ -88,7 +88,7 @@ public class ExpensesController : ControllerBase
 
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, null, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
 
         // A válaszban a kategória neve is kell.
         await _db.Entry(entry).Reference(e => e.Category).LoadAsync(cancellationToken);
@@ -110,7 +110,7 @@ public class ExpensesController : ControllerBase
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
         var categories = await CategoryNames(cancellationToken);
-        var oldKm = entry.OdometerKm;
+
         var before = entry.AuditFields(categories);
         Apply(request, entry);
         var changes = before.AuditChanges(entry.AuditFields(categories));
@@ -123,7 +123,7 @@ public class ExpensesController : ControllerBase
         }
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, oldKm, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
 
         await _db.Entry(entry).Reference(e => e.Category).LoadAsync(cancellationToken);
         return Ok(ToDto(entry));
@@ -144,7 +144,7 @@ public class ExpensesController : ControllerBase
         _db.Expenses.Remove(entry);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
-        await _db.UpdateCurrentKm(vehicleId, entry.OdometerKm, cancellationToken);
+        await _db.UpdateCurrentKm(vehicleId, cancellationToken);
         return NoContent();
     }
 

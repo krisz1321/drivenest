@@ -14,7 +14,7 @@ using Microsoft.Extensions.DependencyInjection;
 await using var db = new AppDbContext(new DbContextOptionsBuilder<AppDbContext>()
     .UseInMemoryDatabase(Guid.NewGuid().ToString()).Options);
 db.Vehicles.AddRange(
-    new Vehicle { Id = 1, UserId = 1, CurrentKm = 50000 },
+    new Vehicle { Id = 1, UserId = 1, CurrentKm = 50000, ManualCurrentKm = 50000 },
     new Vehicle { Id = 2, UserId = 2 },
     new Vehicle { Id = 3, UserId = 1 });
 db.Refuelings.AddRange(
@@ -139,6 +139,14 @@ Check(Valid(boundary), "Maximum SQL decimal values are supported");
 boundary.TotalAmount = 0; boundary.Liters = 0.001m;
 Check(Valid(boundary), "Zero cost and minimum liters are supported");
 Check(new RefuelingRequest().IsFullTank, "Full tank defaults to true");
+var highest = Request();
+highest.OdometerKm = 55000;
+var highestCreated = (await controller.Create(1, highest, ct)).Result as CreatedAtActionResult;
+var highestDto = (RefuelingDto)highestCreated!.Value!;
+Check((await db.Vehicles.FindAsync(1))!.CurrentKm == 55000, "A higher refueling raises current mileage");
+Check(await controller.Delete(1, highestDto.Id, ct) is NoContentResult, "Highest refueling can be deleted");
+Check((await db.Vehicles.FindAsync(1))!.CurrentKm == 50000, "Deleting the highest refueling restores manual mileage");
+
 Console.WriteLine($"All {passed} refueling checks passed.");
 
 sealed class FixedClock : TimeProvider

@@ -254,6 +254,11 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<string>("ImportRecordKey")
+                        .IsUnicode(false)
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<string>("ImportSource")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -277,6 +282,10 @@ namespace Drivenest.Api.Migrations
 
                     b.HasIndex("VehicleId", "Date")
                         .IsDescending(false, true);
+
+                    b.HasIndex("VehicleId", "ImportRecordKey")
+                        .IsUnique()
+                        .HasFilter("[ImportRecordKey] IS NOT NULL");
 
                     b.ToTable("Expenses", null, t =>
                         {
@@ -1197,6 +1206,11 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(2000)
                         .HasColumnType("nvarchar(2000)");
 
+                    b.Property<string>("ImportRecordKey")
+                        .IsUnicode(false)
+                        .HasMaxLength(64)
+                        .HasColumnType("varchar(64)");
+
                     b.Property<string>("ImportSource")
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
@@ -1227,6 +1241,10 @@ namespace Drivenest.Api.Migrations
 
                     b.HasIndex("VehicleId", "Date", "OdometerKm")
                         .IsDescending(false, true, true);
+
+                    b.HasIndex("VehicleId", "ImportRecordKey")
+                        .IsUnique()
+                        .HasFilter("[ImportRecordKey] IS NOT NULL");
 
                     b.ToTable("ServiceRecords", null, t =>
                         {
@@ -1299,6 +1317,9 @@ namespace Drivenest.Api.Migrations
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
 
+                    b.Property<int>("ManualCurrentKm")
+                        .HasColumnType("int");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2(3)");
 
@@ -1328,6 +1349,8 @@ namespace Drivenest.Api.Migrations
                             t.HasCheckConstraint("CK_Vehicles_CurrentKm", "[CurrentKm] >= [InitialKm]");
 
                             t.HasCheckConstraint("CK_Vehicles_InitialKm", "[InitialKm] >= 0");
+
+                            t.HasCheckConstraint("CK_Vehicles_ManualCurrentKm", "[ManualCurrentKm] >= [InitialKm] AND [CurrentKm] >= [ManualCurrentKm]");
 
                             t.HasCheckConstraint("CK_Vehicles_Vin", "[Vin] IS NULL OR LEN([Vin]) = 17");
 
