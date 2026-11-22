@@ -25,6 +25,8 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         _clock = clock;
     }
 
+    protected AppDbContext Db => _db;
+
     private IQueryable<Vehicle> OwnedVehicles => _db.Vehicles.Where(v => v.UserId == User.GetUserId());
 
     // Üzemanyagnevek a változásnaplóhoz
@@ -63,9 +65,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         await ValidateReferences(request, null, cancellationToken);
         if (!ModelState.IsValid) return ValidationProblem(ModelState);
 
-        var vehicle = new Vehicle { UserId = User.GetUserId(), CreatedAt = _clock.GetUtcNow().UtcDateTime };
-        Apply(request, vehicle);
-        _db.Vehicles.Add(vehicle);
+        var vehicle = AddVehicle(request);
         var error = await Save(cancellationToken);
         if (error is not null) return error;
         return CreatedAtAction(nameof(GetById), new { id = vehicle.Id }, await ToDto(vehicle.Id, cancellationToken));
@@ -118,7 +118,15 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         return error is not null ? error : NoContent();
     }
 
-    private async Task ValidateReferences(VehicleRequest request, int? id, CancellationToken cancellationToken)
+    protected Vehicle AddVehicle(VehicleRequest request)
+    {
+        var vehicle = new Vehicle { UserId = User.GetUserId(), CreatedAt = _clock.GetUtcNow().UtcDateTime };
+        Apply(request, vehicle);
+        _db.Vehicles.Add(vehicle);
+        return vehicle;
+    }
+
+    protected async Task ValidateReferences(VehicleRequest request, int? id, CancellationToken cancellationToken)
     {
         if (!await _db.FuelTypes.AnyAsync(f => f.Id == request.FuelTypeId, cancellationToken))
             ModelState.AddModelError(nameof(request.FuelTypeId), "The fuel type does not exist.");
@@ -143,7 +151,7 @@ public abstract class VehicleCrudControllerBase : ControllerBase
         }
     }
 
-    private async Task<ActionResult?> Save(CancellationToken cancellationToken)
+    protected async Task<ActionResult?> Save(CancellationToken cancellationToken)
     {
         try
         {
