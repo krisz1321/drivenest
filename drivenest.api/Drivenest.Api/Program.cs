@@ -47,6 +47,7 @@ namespace Drivenest.Api
 
             builder.Services.AddSingleton(TimeProvider.System);
             builder.Services.AddSingleton<IJwtTokenService, JwtTokenService>();
+            builder.Services.AddScoped<DrivvoImportService>();
 
             builder.Services.AddJwtAuthentication();
             builder.Services.AddFrontendCors(builder.Configuration);
