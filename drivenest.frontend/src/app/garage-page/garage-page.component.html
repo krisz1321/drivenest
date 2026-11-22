@@ -28,15 +28,20 @@
   } @else {
   <header class="garage-heading">
     <div><h1>Garázs</h1>@if (!loading && !loadError) { <p>{{ vehicles.length }} jármű</p> }</div>
-    <button type="button" class="new-vehicle" (click)="open('create')" [disabled]="loading || !fuelTypes.length"><span aria-hidden="true">+</span> Új jármű</button>
+    <div class="action-row">
+      <input #drivvoFile type="file" accept=".csv" hidden (change)="selectDrivvoFile(drivvoFile)">
+      <button type="button" class="button button-secondary button-compact" (click)="drivvoFile.click()" [disabled]="loading || !fuelTypes.length || previewingImport">{{ previewingImport ? 'CSV beolvasása…' : 'Importálás Drivvo-ból' }}</button>
+      <button type="button" class="new-vehicle" (click)="open('create')" [disabled]="loading || !fuelTypes.length || previewingImport"><span aria-hidden="true">+</span> Új jármű</button>
+    </div>
   </header>
   @if (message) { <p class="alert-success" role="status">{{ message }}</p> }
+  @if (importError) { <p class="alert-error" role="alert">{{ importError }}</p> }
   @if (loading) {
     <div class="panel empty-state" role="status">Járművek betöltése…</div>
   } @else if (loadError) {
     <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div>
   } @else if (!vehicles.length) {
-    <div class="panel empty-state"><h2>Még nincs jármű a garázsodban</h2><p>Az Új jármű gombbal hozzáadhatod az első járművedet.</p></div>
+    <div class="panel empty-state"><h2>Még nincs jármű a garázsodban</h2></div>
   } @else {
   <section class="vehicle-grid" aria-label="Járműveim">
     @for (vehicle of vehicles; track vehicle.id) {
@@ -63,6 +68,7 @@
     <p class="form-help">A törlés végleges. Kapcsolódó bejegyzésekkel rendelkező járművet a rendszer nem enged törölni.</p>
   } @else {
     <p class="form-help">A járművet automatikusan a bejelentkezett fiókhoz rendeljük. A * jelölt mezők kötelezők.</p>
+    @if (importDraft; as draft) { <p class="form-help">CSV fájl: <strong>{{ draft.file.name }}</strong></p> }
     <form id="vehicle-form" [formGroup]="form" (ngSubmit)="save()" [attr.aria-busy]="saving" novalidate>
       <fieldset [disabled]="saving"><div class="form-grid">
         <div class="form-field"><span>Márka és modell *</span><label><input type="radio" formControlName="source" value="catalog"> Katalógusból</label><label><input type="radio" formControlName="source" value="custom"> Egyedi</label></div>
@@ -83,5 +89,5 @@
     </form>
   }
   @if (modalErrors.length) { <div class="alert-error" role="alert">@for (error of modalErrors; track $index) { <p>{{ error }}</p> }</div> }
-  <div class="form-actions"><button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>@if (mode === 'delete') { <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Jármű törlése' }}</button> } @else { <button type="submit" form="vehicle-form" class="button button-primary button-compact" [disabled]="saving || !fuelTypes.length">{{ saving ? 'Mentés…' : 'Jármű mentése' }}</button> }</div>
+  <div class="form-actions"><button type="button" class="button button-secondary button-compact" (click)="close()" [disabled]="saving">Mégse</button>@if (mode === 'delete') { <button type="button" class="button button-danger button-compact" (click)="remove()" [disabled]="saving">{{ saving ? 'Törlés…' : 'Jármű törlése' }}</button> } @else { <button type="submit" form="vehicle-form" class="button button-primary button-compact" [disabled]="saving || !fuelTypes.length">{{ saving ? 'Mentés…' : mode === 'import' ? 'Mentés és importálás' : 'Jármű mentése' }}</button> }</div>
 </dialog>

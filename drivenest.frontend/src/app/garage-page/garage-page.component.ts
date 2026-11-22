@@ -13,6 +13,13 @@ import { consumptionLabel, distanceLabel, toConsumption, toDistance } from '../s
 import { VehicleRefuelingsComponent } from '../dashboard/vehicle-refuelings.component';
 import { VehicleServicesComponent } from './vehicle-services.component';
 import { VehicleImportComponent } from './vehicle-import.component';
+import { DrivvoImportPreview, ImportService } from '../services/import.service';
+
+type VehicleDialogMode = 'create' | 'edit' | 'delete' | 'import';
+interface DrivvoImportDraft {
+  file: File;
+  preview: DrivvoImportPreview;
+}
 
 function mileageOrder(form: AbstractControl): ValidationErrors | null {
   return form.get('currentKm')!.value < form.get('initialKm')!.value ? { mileageOrder: true } : null;
@@ -31,6 +38,7 @@ export class GaragePageComponent implements OnInit {
   private readonly api = inject(VehicleService);
   private readonly profile = inject(ProfileService);
   private readonly statsApi = inject(StatsService);
+  private readonly importApi = inject(ImportService);
   private readonly destroyRef = inject(DestroyRef);
   @ViewChild('vehicleDialog') dialog!: ElementRef<HTMLDialogElement>;
   vehicles: Vehicle[] = [];
@@ -43,7 +51,10 @@ export class GaragePageComponent implements OnInit {
   loadErrors: string[] = [];
   modalErrors: string[] = [];
   message = '';
-  mode: 'create' | 'edit' | 'delete' = 'create';
+  previewingImport = false;
+  importError = '';
+  importDraft: DrivvoImportDraft | null = null;
+  mode: VehicleDialogMode = 'create';
   target: Vehicle | null = null;
   readonly form = inject(FormBuilder).nonNullable.group({
     source: ['catalog' as 'catalog' | 'custom'],
@@ -61,7 +72,14 @@ export class GaragePageComponent implements OnInit {
 
   get loadError() { return this.loadErrors.join(' '); }
   get currency() { return this.profile.preferences().currency; }
-  get modalTitle() { return this.mode === 'create' ? 'Jármű hozzáadása' : this.mode === 'edit' ? 'Jármű szerkesztése' : 'Jármű törlése'; }
+  get modalTitle() {
+    switch (this.mode) {
+      case 'create': return 'Jármű hozzáadása';
+      case 'edit': return 'Jármű szerkesztése';
+      case 'delete': return 'Jármű törlése';
+      case 'import': return 'Importálás Drivvo-ból';
+    }
+  }
   name(vehicle: Vehicle) { return `${vehicle.make} ${vehicle.model}`; }
   number(value: number) { return value.toLocaleString('hu-HU'); }
   fuelName(id: number) { return this.fuelTypes.find(f => f.id === id)?.name ?? '—'; }
@@ -124,14 +142,45 @@ export class GaragePageComponent implements OnInit {
     return value === null ? 'N/A' : `${toConsumption(value, unit).toLocaleString('hu-HU')} ${consumptionLabel(unit)}`;
   }
 
-  open(mode: 'create' | 'edit' | 'delete', vehicle: Vehicle | null = null) {
-    if (this.saving || (mode !== 'create' && !vehicle)) return;
+  selectDrivvoFile(input: HTMLInputElement) {
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file || this.previewingImport || this.saving) return;
+
+    this.previewingImport = true;
+    this.importError = '';
+    this.message = '';
+    this.importApi.previewDrivvo(file)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.previewingImport = false))
+      .subscribe({
+        next: preview => {
+          if (this.vehicleId === null && !this.dialog.nativeElement.open) {
+            this.open('import', null, { file, preview });
+          }
+        },
+        error: (error: HttpErrorResponse) => {
+          if (error.error?.title === 'The file is too large.') {
+            this.importError = 'A CSV fájl legfeljebb 5 MB méretű lehet.';
+          } else if (error.status === 400) {
+            this.importError = 'A fájlt nem sikerült beolvasni. Válaszd ki a Drivvo-ból exportált CSV fájlt.';
+          } else {
+            this.importError = this.errors(error).join(' ');
+          }
+        }
+      });
+  }
+
+  open(mode: VehicleDialogMode, vehicle: Vehicle | null = null, importDraft: DrivvoImportDraft | null = null) {
+    if (this.saving || ((mode === 'edit' || mode === 'delete') && !vehicle)) return;
     this.mode = mode;
     this.target = vehicle;
+    this.importDraft = importDraft;
     this.modalErrors = [];
-    this.form.reset({ source: 'catalog', brandId: 0, vehicleModelID: null, customMake: '', customModel: '',
-      licensePlate: '', fuelTypeId: this.fuelTypes[0]?.id ?? 0,
-      vin: '', year: null, initialKm: 0, currentKm: 0 });
+    this.form.reset({
+      source: 'catalog', brandId: 0, vehicleModelID: null, customMake: '', customModel: '',
+      licensePlate: '', fuelTypeId: importDraft ? (importDraft.preview.fuelTypeId ?? 0) : (this.fuelTypes[0]?.id ?? 0),
+      vin: '', year: null, initialKm: 0, currentKm: importDraft?.preview.maxOdometerKm ?? 0
+    });
     if (vehicle) {
       const selectedModel = this.models.find(model =>
         model.modelName === vehicle.model
@@ -149,8 +198,17 @@ export class GaragePageComponent implements OnInit {
     this.dialog.nativeElement.showModal();
   }
 
-  close() { if (!this.saving) this.dialog.nativeElement.close(); }
+  close() { if (!this.saving) this.dismissDialog(); }
   cancel(event: Event) { event.preventDefault(); this.close(); }
+
+  private dismissDialog() {
+    this.dialog.nativeElement.close();
+    if (!this.importDraft) return;
+    this.importDraft = null;
+    this.mode = 'create';
+    this.modalErrors = [];
+    this.form.reset();
+  }
 
   save() {
     if (this.saving) return;
@@ -169,6 +227,10 @@ export class GaragePageComponent implements OnInit {
       licensePlate: value.licensePlate.trim().toUpperCase(),
       vin: value.vin ? value.vin.toUpperCase() : null,
       year: value.year, initialKm: value.initialKm, currentKm: value.currentKm };
+    if (this.mode === 'import') {
+      this.saveImport(request);
+      return;
+    }
     this.saving = true;
     const action = this.mode === 'edit' && this.target ? this.api.update(this.target.id, request) : this.api.create(request);
     action.pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.saving = false)).subscribe({
@@ -179,6 +241,23 @@ export class GaragePageComponent implements OnInit {
       },
       error: (error: HttpErrorResponse) => this.modalErrors = this.errors(error)
     });
+  }
+
+  private saveImport(request: VehicleRequest) {
+    if (!this.importDraft) return;
+    this.saving = true;
+    this.importApi.drivvoWithVehicle(this.importDraft.file, request)
+      .pipe(takeUntilDestroyed(this.destroyRef), finalize(() => this.saving = false))
+      .subscribe({
+        next: ({ importResult }) => {
+          const { refuelings, expenses, services, skipped } = importResult;
+          this.message = `Az importálás kész. ${refuelings} tankolás, ${expenses} kiadás és ${services} szerviz került be.`;
+          if (skipped) this.message += ` ${skipped} bejegyzés kimaradt.`;
+          this.dismissDialog();
+          this.refreshVehicles();
+        },
+        error: (error: HttpErrorResponse) => this.modalErrors = this.errors(error)
+      });
   }
 
   modelsForBrand() {
@@ -204,6 +283,9 @@ export class GaragePageComponent implements OnInit {
 
   private errors(error: HttpErrorResponse): string[] {
     if (error.status === 409 && this.mode === 'delete') return ['A járműhöz kapcsolódó bejegyzések vagy időközbeni változások miatt nem törölhető. Előbb távolítsd el a tankolásait és egyéb kapcsolódó adatait.'];
+    if (this.mode === 'import' && error.error?.title === 'The file contains invalid data.') {
+      return ['A CSV érvénytelen adatot tartalmaz. Javítsd a fájlt, majd indítsd újra az importálást.'];
+    }
     const details = error.error?.errors;
     if (details && typeof details === 'object') {
       const messages = Object.values(details).flat().filter((v): v is string => typeof v === 'string');
