@@ -7,3 +7,24 @@ main { margin-left: var(--sidebar-width); }
 .page-content { max-width: 1500px; margin: auto; padding: 34px 36px; }
 @media (max-width: 900px) { .page-content { padding: 28px 24px; } .topbar { padding: 16px 24px; } }
 @media (max-width: 480px) { .page-content { padding: 24px 14px; } .topbar { padding: 12px 14px; font-size: 10px; } .date { max-width: 90px; text-align: right; } }
+
+// Mobil fejléc: csak 600 px alatt látszik a topbar helyett
+.mobile-head { display: none; position: sticky; top: 0; z-index: 20; align-items: center; justify-content: space-between; gap: 8px; padding: 12px; background: var(--color-surface); border-bottom: 1px solid var(--color-border); }
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.car-button { display: flex; align-items: center; gap: 10px; min-width: 0; min-height: 48px; padding: 6px 12px 6px 6px; border: 0; border-radius: 12px; background: var(--color-background); color: var(--color-text); text-align: left; text-decoration: none; }
+.car-icon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; background: var(--color-sidebar); color: var(--color-primary); flex: none; }
+.car-text { min-width: 0; }
+.car-text strong, .car-text small { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.car-text strong { font-size: 16px; line-height: 1.2; }
+.car-text small { color: var(--color-muted); font-size: 12px; }
+.chevron { width: 16px; }
+.head-button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50%; background: transparent; color: var(--color-text); flex: none; }
+.head-button:disabled { opacity: .5; }
+.picker-backdrop { position: fixed; inset: 0; }
+.picker { position: absolute; top: calc(100% + 4px); left: 12px; right: 12px; margin: 0; padding: 6px; list-style: none; background: var(--color-surface); border: 1px solid var(--color-border); border-radius: 12px; box-shadow: 0 12px 30px rgb(16 43 62 / 18%); max-height: 60svh; overflow-y: auto; }
+.picker button { display: block; width: 100%; padding: 10px 12px; border: 0; border-radius: 8px; background: transparent; color: var(--color-text); text-align: left; }
+.picker button.active { background: var(--color-primary-soft); }
+.picker strong, .picker small { display: block; }
+.picker small { color: var(--color-muted); }
+.mobile-alert { margin: 12px 12px 0; }
+@media (max-width: 600px) { .topbar { display: none; } .mobile-head { display: flex; } }

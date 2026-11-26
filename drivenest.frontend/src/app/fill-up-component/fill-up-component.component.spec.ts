@@ -31,7 +31,7 @@ describe('FillUpComponentComponent', () => {
   afterEach(() => http.verify());
 
   function load() {
-    http.expectOne(req => req.url.endsWith('/ownvehicles')).flush(cars);
+    http.match(req => req.url.endsWith('/ownvehicles')).forEach(req => req.flush(cars));
     http.expectOne(req => req.url.endsWith('/me')).flush({ displayName: 'Teszt', currency: 'HUF' });
     http.expectOne(req => req.url.endsWith('/vehicles/4/refuelings')).flush([entry]);
     http.expectOne(req => req.url.endsWith('/vehicles/8/refuelings')).flush([{ ...entry, id: 2, vehicleId: 8, date: '2026-09-24' }]);
@@ -65,13 +65,13 @@ describe('FillUpComponentComponent', () => {
     expect(component.dialog.nativeElement.open).toBeFalse();
     expect(component.entries[0].id).toBe(3);
     // Mentés után a frissült óraállás miatt újratölti a járműveket.
-    http.expectOne(req => req.url.endsWith('/ownvehicles')).flush([cars[0], { ...cars[1], currentKm: 66000 }]);
+    http.match(req => req.url.endsWith('/ownvehicles')).forEach(req => req.flush([cars[0], { ...cars[1], currentKm: 66000 }]));
     expect(component.vehicles[1].currentKm).toBe(66000);
     http.expectOne(req => req.url.endsWith('/vehicles/8/stats/consumption')).flush({ lastLitersPer100Km: null, averageLitersPer100Km: null, segments: [] });
   });
 
   it('shows an empty state without making fill-up requests for an empty garage', () => {
-    http.expectOne(req => req.url.endsWith('/ownvehicles')).flush([]);
+    http.match(req => req.url.endsWith('/ownvehicles')).forEach(req => req.flush([]));
     http.expectOne(req => req.url.endsWith('/me')).flush({ displayName: 'Teszt', currency: 'HUF' });
     fixture.detectChanges();
     expect(component.entries).toEqual([]);
@@ -122,7 +122,7 @@ describe('FillUpComponentComponent', () => {
   });
 
   it('shows a retry state if a vehicle history fails', () => {
-    http.expectOne(req => req.url.endsWith('/ownvehicles')).flush([cars[0]]);
+    http.match(req => req.url.endsWith('/ownvehicles')).forEach(req => req.flush([cars[0]]));
     http.expectOne(req => req.url.endsWith('/me')).flush({ displayName: 'Teszt', currency: 'HUF' });
     http.expectOne(req => req.url.endsWith('/vehicles/4/refuelings')).flush({}, { status: 500, statusText: 'Error' });
     fixture.detectChanges();

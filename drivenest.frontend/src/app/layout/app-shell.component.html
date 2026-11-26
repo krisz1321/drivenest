@@ -3,6 +3,30 @@
 
   <main [attr.id]="active === 'dashboard' ? 'overview' : null">
     <header class="topbar"><span>Garázs <span class="separator">/</span><strong>{{ section }}</strong></span><span class="date">{{ dateLabel }}</span></header>
+    <header class="mobile-head">
+      @if (vehicle; as car) {
+        <button type="button" class="car-button" (click)="pickerOpen = !pickerOpen" [attr.aria-expanded]="pickerOpen" aria-label="Jármű választása">
+          <span class="car-icon" aria-hidden="true"><svg class="icon" viewBox="0 0 24 24"><path d="M4 17v-5l2.2-5.2A2 2 0 0 1 8 5.5h8a2 2 0 0 1 1.8 1.3L20 12v5"/><path d="M3 12h18v5H3z"/><path d="M6 17v2M18 17v2"/></svg></span>
+          <span class="car-text"><strong>{{ car.make }} {{ car.model }}</strong><small>{{ car.licensePlate }} · {{ km(car) }}</small></span>
+          <svg class="icon chevron" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <button type="button" class="head-button" (click)="downloadBook(car)" [disabled]="pdfLoading" aria-label="Szervizkönyv letöltése">
+          <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M7 10l5 5 5-5M5 20h14"/></svg>
+        </button>
+      } @else if (loaded) {
+        <a class="car-button" routerLink="/garage"><span class="car-text"><strong>Nincs még jármű</strong><small>Jármű hozzáadása</small></span></a>
+      }
+
+      @if (pickerOpen) {
+        <div class="picker-backdrop" (click)="pickerOpen = false"></div>
+        <ul class="picker">
+          @for (car of vehicles; track car.id) {
+            <li><button type="button" [class.active]="car.id === vehicle?.id" (click)="choose(car)"><strong>{{ car.make }} {{ car.model }}</strong><small>{{ car.licensePlate }}</small></button></li>
+          }
+        </ul>
+      }
+    </header>
+    @if (pdfError) { <p class="alert-error mobile-alert" role="alert">{{ pdfError }}</p> }
     <div class="page-content"><ng-content /></div>
   </main>
 </div>

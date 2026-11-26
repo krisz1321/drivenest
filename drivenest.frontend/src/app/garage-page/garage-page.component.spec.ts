@@ -29,7 +29,7 @@ describe('GaragePageComponent', () => {
   afterEach(() => { http.verify({ ignoreCancelled: true }); });
 
   function respond(vehicles: unknown[]) {
-    http.expectOne(req => req.url.endsWith('/ownvehicles')).flush(vehicles);
+    http.match(req => req.url.endsWith('/ownvehicles')).forEach(req => req.flush(vehicles));
     http.expectOne(req => req.url.endsWith('/lookups/fuel-types')).flush([{ id: 1, name: 'Benzin' }]);
     http.expectOne(req => req.url.endsWith('/vehicle-brands')).flush([]);
     http.expectOne(req => req.url.endsWith('/vehicle-models')).flush([]);

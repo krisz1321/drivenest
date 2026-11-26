@@ -43,7 +43,7 @@ describe('Default page', () => {
     await navigation;
     harness.detectChanges();
     http.expectOne('/api/me').flush(user);
-    http.expectOne('/api/ownvehicles').flush([]);
+    http.match('/api/ownvehicles').forEach(req => req.flush([]));
     await harness.fixture.whenStable();
     harness.detectChanges();
     expect(router.url).toBe('/dashboard');
