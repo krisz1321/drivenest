@@ -5,12 +5,14 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { AppShellComponent } from '../layout/app-shell.component';
 import { ProfileService } from '../services/profile.service';
 import { CommonModule } from '@angular/common';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { finalize, forkJoin, of, switchMap, map } from 'rxjs';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { Refueling, RefuelingService, currentTime, shortTime, toApiTime, today } from '../services/refueling.service';
 import { Consumption, StatsService } from '../services/stats.service';
 import { consumptionLabel, toConsumption } from '../shared/units';
+import { SelectedVehicleService } from '../services/selected-vehicle.service';
+import { newEntryRequests } from '../shared/new-entry';
 
 const integer = (control: AbstractControl) => control.value === null || Number.isInteger(control.value) ? null : { integer: true };
 const precision = (digits: number) => (control: AbstractControl) => control.value === null
@@ -44,6 +46,10 @@ export class FillUpComponentComponent implements OnInit {
   private readonly api = inject(RefuelingService);
   private readonly statsApi = inject(StatsService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly selected = inject(SelectedVehicleService);
+  private newRequested = false;
   entries: Refueling[] = [];
   consumption: Record<number, Consumption> = {};
   loading = false;
@@ -103,7 +109,16 @@ export class FillUpComponentComponent implements OnInit {
   segment(entry: Refueling) { return this.consumption[entry.vehicleId]?.segments.find(s => s.endRefuelingId === entry.id); }
   number(value: number, digits = 2) { return value.toLocaleString('hu-HU', { maximumFractionDigits: digits }); }
   invalid(field: keyof typeof this.form.controls) { const control = this.form.controls[field]; return control.touched && control.invalid; }
-  ngOnInit() { this.load(); }
+  ngOnInit() {
+    this.load();
+    newEntryRequests(this.route, this.router).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => { this.newRequested = true; this.openRequested(); });
+  }
+  // Csak betöltés után nyitható meg, mert az űrlapnak kellenek a járművek.
+  private openRequested() {
+    if (!this.newRequested || this.loading) return;
+    this.newRequested = false;
+    setTimeout(() => this.open('create'));
+  }
   load() {
     if (this.loading || this.saving) return;
     this.loading = true;
@@ -112,7 +127,7 @@ export class FillUpComponentComponent implements OnInit {
       switchMap(result => {
         this.vehicles = result.vehicles;
         return this.vehicles.length ? forkJoin(this.vehicles.map(car => this.api.list(car.id))).pipe(map(groups => groups.flat())) : of([] as Refueling[]);
-      }), takeUntilDestroyed(this.destroyRef), finalize(() => this.loading = false)
+      }), takeUntilDestroyed(this.destroyRef), finalize(() => { this.loading = false; this.openRequested(); })
     ).subscribe({ next: entries => { this.entries = this.sorted(entries); this.loadConsumption(); },
       error: () => this.loadError = 'A tankolásokat nem sikerült betölteni. Próbáld újra.' });
   }
@@ -132,8 +147,10 @@ export class FillUpComponentComponent implements OnInit {
     this.errors = [];
     this.priceSource = 'total';
     this.unitPriceControl.reset(0, { emitEvent: false });
-    this.form.reset({ vehicleId: this.vehicles[0]?.id ?? 0, date: today(),
-      time: currentTime(), odometerKm: this.vehicles[0]?.currentKm ?? 0, liters: 0, totalAmount: 0, isFullTank: true }, { emitEvent: false });
+    // Új tankolásnál a kiválasztott autó az alapértelmezett
+    const car = this.vehicles.find(v => v.id === this.selected.vehicleId()) ?? this.vehicles[0];
+    this.form.reset({ vehicleId: car?.id ?? 0, date: today(),
+      time: currentTime(), odometerKm: car?.currentKm ?? 0, liters: 0, totalAmount: 0, isFullTank: true }, { emitEvent: false });
     if (entry) this.form.patchValue({ ...entry, time: shortTime(entry.time) }, { emitEvent: false });
     this.calculatePrice();
     this.dialog.nativeElement.showModal();

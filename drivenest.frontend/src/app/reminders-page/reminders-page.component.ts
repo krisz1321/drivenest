@@ -1,10 +1,12 @@
 import { Component, DestroyRef, OnInit, ViewChild, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
+import { SelectedVehicleService } from '../services/selected-vehicle.service';
+import { newEntryRequests } from '../shared/new-entry';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { Reminder, ReminderService, ReminderStatus, WARNING_DAYS, WARNING_KM, reminderStatus, remainingText } from '../services/reminder.service';
@@ -26,6 +28,10 @@ export class RemindersPageComponent implements OnInit {
   private readonly api = inject(ReminderService);
   private readonly profile = inject(ProfileService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly selected = inject(SelectedVehicleService);
+  private newRequested = false;
 
   readonly warningDays = WARNING_DAYS;
 
@@ -47,13 +53,25 @@ export class RemindersPageComponent implements OnInit {
 
   ngOnInit() {
     this.load();
+    newEntryRequests(this.route, this.router).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.newRequested = true;
+      this.openRequested();
+    });
+  }
+
+  // Csak betöltés után nyitható meg, mert a dialógusnak kellenek a járművek.
+  private openRequested() {
+    if (!this.newRequested || this.loading) return;
+    this.newRequested = false;
+    setTimeout(() => this.openCreate());
   }
 
   openCreate() {
     if (!this.vehicles.length || this.loading) return;
 
-    // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot.
-    const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
+    // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot, különben a kiválasztott autóval.
+    const car = this.vehicles.find(v => v.id === this.vehicleFilter)
+      ?? this.vehicles.find(v => v.id === this.selected.vehicleId()) ?? this.vehicles[0];
     this.dialog.openCreate(car.id);
   }
 
@@ -113,7 +131,7 @@ export class RemindersPageComponent implements OnInit {
         return forkJoin(this.vehicles.map(car => this.api.list(car.id, true))).pipe(map(groups => groups.flat()));
       }),
       takeUntilDestroyed(this.destroyRef),
-      finalize(() => this.loading = false)
+      finalize(() => { this.loading = false; this.openRequested(); })
     ).subscribe({
       next: entries => this.entries = entries,
       error: () => this.loadError = 'Az emlékeztetőket nem sikerült betölteni. Próbáld újra.'

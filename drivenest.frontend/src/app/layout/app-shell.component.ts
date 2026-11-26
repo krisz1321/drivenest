@@ -37,6 +37,7 @@ export class AppShellComponent implements OnInit {
   vehicles: Vehicle[] = [];
   loaded = false;
   pickerOpen = false;
+  sheetOpen = false;
   pdfLoading = false;
   pdfError = '';
 

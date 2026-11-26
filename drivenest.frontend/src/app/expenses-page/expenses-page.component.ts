@@ -2,10 +2,12 @@ import { Component, DestroyRef, ElementRef, OnInit, ViewChild, inject } from '@a
 import { CommonModule } from '@angular/common';
 import { AbstractControl, FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { RouterLink } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { AppShellComponent } from '../layout/app-shell.component';
+import { SelectedVehicleService } from '../services/selected-vehicle.service';
+import { newEntryRequests } from '../shared/new-entry';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
 import { Expense, ExpenseCategory, ExpenseRequest, ExpenseService } from '../services/expense.service';
@@ -33,6 +35,10 @@ export class ExpensesPageComponent implements OnInit {
   private readonly api = inject(ExpenseService);
   private readonly profile = inject(ProfileService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
+  private readonly selected = inject(SelectedVehicleService);
+  private newRequested = false;
 
   vehicles: Vehicle[] = [];
   categories: ExpenseCategory[] = [];
@@ -65,6 +71,17 @@ export class ExpensesPageComponent implements OnInit {
 
   ngOnInit() {
     this.load();
+    newEntryRequests(this.route, this.router).pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
+      this.newRequested = true;
+      this.openRequested();
+    });
+  }
+
+  // Csak betöltés után nyitható meg, mert a dialógusnak kellenek a járművek.
+  private openRequested() {
+    if (!this.newRequested || this.loading) return;
+    this.newRequested = false;
+    setTimeout(() => this.openCreate());
   }
 
   // A kategória legördülőben külön csoportban vannak a beépített és a saját kategóriák.
@@ -99,8 +116,9 @@ export class ExpensesPageComponent implements OnInit {
     this.errors = [];
     this.form.controls.vehicleId.enable();
 
-    // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot.
-    const car = this.vehicles.find(v => v.id === this.vehicleFilter) ?? this.vehicles[0];
+    // Ha a listában ki van szűrve egy jármű, azzal nyitjuk meg az űrlapot, különben a kiválasztott autóval.
+    const car = this.vehicles.find(v => v.id === this.vehicleFilter)
+      ?? this.vehicles.find(v => v.id === this.selected.vehicleId()) ?? this.vehicles[0];
     this.form.reset({
       vehicleId: car.id,
       date: today(),
@@ -252,7 +270,7 @@ export class ExpensesPageComponent implements OnInit {
         return forkJoin(this.vehicles.map(car => this.api.list(car.id))).pipe(map(groups => groups.flat()));
       }),
       takeUntilDestroyed(this.destroyRef),
-      finalize(() => this.loading = false)
+      finalize(() => { this.loading = false; this.openRequested(); })
     ).subscribe({
       next: entries => this.entries = this.sorted(entries),
       error: () => this.loadError = 'A kiadásokat nem sikerült betölteni. Próbáld újra.'

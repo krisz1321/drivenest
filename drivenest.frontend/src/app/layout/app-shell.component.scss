@@ -33,8 +33,23 @@ main { margin-left: var(--sidebar-width); }
 .tab i { display: grid; place-items: center; width: 52px; height: 28px; border-radius: 14px; }
 .tab.active { color: var(--color-text); font-weight: 700; }
 .tab.active i { background: color-mix(in srgb, var(--color-primary) 22%, transparent); color: var(--color-warning); }
-.fab { display: grid; place-items: center; width: 56px; height: 56px; margin: -26px auto 0; border: 4px solid var(--color-background); border-radius: 50%; background: var(--color-primary); color: var(--color-on-primary); box-shadow: 0 6px 18px rgb(0 0 0 / 22%); }
+.fab { display: grid; place-items: center; width: 56px; height: 56px; margin: -26px auto 0; padding: 0; border: 4px solid var(--color-background); border-radius: 50%; background: var(--color-primary); color: var(--color-on-primary); box-shadow: 0 6px 18px rgb(0 0 0 / 22%); }
 .fab .icon { width: 24px; height: 24px; stroke-width: 2.4; }
+
+// A + gomb alsó lapja
+.sheet-backdrop { position: fixed; inset: 0; z-index: 30; background: rgb(16 43 62 / 45%); }
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 31; padding: 18px 16px calc(16px + env(safe-area-inset-bottom)); border-radius: 20px 20px 0 0; background: var(--color-surface); box-shadow: 0 -12px 30px rgb(16 43 62 / 18%); }
+.sheet-title { margin: 0 0 14px; font-weight: 700; font-size: 17px; }
+.sheet-title small { display: block; color: var(--color-muted); font-size: 12px; font-weight: 400; }
+.sheet-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.sheet-grid a { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 10px 4px; border-radius: 12px; color: var(--color-text); font-size: 12px; font-weight: 600; text-decoration: none; }
+.sheet-grid a:hover { background: var(--color-background); }
+.sheet-icon { display: grid; place-items: center; width: 52px; height: 52px; border-radius: 50%; color: #263747; }
+.sheet-icon.fuel { background: #f3c88a; }
+.sheet-icon.service { background: #c6d9ee; }
+.sheet-icon.expense { background: #f4c4bb; }
+.sheet-icon.reminder { background: #dde4ea; }
+.sheet-close { width: 100%; margin-top: 14px; }
 
 @media (max-width: 600px) {
   .topbar { display: none; }

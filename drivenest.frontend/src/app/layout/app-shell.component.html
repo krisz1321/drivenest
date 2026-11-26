@@ -37,9 +37,9 @@
     <a class="tab" [class.active]="active === 'statistics'" routerLink="/statistics">
       <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></i>Statisztikák
     </a>
-    <a class="fab" routerLink="/refuelings" aria-label="Új bejegyzés">
+    <button type="button" class="fab" (click)="sheetOpen = true" aria-label="Új bejegyzés" [attr.aria-expanded]="sheetOpen">
       <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
-    </a>
+    </button>
     <a class="tab" [class.active]="active === 'reminders'" routerLink="/reminders">
       <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></i>Emlékeztetők
     </a>
@@ -47,4 +47,19 @@
       <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></i>Több
     </a>
   </nav>
+
+  <!-- A + gomb alsó lapja: a meglévő oldalak "új" ablakát nyitja meg -->
+  @if (sheetOpen) {
+    <div class="sheet-backdrop" (click)="sheetOpen = false"></div>
+    <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+      <p id="sheet-title" class="sheet-title">Új bejegyzés @if (vehicle; as car) { <small>{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</small> }</p>
+      <div class="sheet-grid">
+        <a routerLink="/refuelings" [queryParams]="{ new: 1 }" (click)="sheetOpen = false"><span class="sheet-icon fuel"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M4 10h10"/><path d="M14 8l3 3v6a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg></span>Tankolás</a>
+        <a routerLink="/expenses" [queryParams]="{ new: 1 }" (click)="sheetOpen = false"><span class="sheet-icon expense"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 14h2"/></svg></span>Kiadás</a>
+        <a routerLink="/service" [queryParams]="{ new: 1 }" (click)="sheetOpen = false"><span class="sheet-icon service"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg></span>Szerviz</a>
+        <a routerLink="/reminders" [queryParams]="{ new: 1 }" (click)="sheetOpen = false"><span class="sheet-icon reminder"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></span>Emlékeztető</a>
+      </div>
+      <button type="button" class="button button-secondary sheet-close" (click)="sheetOpen = false">Mégse</button>
+    </div>
+  }
 </div>
