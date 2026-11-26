@@ -15,7 +15,9 @@ h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
 .label { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; color: var(--color-muted); text-transform: uppercase; }
 
 ul { margin: 0; padding: 0; list-style: none; }
-.entry { display: flex; gap: 14px; padding: 12px 0 12px 2px; border-bottom: 1px solid var(--color-border); }
+.entry { border-bottom: 1px solid var(--color-border); }
+.entry.open { background: #fafbfc; }
+.entry-main { display: flex; gap: 14px; width: 100%; padding: 12px 4px 12px 2px; border: 0; background: transparent; color: inherit; text-align: left; }
 .entry-icon { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #263747; flex: none; }
 .entry-icon .icon { width: 18px; height: 18px; stroke-width: 2; }
 .entry-icon.fuel { background: #f3c88a; }
@@ -28,6 +30,13 @@ ul { margin: 0; padding: 0; list-style: none; }
 .amount { font-size: 16px; font-weight: 700; white-space: nowrap; }
 .entry-row small { color: var(--color-muted); font-size: 12px; }
 .date { white-space: nowrap; }
+
+// Kibontott sor
+.detail { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; padding: 0 4px 14px 52px; font-size: 13px; }
+dl { display: flex; flex-direction: column; gap: 6px; width: 100%; margin: 0; }
+dl div { display: flex; justify-content: space-between; gap: 8px; }
+dt { color: var(--color-muted); }
+dd { margin: 0; text-align: right; overflow-wrap: anywhere; }
 
 // Emlékeztető kártyák, vízszintesen görgethető sávban
 .reminders { margin-bottom: 8px; }

@@ -19,6 +19,9 @@ interface HistoryEntry {
   kind: 'fuel' | 'service' | 'expense';
   title: string;
   details: string;
+  // A kibontott sor részletei és a szerkesztés helye (ott van a dialógus)
+  rows: { label: string; value: string }[];
+  editLink: (string | number)[];
   date: string;
   odometerKm: number;
   amount: number;
@@ -62,6 +65,8 @@ export class HistoryPageComponent implements OnInit {
   reminders: Reminder[] = [];
   loading = false;
   loadError = '';
+  // Egyszerre egy sor lehet kibontva
+  openId: string | null = null;
 
   get vehicle() { return this.vehicles.find(v => v.id === this.selected.vehicleId()) ?? null; }
   private get prefs() { return this.profile.preferences(); }
@@ -96,6 +101,7 @@ export class HistoryPageComponent implements OnInit {
       next: data => {
         this.months = this.buildMonths(data.refuelings, data.services, data.expenses, data.consumption);
         this.reminders = data.reminders;
+        this.openId = null;
         this.loading = false;
       },
       error: () => {
@@ -144,23 +150,16 @@ export class HistoryPageComponent implements OnInit {
     return parts.join(' vagy ');
   }
 
+  toggle(entry: HistoryEntry) { this.openId = this.openId === entry.id ? null : entry.id; }
+
   money(amount: number) { return `${this.number(amount)} ${currencyLabel(this.prefs.currency)}`; }
 
   private buildMonths(refuelings: Refueling[], services: ServiceRecord[], expenses: Expense[], consumption: Consumption | null) {
     const segments = consumption?.segments ?? [];
     const entries: HistoryEntry[] = [
-      ...refuelings.map(r => ({
-        id: `fuel-${r.id}`, kind: 'fuel' as const, title: 'Tankolás', details: this.fuelDetails(r, segments.find(s => s.endRefuelingId === r.id)),
-        date: r.date, odometerKm: r.odometerKm, amount: r.totalAmount
-      })),
-      ...services.map(s => ({
-        id: `service-${s.id}`, kind: 'service' as const, title: s.items.map(i => i.categoryName).join(', ') || 'Szerviz',
-        details: `Szerviz · ${this.distance(s.odometerKm)}`, date: s.date, odometerKm: s.odometerKm, amount: s.total
-      })),
-      ...expenses.map(e => ({
-        id: `expense-${e.id}`, kind: 'expense' as const, title: e.categoryName,
-        details: ['Kiadás', e.location].filter(Boolean).join(' · '), date: e.date, odometerKm: e.odometerKm, amount: e.amount
-      }))
+      ...refuelings.map(r => this.fuelEntry(r, segments.find(s => s.endRefuelingId === r.id))),
+      ...services.map(s => this.serviceEntry(s)),
+      ...expenses.map(e => this.expenseEntry(e))
     ].sort((a, b) => b.date.localeCompare(a.date) || b.odometerKm - a.odometerKm);
 
     const months: HistoryMonth[] = [];
@@ -187,12 +186,49 @@ export class HistoryPageComponent implements OnInit {
     return months;
   }
 
-  private fuelDetails(r: Refueling, segment: ConsumptionSegment | undefined) {
-    const parts = [this.distance(r.odometerKm)];
-    if (segment) parts.push(this.consumption(segment.litersPer100Km));
-    else if (!r.isFullTank) parts.push('részleges');
-    parts.push(`${this.number(toVolume(r.liters, this.prefs.volumeUnit), 2)} ${volumeLabel(this.prefs.volumeUnit)}`);
-    return parts.join(' · ');
+  private fuelEntry(r: Refueling, segment: ConsumptionSegment | undefined): HistoryEntry {
+    const unit = this.prefs.volumeUnit;
+    const volume = toVolume(r.liters, unit);
+    const quantity = `${this.number(volume, 2)} ${volumeLabel(unit)}`;
+    const details = [this.distance(r.odometerKm)];
+    if (segment) details.push(this.consumption(segment.litersPer100Km));
+    else if (!r.isFullTank) details.push('részleges');
+    details.push(quantity);
+
+    const rows = [
+      { label: 'Mennyiség', value: quantity },
+      { label: 'Egységár', value: `${this.number(r.totalAmount / volume, 1)} ${currencyLabel(this.prefs.currency)}/${volumeLabel(unit)}` },
+      { label: 'Fogyasztás', value: segment ? this.consumption(segment.litersPer100Km) : '—' },
+      { label: 'Megtett táv', value: segment ? this.distance(segment.distanceKm) : '—' },
+      { label: 'Tele tank', value: r.isFullTank ? 'Igen' : 'Nem' }
+    ];
+    return {
+      id: `fuel-${r.id}`, kind: 'fuel', title: 'Tankolás', details: details.join(' · '), rows,
+      editLink: ['/garage', r.vehicleId], date: r.date, odometerKm: r.odometerKm, amount: r.totalAmount
+    };
+  }
+
+  private serviceEntry(s: ServiceRecord): HistoryEntry {
+    const rows = s.items.map(i => ({ label: i.categoryName, value: this.money(i.amount) }));
+    if (s.provider) rows.push({ label: 'Szerviz / helyszín', value: s.provider });
+    if (s.description) rows.push({ label: 'Megjegyzés', value: s.description });
+    return {
+      id: `service-${s.id}`, kind: 'service', title: s.items.map(i => i.categoryName).join(', ') || 'Szerviz',
+      details: `Szerviz · ${this.distance(s.odometerKm)}`, rows, editLink: ['/service'],
+      date: s.date, odometerKm: s.odometerKm, amount: s.total
+    };
+  }
+
+  private expenseEntry(e: Expense): HistoryEntry {
+    return {
+      id: `expense-${e.id}`, kind: 'expense', title: e.categoryName,
+      details: ['Kiadás', e.location].filter(Boolean).join(' · '),
+      rows: [
+        { label: 'Kilométeróra', value: this.distance(e.odometerKm) },
+        { label: 'Megjegyzés', value: e.description || '—' }
+      ],
+      editLink: ['/expenses'], date: e.date, odometerKm: e.odometerKm, amount: e.amount
+    };
   }
 
   dateLabel(date: string) {
