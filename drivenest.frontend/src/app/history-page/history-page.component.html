@@ -1,0 +1,45 @@
+<app-shell active="history" section="Előzmények">
+  <header class="page-heading">
+    <h1>Előzmények</h1>
+    @if (vehicle; as car) { <p class="muted">{{ car.make }} {{ car.model }} · {{ car.licensePlate }}</p> }
+  </header>
+
+  @if (loading) {
+    <div class="panel empty-state" role="status">Az előzmények betöltése…</div>
+  } @else if (loadError) {
+    <div class="alert-error" role="alert"><p>{{ loadError }}</p><button type="button" class="button button-secondary button-compact" (click)="load()">Újrapróbálás</button></div>
+  } @else if (!vehicles.length) {
+    <div class="panel empty-state"><h2>Még nincs jármű</h2><p>Adj hozzá egy autót a garázsban.</p><a class="button button-primary" routerLink="/garage">Garázs megnyitása</a></div>
+  } @else if (!months.length) {
+    <div class="panel empty-state">Még nincs bejegyzés ennél az autónál.</div>
+  } @else {
+    <div class="timeline">
+      @for (month of months; track month.key) {
+        <section class="month" [attr.aria-label]="month.label">
+          <div class="month-summary">
+            <span class="label">{{ month.label }}</span>
+            <strong>{{ monthSummary(month) }}</strong>
+            @if (monthChange(month); as change) { <p>Költségek <b>{{ change.text }}</b>, mint {{ change.name }}</p> }
+          </div>
+          <ul>
+            @for (entry of month.entries; track entry.id) {
+              <li class="entry">
+                <span class="entry-icon" [class]="entry.kind" aria-hidden="true">
+                  @switch (entry.kind) {
+                    @case ('fuel') { <svg class="icon" viewBox="0 0 24 24"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M4 10h10"/><path d="M14 8l3 3v6a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg> }
+                    @case ('service') { <svg class="icon" viewBox="0 0 24 24"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg> }
+                    @default { <svg class="icon" viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 14h2"/></svg> }
+                  }
+                </span>
+                <div class="entry-body">
+                  <div class="entry-row"><strong>{{ entry.title }}</strong><span class="amount">{{ money(entry.amount) }}</span></div>
+                  <div class="entry-row"><small>{{ entry.details }}</small><small class="date">{{ dateLabel(entry.date) }}</small></div>
+                </div>
+              </li>
+            }
+          </ul>
+        </section>
+      }
+    </div>
+  }
+</app-shell>

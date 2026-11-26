@@ -13,12 +13,14 @@ import { ServicePageComponent } from './service-page/service-page.component';
 import { RemindersPageComponent } from './reminders-page/reminders-page.component';
 import { AuditPageComponent } from './audit-page/audit-page.component';
 import { MorePageComponent } from './more-page/more-page.component';
+import { HistoryPageComponent } from './history-page/history-page.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
   { path: 'login', component: LoginPageComponent },
   { path: 'register', component: RegisterPageComponent },
   { path: 'dashboard', component: DashboardComponent, canActivate: [authGuard] },
+  { path: 'history', component: HistoryPageComponent, canActivate: [authGuard] },
   { path: 'garage/:id', component: GaragePageComponent, canActivate: [authGuard] },
   { path: 'garage', component: GaragePageComponent, canActivate: [authGuard] },
   { path: 'refuelings', component: FillUpComponentComponent, canActivate: [authGuard] },

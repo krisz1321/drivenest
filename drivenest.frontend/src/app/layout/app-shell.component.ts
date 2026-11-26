@@ -43,7 +43,7 @@ export class AppShellComponent implements OnInit {
   get displayName() { return this.profile.profile()?.displayName || 'Saját garázs'; }
   get vehicle() { return this.vehicles.find(v => v.id === this.selected.vehicleId()) ?? null; }
   // Ami nem fért a fülsávra, az a Több fül alá tartozik.
-  get moreActive() { return !['dashboard', 'history', 'statistics', 'reminders'].includes(this.active); }
+  get moreActive() { return !['history', 'statistics', 'reminders'].includes(this.active); }
 
   ngOnInit() {
     this.vehicleApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

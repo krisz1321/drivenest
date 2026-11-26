@@ -1,0 +1,32 @@
+:host { display: block; }
+
+.page-heading { margin-bottom: 20px; }
+.page-heading p { margin-bottom: 0; font-size: 13px; }
+h1 { margin-bottom: 4px; font-size: 26px; letter-spacing: -.6px; }
+
+// Idővonal: szaggatott vonal az ikonok mögött, hónaponként összesítő kártya
+.timeline { position: relative; max-width: 720px; }
+.timeline::before { content: ''; position: absolute; left: 19px; top: 0; bottom: 0; border-left: 2px dashed var(--color-border); }
+.month-summary { position: relative; display: flex; flex-direction: column; gap: 4px; margin: 14px 0 6px 48px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); }
+.month-summary::before { content: ''; position: absolute; left: -40px; top: 18px; width: 22px; height: 8px; border-radius: 4px; background: var(--color-border); }
+.month-summary strong { font-size: 14px; }
+.month-summary p { margin: 0; font-size: 13px; color: var(--color-muted); }
+.month-summary p b { color: var(--color-text); }
+.label { font-size: 11px; font-weight: 700; letter-spacing: 1.4px; color: var(--color-muted); text-transform: uppercase; }
+
+ul { margin: 0; padding: 0; list-style: none; }
+.entry { display: flex; gap: 14px; padding: 12px 0 12px 2px; border-bottom: 1px solid var(--color-border); }
+.entry-icon { position: relative; display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; color: #263747; flex: none; }
+.entry-icon .icon { width: 18px; height: 18px; stroke-width: 2; }
+.entry-icon.fuel { background: #f3c88a; }
+.entry-icon.service { background: #c6d9ee; }
+.entry-icon.expense { background: #f4c4bb; }
+.entry-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.entry-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.entry-row strong { font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
+.amount { font-size: 16px; font-weight: 700; white-space: nowrap; }
+.entry-row small { color: var(--color-muted); font-size: 12px; }
+.date { white-space: nowrap; }
+
+// Telefonon a fejlécben már ott az autó, nem kell külön cím
+@media (max-width: 600px) { .page-heading { display: none; } }
