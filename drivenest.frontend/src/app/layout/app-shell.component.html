@@ -29,4 +29,22 @@
     @if (pdfError) { <p class="alert-error mobile-alert" role="alert">{{ pdfError }}</p> }
     <div class="page-content"><ng-content /></div>
   </main>
+
+  <nav class="tabbar" aria-label="Fő navigáció">
+    <a class="tab" [class.active]="active === 'dashboard' || active === 'history'" routerLink="/dashboard">
+      <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg></i>Előzmények
+    </a>
+    <a class="tab" [class.active]="active === 'statistics'" routerLink="/statistics">
+      <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg></i>Statisztikák
+    </a>
+    <a class="fab" routerLink="/refuelings" aria-label="Új bejegyzés">
+      <svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+    </a>
+    <a class="tab" [class.active]="active === 'reminders'" routerLink="/reminders">
+      <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg></i>Emlékeztetők
+    </a>
+    <a class="tab" [class.active]="moreActive" routerLink="/more">
+      <i><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg></i>Több
+    </a>
+  </nav>
 </div>

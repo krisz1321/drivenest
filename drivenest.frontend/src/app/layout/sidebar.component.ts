@@ -1,6 +1,8 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
 import { RouterLink } from '@angular/router';
 
+export type NavPage = 'dashboard' | 'history' | 'settings' | 'garage' | 'refuelings' | 'expenses' | 'service' | 'reminders' | 'statistics' | 'audit' | 'more';
+
 @Component({
   selector: 'app-sidebar',
   standalone: true,
@@ -10,7 +12,7 @@ import { RouterLink } from '@angular/router';
   styleUrl: './sidebar.component.scss'
 })
 export class SidebarComponent {
-  @Input() active: 'dashboard' | 'settings' | 'garage' | 'refuelings' | 'expenses' | 'service' | 'reminders' | 'statistics' | 'audit' = 'dashboard';
+  @Input() active: NavPage = 'dashboard';
   @Input() displayName = 'Saját garázs';
   @Output() signOut = new EventEmitter<void>();
 }

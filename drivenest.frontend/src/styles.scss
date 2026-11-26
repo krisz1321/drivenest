@@ -152,3 +152,8 @@ select.form-input { appearance: none; padding-right: 42px; cursor: pointer; back
 .signout:hover { color: var(--color-surface); }
 .text-button:hover:not(:disabled) { text-decoration: underline; text-underline-offset: 3px; }
 .modal { box-shadow: 0 24px 60px rgb(16 43 62 / 22%); }
+
+// Inline SVG ikonok (mobil fejléc, fülsáv, Több oldal)
+.icon { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+// Telefonon az oldalsáv helyett alsó fülsáv van
+@media (max-width: 600px) { :root { --sidebar-width: 0px; } .sidebar { display: none; } }

@@ -1,0 +1,18 @@
+<app-shell active="more" section="Több">
+  <h1>Több</h1>
+  <div class="panel menu">
+    <div class="profile"><span class="avatar" aria-hidden="true">{{ displayName.slice(0, 1).toUpperCase() }}</span><strong>{{ displayName }}</strong></div>
+    <nav aria-label="További oldalak">
+      <a class="menu-item" routerLink="/garage"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 17v-5l2.2-5.2A2 2 0 0 1 8 5.5h8a2 2 0 0 1 1.8 1.3L20 12v5"/><path d="M3 12h18v5H3z"/><path d="M6 17v2M18 17v2"/></svg>Járműveim</a>
+      <a class="menu-item" routerLink="/dashboard"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Vezérlőpult</a>
+      <hr>
+      <a class="menu-item" routerLink="/refuelings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 21V5a2 2 0 0 1 2-2h6a2 2 0 0 1 2 2v16"/><path d="M3 21h12"/><path d="M4 10h10"/><path d="M14 8l3 3v6a1.5 1.5 0 0 0 3 0V9l-3-3"/></svg>Tankolások</a>
+      <a class="menu-item" routerLink="/expenses"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M3 10h18"/><path d="M16 14h2"/></svg>Kiadások</a>
+      <a class="menu-item" routerLink="/service"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Szerviz</a>
+      <hr>
+      <a class="menu-item" routerLink="/audit"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>Változásnapló</a>
+      <a class="menu-item" routerLink="/settings"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h10M18 6h2M4 12h4M12 12h8M4 18h12"/><circle cx="16" cy="6" r="2"/><circle cx="10" cy="12" r="2"/><circle cx="18" cy="18" r="2"/></svg>Beállítások</a>
+      <button type="button" class="menu-item" (click)="signOut()"><svg class="icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>Kijelentkezés</button>
+    </nav>
+  </div>
+</app-shell>

@@ -2,7 +2,7 @@ import { Component, DestroyRef, Input, OnInit, inject } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { finalize, of, switchMap } from 'rxjs';
-import { SidebarComponent } from './sidebar.component';
+import { NavPage, SidebarComponent } from './sidebar.component';
 import { AuthService } from '../services/auth.service';
 import { ProfileService } from '../services/profile.service';
 import { Vehicle, VehicleService } from '../services/vehicle.service';
@@ -27,7 +27,7 @@ export class AppShellComponent implements OnInit {
   private readonly serviceApi = inject(ServiceRecordService);
   private readonly pdf = inject(ServiceBookPdfService);
   private readonly destroyRef = inject(DestroyRef);
-  @Input() active: 'dashboard' | 'settings' | 'garage' | 'refuelings' | 'expenses' | 'service' | 'reminders' | 'statistics' | 'audit' = 'dashboard';
+  @Input() active: NavPage = 'dashboard';
   @Input() section = 'Vezérlőpult';
   readonly dateLabel = new Date().toLocaleDateString('hu-HU', {
     year: 'numeric', month: 'long', day: 'numeric', timeZone: 'Europe/Budapest'
@@ -42,6 +42,8 @@ export class AppShellComponent implements OnInit {
 
   get displayName() { return this.profile.profile()?.displayName || 'Saját garázs'; }
   get vehicle() { return this.vehicles.find(v => v.id === this.selected.vehicleId()) ?? null; }
+  // Ami nem fért a fülsávra, az a Több fül alá tartozik.
+  get moreActive() { return !['dashboard', 'history', 'statistics', 'reminders'].includes(this.active); }
 
   ngOnInit() {
     this.vehicleApi.list().pipe(takeUntilDestroyed(this.destroyRef)).subscribe({

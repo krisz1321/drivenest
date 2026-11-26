@@ -12,6 +12,7 @@ import { ExpensesPageComponent } from './expenses-page/expenses-page.component';
 import { ServicePageComponent } from './service-page/service-page.component';
 import { RemindersPageComponent } from './reminders-page/reminders-page.component';
 import { AuditPageComponent } from './audit-page/audit-page.component';
+import { MorePageComponent } from './more-page/more-page.component';
 
 const routes: Routes = [
   { path: '', redirectTo: 'login', pathMatch: 'full' },
@@ -27,6 +28,7 @@ const routes: Routes = [
   { path: 'statistics', loadComponent: () => import('./statistics-page/statistics-page.component').then(m => m.StatisticsPageComponent), canActivate: [authGuard] },
   { path: 'audit', component: AuditPageComponent, canActivate: [authGuard] },
   { path: 'settings', component: SettingsPageComponent, canActivate: [authGuard] },
+  { path: 'more', component: MorePageComponent, canActivate: [authGuard] },
   { path: '**', redirectTo: 'login' }
 ];
 
