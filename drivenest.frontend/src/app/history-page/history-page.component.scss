@@ -21,12 +21,25 @@ ul { margin: 0; padding: 0; list-style: none; }
 .entry-icon.fuel { background: #f3c88a; }
 .entry-icon.service { background: #c6d9ee; }
 .entry-icon.expense { background: #f4c4bb; }
+.entry-icon.reminder { background: #dde4ea; }
 .entry-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
 .entry-row { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
 .entry-row strong { font-size: 16px; min-width: 0; overflow-wrap: anywhere; }
 .amount { font-size: 16px; font-weight: 700; white-space: nowrap; }
 .entry-row small { color: var(--color-muted); font-size: 12px; }
 .date { white-space: nowrap; }
+
+// Emlékeztető kártyák, vízszintesen görgethető sávban
+.reminders { margin-bottom: 8px; }
+.reminders .label { margin: 0 0 8px; }
+.reminder-strip { display: flex; gap: 10px; padding-bottom: 8px; overflow-x: auto; scroll-snap-type: x mandatory; }
+.reminder-card { flex: none; width: 236px; display: flex; flex-direction: column; gap: 6px; padding: 12px 14px; border: 1px solid var(--color-border); border-radius: 14px; background: var(--color-surface); color: var(--color-text); text-decoration: none; scroll-snap-align: start; }
+.reminder-title { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 15px; }
+.reminder-title .entry-icon { width: 34px; height: 34px; }
+.reminder-card small { font-size: 12px; }
+.status { font-size: 12px; font-weight: 600; color: var(--color-success); }
+.status.overdue { color: var(--color-error); }
+.status.soon { color: var(--color-warning); }
 
 // Telefonon a fejlécben már ott az autó, nem kell külön cím
 @media (max-width: 600px) { .page-heading { display: none; } }

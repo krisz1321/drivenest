@@ -10,6 +10,7 @@ import { Refueling, RefuelingService } from '../services/refueling.service';
 import { ServiceRecord, ServiceRecordService } from '../services/service-record.service';
 import { Expense, ExpenseService } from '../services/expense.service';
 import { Consumption, ConsumptionSegment, StatsService } from '../services/stats.service';
+import { Reminder, ReminderService, reminderStatus, remainingText } from '../services/reminder.service';
 import { consumptionLabel, currencyLabel, distanceLabel, toConsumption, toDistance, toVolume, volumeLabel } from '../shared/units';
 
 // Egy sor az idővonalon (tankolás, szerviz vagy kiadás)
@@ -51,12 +52,14 @@ export class HistoryPageComponent implements OnInit {
   private readonly serviceApi = inject(ServiceRecordService);
   private readonly expenseApi = inject(ExpenseService);
   private readonly statsApi = inject(StatsService);
+  private readonly reminderApi = inject(ReminderService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly vehicleId$ = toObservable(this.selected.vehicleId);
   private subscription?: Subscription;
 
   vehicles: Vehicle[] = [];
   months: HistoryMonth[] = [];
+  reminders: Reminder[] = [];
   loading = false;
   loadError = '';
 
@@ -80,17 +83,19 @@ export class HistoryPageComponent implements OnInit {
       }),
       tap(() => this.loading = true),
       switchMap(id => id === null
-        ? of({ refuelings: [] as Refueling[], services: [] as ServiceRecord[], expenses: [] as Expense[], consumption: null })
+        ? of({ refuelings: [] as Refueling[], services: [] as ServiceRecord[], expenses: [] as Expense[], consumption: null, reminders: [] as Reminder[] })
         : forkJoin({
           refuelings: this.refuelingApi.list(id),
           services: this.serviceApi.list(id),
           expenses: this.expenseApi.list(id),
-          consumption: this.statsApi.consumption(id)
+          consumption: this.statsApi.consumption(id),
+          reminders: this.reminderApi.list(id)
         })),
       takeUntilDestroyed(this.destroyRef)
     ).subscribe({
       next: data => {
         this.months = this.buildMonths(data.refuelings, data.services, data.expenses, data.consumption);
+        this.reminders = data.reminders;
         this.loading = false;
       },
       error: () => {
@@ -117,6 +122,26 @@ export class HistoryPageComponent implements OnInit {
     const name = MONTHS_IN[(m + 10) % 12];
     if (percent === 0) return { text: 'ugyanannyi', name };
     return { text: `${Math.abs(percent)}%-kal ${percent > 0 ? 'több' : 'kevesebb'}`, name };
+  }
+
+  // A nyitott emlékeztetők: elöl a lejártak, aztán a hamarosan esedékesek, azon belül dátum szerint
+  get reminderCards() {
+    const order = { overdue: 0, soon: 1, ok: 2, completed: 3 };
+    const km = this.vehicle?.currentKm ?? 0;
+    return this.reminders
+      .filter(entry => !entry.isCompleted)
+      .map(entry => ({ entry, status: reminderStatus(entry, km), remaining: remainingText(entry, km, this.prefs.distanceUnit) }))
+      .sort((a, b) => order[a.status] - order[b.status]
+        || (a.entry.dueDate ?? '9999').localeCompare(b.entry.dueDate ?? '9999')
+        || (a.entry.dueOdometerKm ?? 0) - (b.entry.dueOdometerKm ?? 0));
+  }
+
+  // Pl. "145 000 km vagy 2026. dec. 7."
+  dueText(entry: Reminder) {
+    const parts: string[] = [];
+    if (entry.dueOdometerKm !== null) parts.push(this.distance(entry.dueOdometerKm));
+    if (entry.dueDate) parts.push(new Date(entry.dueDate).toLocaleDateString('hu-HU', { year: 'numeric', month: 'short', day: 'numeric', timeZone: 'UTC' }));
+    return parts.join(' vagy ');
   }
 
   money(amount: number) { return `${this.number(amount)} ${currencyLabel(this.prefs.currency)}`; }
